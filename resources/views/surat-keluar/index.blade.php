@@ -158,44 +158,49 @@
 
         <div class="form-grid form-grid-3">
             <div class="form-group">
-                <label for="kurun_waktu" class="form-label">Kurun Waktu</label>
+                <label for="kurun_waktu" class="form-label">Kurun Waktu <span class="required">*</span></label>
                 <input type="text" name="kurun_waktu" id="kurun_waktu"
-                       class="form-input" value="{{ old('kurun_waktu') }}" placeholder="Contoh: 2024-2025">
+                       class="form-input @error('kurun_waktu') input-error @enderror" value="{{ old('kurun_waktu') }}" placeholder="Contoh: 2024-2025" required>
+                @error('kurun_waktu')<span class="error-text">{{ $message }}</span>@enderror
             </div>
 
             <div class="form-group">
-                <label for="jumlah_folder" class="form-label">Jumlah Folder</label>
+                <label for="jumlah_folder" class="form-label">Jumlah Folder <span class="required">*</span></label>
                 <input type="text" name="jumlah_folder" id="jumlah_folder"
-                       class="form-input" value="{{ old('jumlah_folder') }}" placeholder="Contoh: 2">
+                       class="form-input @error('jumlah_folder') input-error @enderror" value="{{ old('jumlah_folder') }}" placeholder="Contoh: 2" required>
+                @error('jumlah_folder')<span class="error-text">{{ $message }}</span>@enderror
             </div>
 
             <div class="form-group">
-                <label for="nomor_item_arsip" class="form-label">Nomor: Item Arsip</label>
+                <label for="nomor_item_arsip" class="form-label">Nomor: Item Arsip <span class="required">*</span></label>
                 <input type="text" name="nomor_item_arsip" id="nomor_item_arsip"
-                       class="form-input" value="{{ old('nomor_item_arsip') }}" placeholder="Contoh: 001">
+                       class="form-input @error('nomor_item_arsip') input-error @enderror" value="{{ old('nomor_item_arsip') }}" placeholder="Contoh: 001" required>
+                @error('nomor_item_arsip')<span class="error-text">{{ $message }}</span>@enderror
             </div>
         </div>
 
         <div class="form-grid form-grid-2">
             <div class="form-group">
-                <label for="jumlah_lembar" class="form-label">Jumlah Lembar</label>
+                <label for="jumlah_lembar" class="form-label">Jumlah Lembar <span class="required">*</span></label>
                 <input type="text" name="jumlah_lembar" id="jumlah_lembar"
-                       class="form-input" value="{{ old('jumlah_lembar') }}" placeholder='Contoh: 10 Lembar'>
+                       class="form-input @error('jumlah_lembar') input-error @enderror" value="{{ old('jumlah_lembar') }}" placeholder='Contoh: 10 Lembar' required>
+                @error('jumlah_lembar')<span class="error-text">{{ $message }}</span>@enderror
             </div>
 
             <div class="form-group">
-                <label for="tingkat_perkembangan" class="form-label">Tingkat Perkembangan</label>
+                <label for="tingkat_perkembangan" class="form-label">Tingkat Perkembangan <span class="required">*</span></label>
                 <input type="text" name="tingkat_perkembangan" id="tingkat_perkembangan"
-                       class="form-input" value="{{ old('tingkat_perkembangan') }}" placeholder="Contoh: Asli">
+                       class="form-input @error('tingkat_perkembangan') input-error @enderror" value="{{ old('tingkat_perkembangan') }}" placeholder="Contoh: Asli" required>
+                @error('tingkat_perkembangan')<span class="error-text">{{ $message }}</span>@enderror
             </div>
         </div>
 
         <div class="form-grid">
             <div class="form-group form-group-upload">
-                <label for="uraian_informasi_arsip" class="form-label">Uraian Informasi Arsip</label>
+                <label for="uraian_informasi_arsip" class="form-label">Uraian Informasi Arsip <span class="required">*</span></label>
                 <textarea name="uraian_informasi_arsip" id="uraian_informasi_arsip"
                           class="form-input form-textarea @error('uraian_informasi_arsip') input-error @enderror"
-                          placeholder="Tuliskan uraian informasi arsip..." rows="3">{{ old('uraian_informasi_arsip') }}</textarea>
+                          placeholder="Tuliskan uraian informasi arsip..." rows="3" required>{{ old('uraian_informasi_arsip') }}</textarea>
                 @error('uraian_informasi_arsip')
                     <span class="error-text">{{ $message }}</span>
                 @enderror
@@ -215,50 +220,56 @@
 
         <div class="form-grid form-grid-3">
             <div class="form-group">
-                <label for="lokasi_simpan" class="form-label">Lokasi Simpan</label>
+                <label for="lokasi_simpan" class="form-label">Lokasi Simpan <span class="required">*</span></label>
                 <input type="text" name="lokasi_simpan" id="lokasi_simpan"
-                       class="form-input" value="{{ old('lokasi_simpan') }}" placeholder="Contoh: Rak B-01">
+                       class="form-input @error('lokasi_simpan') input-error @enderror" value="{{ old('lokasi_simpan') }}" placeholder="Contoh: Rak B-01" required>
+                @error('lokasi_simpan')<span class="error-text">{{ $message }}</span>@enderror
             </div>
 
             <div class="form-group">
-                <label for="klasifikasi_keamanan" class="form-label">Klasifikasi Keamanan</label>
-                <select name="klasifikasi_keamanan" id="klasifikasi_keamanan" class="form-input form-select">
+                <label for="klasifikasi_keamanan" class="form-label">Klasifikasi Keamanan <span class="required">*</span></label>
+                <select name="klasifikasi_keamanan" id="klasifikasi_keamanan" class="form-input form-select @error('klasifikasi_keamanan') input-error @enderror" required>
                     <option value="" disabled {{ old('klasifikasi_keamanan') ? '' : 'selected' }}>— Pilih —</option>
                     <option value="Biasa"         {{ old('klasifikasi_keamanan') == 'Biasa'         ? 'selected' : '' }}>Biasa</option>
                     <option value="Terbatas"      {{ old('klasifikasi_keamanan') == 'Terbatas'      ? 'selected' : '' }}>Terbatas</option>
                     <option value="Rahasia"       {{ old('klasifikasi_keamanan') == 'Rahasia'       ? 'selected' : '' }}>Rahasia</option>
                     <option value="Sangat Rahasia"{{ old('klasifikasi_keamanan') == 'Sangat Rahasia'? 'selected' : '' }}>Sangat Rahasia</option>
                 </select>
+                @error('klasifikasi_keamanan')<span class="error-text">{{ $message }}</span>@enderror
             </div>
 
             <div class="form-group">
-                <label for="tingkat_akses" class="form-label">Tingkat Akses</label>
-                <select name="tingkat_akses" id="tingkat_akses" class="form-input form-select">
+                <label for="tingkat_akses" class="form-label">Tingkat Akses <span class="required">*</span></label>
+                <select name="tingkat_akses" id="tingkat_akses" class="form-input form-select @error('tingkat_akses') input-error @enderror" required>
                     <option value="" disabled {{ old('tingkat_akses') ? '' : 'selected' }}>— Pilih —</option>
                     <option value="Terbuka"  {{ old('tingkat_akses') == 'Terbuka'  ? 'selected' : '' }}>Terbuka</option>
                     <option value="Tertutup" {{ old('tingkat_akses') == 'Tertutup' ? 'selected' : '' }}>Tertutup</option>
                     <option value="Terbatas" {{ old('tingkat_akses') == 'Terbatas' ? 'selected' : '' }}>Terbatas</option>
                 </select>
+                @error('tingkat_akses')<span class="error-text">{{ $message }}</span>@enderror
             </div>
         </div>
 
         <div class="form-grid form-grid-3">
             <div class="form-group">
-                <label for="retensi_aktif" class="form-label">Retensi — Aktif</label>
+                <label for="retensi_aktif" class="form-label">Retensi — Aktif <span class="required">*</span></label>
                 <input type="text" name="retensi_aktif" id="retensi_aktif"
-                       class="form-input" value="{{ old('retensi_aktif') }}" placeholder="Contoh: 2 Tahun">
+                       class="form-input @error('retensi_aktif') input-error @enderror" value="{{ old('retensi_aktif') }}" placeholder="Contoh: 2 Tahun" required>
+                @error('retensi_aktif')<span class="error-text">{{ $message }}</span>@enderror
             </div>
 
             <div class="form-group">
-                <label for="retensi_inaktif" class="form-label">Retensi — Inaktif</label>
+                <label for="retensi_inaktif" class="form-label">Retensi — Inaktif <span class="required">*</span></label>
                 <input type="text" name="retensi_inaktif" id="retensi_inaktif"
-                       class="form-input" value="{{ old('retensi_inaktif') }}" placeholder="Contoh: 5 Tahun">
+                       class="form-input @error('retensi_inaktif') input-error @enderror" value="{{ old('retensi_inaktif') }}" placeholder="Contoh: 5 Tahun" required>
+                @error('retensi_inaktif')<span class="error-text">{{ $message }}</span>@enderror
             </div>
 
             <div class="form-group">
-                <label for="retensi_keterangan" class="form-label">Retensi — Keterangan</label>
+                <label for="retensi_keterangan" class="form-label">Retensi — Keterangan <span class="required">*</span></label>
                 <input type="text" name="retensi_keterangan" id="retensi_keterangan"
-                       class="form-input" value="{{ old('retensi_keterangan') }}" placeholder="Keterangan tambahan...">
+                       class="form-input @error('retensi_keterangan') input-error @enderror" value="{{ old('retensi_keterangan') }}" placeholder="Keterangan tambahan..." required>
+                @error('retensi_keterangan')<span class="error-text">{{ $message }}</span>@enderror
             </div>
         </div>
     </div>
