@@ -28,10 +28,10 @@ class SuratKeluarController extends Controller
             "uraian_informasi_berkas" => "required|string|max:1000",
             "kurun_waktu"             => "required|string|max:255",
             "jumlah_folder"           => "required|string|max:255",
-            "nomor_item_arsip"        => "required|string|max:255",
+            "nomor_item_arsip"        => "required|numeric|min:1",
             "surat_keluar"            => "required|file|mimes:pdf|max:10240",
             "uraian_informasi_arsip"  => "required|string|max:1000",
-            "tanggal_surat"           => "required|date",
+            "tanggal_surat"           => "required|string|max:50",
             "jumlah_lembar"           => "required|string|max:255",
             "tingkat_perkembangan"    => "required|string|max:255",
             "lokasi_simpan"           => "required|string|max:255",
@@ -49,6 +49,8 @@ class SuratKeluarController extends Controller
             "kurun_waktu.required"             => "Kurun Waktu wajib diisi.",
             "jumlah_folder.required"           => "Jumlah Folder wajib diisi.",
             "nomor_item_arsip.required"        => "Nomor Item Arsip wajib diisi.",
+            "nomor_item_arsip.numeric"         => "Nomor Item Arsip harus berupa angka.",
+            "nomor_item_arsip.min"             => "Nomor Item Arsip minimal 1.",
             "surat_keluar.required"            => "File Surat Keluar (PDF) wajib diunggah.",
             "uraian_informasi_arsip.required"  => "Uraian Informasi Arsip wajib diisi.",
             "tanggal_surat.required"           => "Tanggal Surat wajib diisi.",
@@ -85,7 +87,7 @@ class SuratKeluarController extends Controller
                     $file->getClientOriginalName(),
                 );
             $file->storeAs("arsip/surat-keluar", $filename, "public");
-            $filePath = "storage/arsip/surat-keluar/" . $filename;
+            $filePath = route('pdf.view', ['type' => 'surat-keluar', 'filename' => $filename]);
 
             // Timestamp otomatis
             $timestamp = now()->format("Y-m-d H:i:s");
@@ -116,7 +118,10 @@ class SuratKeluarController extends Controller
             ];
 
             $body = new Sheets\ValueRange(["values" => $values]);
-            $params = ["valueInputOption" => "RAW"];
+            $params = [
+                "valueInputOption" => "RAW",
+                "insertDataOption" => "INSERT_ROWS",
+            ];
 
             $service->spreadsheets_values->append(
                 $spreadsheetId,

@@ -1,6 +1,6 @@
 # 📂 Sistem Pengarsipan Digital Surat — BPSDMP
 
-Aplikasi web berbasis **Laravel 11** untuk pengarsipan surat masuk dan surat keluar secara digital. Data arsip disimpan langsung ke **Google Spreadsheet** via Google Sheets API, serta file PDF surat disimpan di server lokal.
+Aplikasi web berbasis **Laravel 11** untuk pengarsipan surat masuk dan surat keluar secara digital. Data arsip disimpan langsung ke **Google Spreadsheet** via Google Sheets API, file PDF disimpan di server lokal dan dapat **diakses publik** melalui URL unik tanpa perlu login.
 
 ---
 
@@ -10,8 +10,11 @@ Aplikasi web berbasis **Laravel 11** untuk pengarsipan surat masuk dan surat kel
 - 📥 **Arsip Surat Masuk** — Input 17 field data + upload file PDF (maks. 10MB)
 - 📤 **Arsip Surat Keluar** — Input 18 field data + upload file PDF (maks. 10MB)
 - 📊 **Google Sheets Integration** — Data tersimpan otomatis ke spreadsheet (sheet `dbSM` dan `dbSK`)
+- 📎 **PDF Publik** — File PDF surat dapat diakses publik via URL `/pdf/{type}/{filename}` tanpa login
+- 📈 **Dashboard Rangkuman** — Statistik bulanan & tahunan surat masuk/keluar + pie chart kode klasifikasi
 - 📱 **Responsive** — Hamburger menu untuk tampilan mobile & tablet
-- 🌐 **Ngrok Ready** — Trusted proxy dikonfigurasi agar login bekerja lewat tunnel HTTPS
+- 🌐 **Ngrok Ready** — Trusted proxy dikonfigurasi agar bekerja lewat tunnel HTTPS
+- ⚡ **Apache Ready** — Virtual host Laragon dikonfigurasi, tidak perlu `php artisan serve`
 
 ---
 
@@ -20,12 +23,83 @@ Aplikasi web berbasis **Laravel 11** untuk pengarsipan surat masuk dan surat kel
 | Layer | Teknologi |
 |---|---|
 | Framework | Laravel 11 (PHP 8.4) |
-| Database | SQLite (local auth) |
+| Database | SQLite (local auth & sessions) |
 | Storage | Google Sheets API v4 |
 | Frontend | Blade + Vanilla CSS (Pure CSS, tanpa framework) |
 | Auth | Laravel Session Auth (`Auth::attempt`) |
 | File Upload | Laravel Storage (`public` disk) |
-| Tunnel | Ngrok (opsional, untuk akses publik) |
+| Web Server | Apache (Laragon) — port 80, virtual host `project-magang.test` |
+| Tunnel | Ngrok (opsional, untuk akses publik via PC lokal) |
+
+---
+
+## 🌐 Akses PDF Publik
+
+File PDF yang diupload dapat diakses **tanpa login** melalui URL:
+
+```
+https://domain-kamu.com/pdf/surat-masuk/{nama-file.pdf}
+https://domain-kamu.com/pdf/surat-keluar/{nama-file.pdf}
+```
+
+- URL ini tersimpan otomatis di kolom **R (Surat Masuk)** dan **I (Surat Keluar)** di Google Sheets
+- Dapat langsung diklik dari spreadsheet untuk membuka/mengunduh PDF
+- Keamanan: hanya ekstensi `.pdf` yang diizinkan, path traversal dicegah
+
+---
+
+## ⚡ Cara Menjalankan Lokal (Laragon)
+
+> Tidak perlu `php artisan serve` — langsung menggunakan Apache Laragon.
+
+### Prasyarat
+- Laragon terinstall & Apache **berjalan** (`Start All`)
+- PHP 8.4 dengan extension `pdo_sqlite` & `sqlite3` aktif di `php.ini`
+- Virtual host `project-magang.test` terkonfigurasi
+
+### Langkah Setup Awal (sekali saja)
+```bash
+# 1. Clone project
+cd C:\laragon\www
+# (letakkan folder project-magang di sini)
+
+# 2. Install dependencies
+composer install
+
+# 3. Buat file .env
+cp .env.example .env
+php artisan key:generate
+
+# 4. Isi konfigurasi .env (lihat bagian Konfigurasi .env)
+
+# 5. Migrasi & seed database
+php artisan migrate --seed
+
+# 6. Buat symlink storage
+php artisan storage:link
+```
+
+### Menjalankan Sehari-hari
+1. Pastikan **Laragon** aktif (Apache menyala)
+2. Akses lokal: `http://project-magang.test`
+3. Untuk akses publik via ngrok, **double-click** `start-ngrok.bat`
+
+---
+
+## 🔧 Konfigurasi `.env`
+
+```dotenv
+APP_NAME="Arsip Surat BPSDMP"
+APP_ENV=local
+APP_KEY=base64:...
+APP_DEBUG=true
+APP_URL=http://project-magang.test
+
+GOOGLE_SHEET_ID=1QdlmA0ug3xNY2-...
+GOOGLE_SERVICE_ACCOUNT_JSON=storage/app/google-credentials.json
+
+DB_CONNECTION=sqlite
+```
 
 ---
 
@@ -73,7 +147,7 @@ erDiagram
         string O_retensi_aktif
         string P_retensi_inaktif
         string Q_retensi_keterangan
-        string R_path_pdf
+        url    R_url_pdf
     }
 
     GOOGLE_SHEET_dbSK {
@@ -85,7 +159,7 @@ erDiagram
         string F_kurun_waktu
         string G_jumlah_folder
         string H_nomor_item_arsip
-        string I_path_pdf
+        url    I_url_pdf
         string J_uraian_informasi_arsip
         date   K_tanggal_surat
         string L_jumlah_lembar
@@ -128,7 +202,8 @@ flowchart TD
     M -- Gagal --> N[Tampil Pesan Error\nForm tetap terisi]
     N --> K
     M -- Lolos --> O[Simpan PDF ke Server\nstorage/arsip/surat-masuk/]
-    O --> P[Kirim Data ke Google Sheets\nSheet: dbSM kolom A–R]
+    O --> O2[Generate URL Publik PDF\n/pdf/surat-masuk/nama-file.pdf]
+    O2 --> P[Kirim Data ke Google Sheets\nSheet: dbSM kolom A–R]
     P --> Q[Tampil Notifikasi Berhasil]
     Q --> H
 
@@ -139,12 +214,22 @@ flowchart TD
     U -- Gagal --> V[Tampil Pesan Error\nForm tetap terisi]
     V --> S
     U -- Lolos --> W[Simpan PDF ke Server\nstorage/arsip/surat-keluar/]
-    W --> X[Kirim Data ke Google Sheets\nSheet: dbSK kolom A–S]
+    W --> W2[Generate URL Publik PDF\n/pdf/surat-keluar/nama-file.pdf]
+    W2 --> X[Kirim Data ke Google Sheets\nSheet: dbSK kolom A–S]
     X --> Y[Tampil Notifikasi Berhasil]
     Y --> H
 
+    I -- Dashboard --> DA[Tampil Statistik Bulanan & Tahunan]
+    DA --> DB[Pie Chart Kode Klasifikasi]
+    DB --> H
+
     I -- Keluar --> Z[Logout Session]
     Z --> D
+
+    PUB([Pengguna Publik]) --> PURL[Akses URL PDF\n/pdf/type/filename]
+    PURL --> PCHECK{File Ada?}
+    PCHECK -- Ya --> PPDF[Tampil PDF di Browser]
+    PCHECK -- Tidak --> P404[404 Not Found]
 ```
 
 ---
@@ -154,6 +239,7 @@ flowchart TD
 ```mermaid
 graph LR
     Admin(["👤 Admin\n(2 akun)"])
+    Public(["🌐 Publik\n(tanpa login)"])
 
     subgraph Sistem ["🖥️ Sistem Pengarsipan BPSDMP"]
         UC1("🔐 Login ke Sistem")
@@ -162,6 +248,8 @@ graph LR
         UC4("📎 Upload File PDF")
         UC5("📊 Simpan ke Google Sheets")
         UC6("🚪 Logout")
+        UC7("📈 Lihat Dashboard Statistik")
+        UC8("🔗 Akses PDF via URL Publik")
 
         UC2 --> UC4
         UC3 --> UC4
@@ -177,6 +265,8 @@ graph LR
     Admin --> UC2
     Admin --> UC3
     Admin --> UC6
+    Admin --> UC7
+    Public --> UC8
 
     UC1 -.->|"«include»"| VALID["Validasi Kredensial\n(username + password)"]
     UC5 -.->|"«include»"| GS
@@ -189,41 +279,45 @@ graph LR
 ```
 project-magang/
 ├── app/
-│   ├── Http/
-│   │   ├── Controllers/
-│   │   │   ├── ArsipController.php       ← Surat Masuk (form + Google Sheets)
-│   │   │   ├── SuratKeluarController.php ← Surat Keluar (form + Google Sheets)
-│   │   │   └── Auth/
-│   │   │       └── LoginController.php   ← Login & Logout
-│   │   └── Middleware/
-│   └── Models/
-│       └── User.php
+│   └── Http/
+│       └── Controllers/
+│           ├── ArsipController.php          ← Surat Masuk (form + Google Sheets + URL PDF)
+│           ├── SuratKeluarController.php    ← Surat Keluar (form + Google Sheets + URL PDF)
+│           ├── DashboardController.php      ← Statistik bulanan/tahunan dari Google Sheets
+│           └── Auth/
+│               └── LoginController.php      ← Login & Logout
 ├── bootstrap/
-│   └── app.php                           ← TrustProxies untuk Ngrok
+│   └── app.php                              ← TrustProxies untuk Ngrok (at: '*')
 ├── database/
-│   ├── migrations/                       ← Tabel users, sessions, cache
+│   ├── migrations/                          ← Tabel users, sessions, cache
 │   ├── seeders/
-│   │   └── DatabaseSeeder.php            ← 2 akun admin hardcoded
-│   └── database.sqlite                   ← Database lokal
+│   │   └── DatabaseSeeder.php               ← 2 akun admin hardcoded
+│   └── database.sqlite                      ← Database lokal (SQLite)
 ├── public/
-│   └── css/
-│       └── app.css                       ← Stylesheet utama (Vanilla CSS, 958 baris)
+│   ├── css/
+│   │   └── app.css                          ← Stylesheet utama (Vanilla CSS)
+│   └── storage/                             ← Symlink ke storage/app/public/
 ├── resources/
 │   └── views/
 │       ├── auth/
-│       │   └── login.blade.php           ← Halaman login (dark glassmorphism)
+│       │   └── login.blade.php              ← Halaman login (dark glassmorphism)
 │       ├── arsip/
-│       │   └── index.blade.php           ← Form surat masuk
+│       │   └── index.blade.php              ← Form surat masuk
 │       ├── surat-keluar/
-│       │   └── index.blade.php           ← Form surat keluar
+│       │   └── index.blade.php              ← Form surat keluar
+│       ├── dashboard/
+│       │   └── index.blade.php              ← Dashboard statistik & chart
 │       └── layouts/
-│           └── app.blade.php             ← Layout utama (sidebar + header)
+│           └── app.blade.php                ← Layout utama (sidebar + header)
 ├── routes/
-│   └── web.php                           ← Semua route (auth middleware)
-└── storage/
-    └── app/public/
-        ├── arsip/surat-masuk/            ← PDF surat masuk tersimpan di sini
-        └── arsip/surat-keluar/           ← PDF surat keluar tersimpan di sini
+│   └── web.php                              ← Semua route (auth middleware + PDF publik)
+├── storage/
+│   └── app/public/
+│       ├── arsip/surat-masuk/               ← PDF surat masuk tersimpan di sini
+│       └── arsip/surat-keluar/              ← PDF surat keluar tersimpan di sini
+├── start-ngrok.bat                          ← Script 1-klik untuk jalankan ngrok
+└── C:\laragon\etc\apache2\sites-enabled\
+    └── auto.project-magang.test.conf        ← Virtual host Apache Laragon
 ```
 
 ---
@@ -262,7 +356,7 @@ project-magang/
 | O | Retensi Aktif |
 | P | Retensi Inaktif |
 | Q | Retensi Keterangan |
-| R | Path File PDF |
+| R | **URL Publik File PDF** *(dapat diklik langsung dari spreadsheet)* |
 
 ### Sheet `dbSK` — Surat Keluar (Kolom A–S)
 
@@ -276,7 +370,7 @@ project-magang/
 | F | Kurun Waktu |
 | G | Jumlah Folder |
 | H | Nomor Item Arsip |
-| I | Path File PDF |
+| I | **URL Publik File PDF** *(dapat diklik langsung dari spreadsheet)* |
 | J | Uraian Informasi Arsip |
 | K | Tanggal Surat |
 | L | Jumlah Lembar |
@@ -287,6 +381,21 @@ project-magang/
 | Q | Retensi Aktif |
 | R | Retensi Inaktif |
 | S | Retensi Keterangan |
+
+---
+
+## 🔄 Changelog Signifikan
+
+| Versi | Perubahan |
+|---|---|
+| v1.0 | Setup awal: form surat masuk + keluar + Google Sheets |
+| v1.1 | Sistem autentikasi login/logout (SQLite) |
+| v1.2 | Responsive layout: hamburger menu mobile/tablet |
+| v1.3 | Dashboard statistik bulanan & tahunan + pie chart |
+| v1.4 | Apache Laragon virtual host (`project-magang.test`) — tanpa `artisan serve` |
+| v1.4 | Enable PHP extensions `pdo_sqlite` & `sqlite3` untuk Apache |
+| v1.5 | **PDF Publik**: Route `/pdf/{type}/{filename}` tanpa autentikasi |
+| v1.5 | URL PDF lengkap tersimpan ke Google Sheets (bisa diklik dari spreadsheet) |
 
 ---
 
