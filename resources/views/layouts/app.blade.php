@@ -156,11 +156,13 @@
             background: rgba(15, 23, 42, 0.45);
             z-index: 88;
             opacity: 0;
+            pointer-events: none; /* Tidak menghalangi klik saat tertutup */
             transition: opacity 0.3s ease;
             backdrop-filter: blur(2px);
         }
         .sidebar-overlay.is-visible {
             opacity: 1;
+            pointer-events: auto; /* Aktif saat drawer terbuka */
         }
 
         /* ── Responsive: tampilkan burger, ubah sidebar jadi drawer ── */
@@ -170,6 +172,7 @@
             }
             .sidebar-overlay {
                 display: block;
+                pointer-events: none; /* Tetap tidak menghalangi klik saat tertutup */
             }
             /* Override: sidebar jadi drawer dari kiri */
             .sidebar {
