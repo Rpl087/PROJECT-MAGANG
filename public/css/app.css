@@ -916,7 +916,7 @@ body.header-is-hidden .sidebar {
     }
 }
 
-/* --- 768px: Tablet Portrait — sidebar menjadi tab horizontal --- */
+/* --- 768px: Mobile — sidebar menjadi drawer (dihandle via JS + CSS di app.blade.php) --- */
 @media (max-width: 768px) {
     :root {
         --header-height: 60px;
@@ -928,71 +928,22 @@ body.header-is-hidden .sidebar {
         padding: 0;
     }
 
-    /* Sidebar → horizontal tab bar (kembali ke normal flow) */
-    .sidebar {
-        position: sticky;
-        top: var(--header-height);
-        left: unset;
-        width: 100%;
-        height: auto;
-        z-index: 90;
-        padding: 0;
-        border-right: none;
-        border-bottom: 1px solid var(--color-border);
-        background: var(--color-surface);
-        box-shadow: var(--shadow-sm);
-        overflow-y: visible;
-        transition: none;
-    }
-
-    body.header-is-hidden .sidebar {
-        top: 0;
-        height: auto;
-    }
-
+    /* Main content tanpa margin kiri (sidebar sudah drawer) */
     .main-content {
         margin-left: 0;
-    }
-
-    .sidebar-label {
-        display: none;
-    }
-
-    .sidebar-nav {
-        flex-direction: row;
-        gap: 0;
-        padding: 0 var(--space-5);
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-        scrollbar-width: none;
-    }
-
-    .sidebar-nav::-webkit-scrollbar {
-        display: none;
-    }
-
-    .sidebar-link {
-        padding: var(--space-3) var(--space-5);
-        border-radius: 0;
-        border-bottom: 2px solid transparent;
-        white-space: nowrap;
-        font-size: var(--font-size-sm);
-    }
-
-    .sidebar-link-active {
-        background: transparent;
-        color: var(--color-primary);
-        border-bottom-color: var(--color-primary);
-    }
-
-    .main-content {
         padding: var(--space-6) var(--space-5) var(--space-10);
+    }
+
+    /* Header inner lebih compact */
+    .header-inner {
+        padding: 0 var(--space-5);
     }
 
     .page-title {
         font-size: var(--font-size-xl);
     }
 
+    /* Sembunyikan label nav di header */
     .nav-label {
         display: none;
     }
@@ -1023,6 +974,11 @@ body.header-is-hidden .sidebar {
     .form-actions .btn {
         width: 100%;
         justify-content: center;
+    }
+
+    /* Footer mobile */
+    .footer {
+        margin-left: 0;
     }
 }
 

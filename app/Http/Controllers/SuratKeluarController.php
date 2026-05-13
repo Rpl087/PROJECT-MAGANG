@@ -9,11 +9,100 @@ use Google\Service\Sheets;
 class SuratKeluarController extends Controller
 {
     /**
-     * Tampilkan halaman form surat keluar.
+     * Buat instance Google Sheets service.
+     */
+    private function getSheetService(): array
+    {
+        $client = new Client();
+        $client->setAuthConfig(base_path(env('GOOGLE_SERVICE_ACCOUNT_JSON')));
+        $client->addScope(Sheets::SPREADSHEETS);
+        $service       = new Sheets($client);
+        $spreadsheetId = env('GOOGLE_SHEET_ID');
+        return [$service, $spreadsheetId];
+    }
+
+    /**
+     * Dapatkan sheet ID numerik berdasarkan nama sheet.
+     */
+    private function getSheetId(Sheets $service, string $spreadsheetId, string $sheetName): ?int
+    {
+        $spreadsheet = $service->spreadsheets->get($spreadsheetId);
+        foreach ($spreadsheet->getSheets() as $sheet) {
+            if ($sheet->getProperties()->getTitle() === $sheetName) {
+                return $sheet->getProperties()->getSheetId();
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Tampilkan daftar surat keluar dari Google Sheets + form input.
+     * - Admin   : membaca dari sheet "SURAT KELUAR" dan dapat menghapus baris
+     * - Internship: hanya menampilkan form input (rows kosong, tanpa tabel)
      */
     public function index()
     {
-        return view("surat-keluar.index");
+        $rows       = [];
+        $fetchError = null;
+        $isAdmin    = auth()->user()?->isAdmin() ?? false;
+
+        if ($isAdmin) {
+            try {
+                [$service, $spreadsheetId] = $this->getSheetService();
+                $response = $service->spreadsheets_values->get($spreadsheetId, 'SURAT KELUAR!A:S');
+                $values   = $response->getValues() ?? [];
+
+                // Skip baris header (index 0), simpan data beserta index aslinya di sheet
+                // Hanya tampilkan baris yang punya Tanggal Surat (col K/index 10) terisi
+                foreach ($values as $i => $row) {
+                    if ($i === 0) continue;
+                    $tanggal = trim($row[10] ?? '');
+                    // Lewati baris tanpa tanggal — indikator baris kosong/invalid
+                    if (empty($tanggal)) continue;
+                    $rows[] = ['index' => $i, 'data' => $row];
+                }
+            } catch (\Exception $e) {
+                $fetchError = 'Gagal memuat data dari Google Sheets: ' . $e->getMessage();
+            }
+        }
+
+        return view('surat-keluar.index', compact('rows', 'fetchError', 'isAdmin'));
+    }
+
+    /**
+     * Hapus baris surat keluar dari Google Sheets (sheet: SURAT KELUAR) berdasarkan row index (0-based).
+     */
+    public function destroy(int $rowIndex)
+    {
+        try {
+            [$service, $spreadsheetId] = $this->getSheetService();
+            $sheetId = $this->getSheetId($service, $spreadsheetId, 'SURAT KELUAR');
+
+            if ($sheetId === null) {
+                return redirect()->route('surat-keluar.index')
+                    ->with('error', 'Sheet "SURAT KELUAR" tidak ditemukan di Spreadsheet.');
+            }
+
+            $requests = [[
+                'deleteDimension' => [
+                    'range' => [
+                        'sheetId'    => $sheetId,
+                        'dimension'  => 'ROWS',
+                        'startIndex' => $rowIndex,
+                        'endIndex'   => $rowIndex + 1,
+                    ],
+                ],
+            ]];
+
+            $body = new Sheets\BatchUpdateSpreadsheetRequest(['requests' => $requests]);
+            $service->spreadsheets->batchUpdate($spreadsheetId, $body);
+
+            return redirect()->route('surat-keluar.index')
+                ->with('success', 'Data surat keluar berhasil dihapus dari Spreadsheet.');
+        } catch (\Exception $e) {
+            return redirect()->route('surat-keluar.index')
+                ->with('error', 'Gagal menghapus data: ' . $e->getMessage());
+        }
     }
 
     /**

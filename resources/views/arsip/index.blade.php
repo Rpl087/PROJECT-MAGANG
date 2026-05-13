@@ -4,9 +4,131 @@
 
 @section('content')
 <div class="page-header">
-    <h2 class="page-title">Input Surat Masuk</h2>
-    <p class="page-description">Lengkapi formulir di bawah untuk mengarsipkan surat ke dalam sistem.</p>
+    <h2 class="page-title">Surat Masuk</h2>
+    @if($isAdmin ?? false)
+        <p class="page-description">Lihat daftar arsip tersimpan dan tambah surat masuk baru ke dalam sistem.</p>
+    @else
+        <p class="page-description">Gunakan formulir di bawah untuk mengarsipkan surat masuk ke dalam sistem.</p>
+    @endif
 </div>
+
+{{-- ── TABEL DAFTAR SURAT MASUK (hanya tampil untuk admin) ────────────────────── --}}
+@if($isAdmin ?? false)
+<div class="form-container" style="margin-bottom:2rem;">
+    <div class="form-section" style="margin-bottom:0;">
+        <div class="section-header">
+            <div class="section-number">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+            </div>
+            <div>
+                <h3 class="section-title">Daftar Surat Masuk Tersimpan</h3>
+                <p class="section-desc">Data diambil langsung dari Google Spreadsheet (sheet: SURAT MASUK)</p>
+            </div>
+        </div>
+
+        @if(isset($fetchError))
+            <div class="alert alert-error" style="margin:1rem 0;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                {{ $fetchError }}
+            </div>
+        @endif
+
+        <div style="overflow-x:auto; margin-top:.5rem;">
+            <table class="arsip-table">
+                <thead>
+                    <tr>
+                        <th>No</th>
+                        <th>Tanggal Surat</th>
+                        <th>Kode Klasifikasi</th>
+                        <th>Uraian Berkas</th>
+                        <th>Lokasi Simpan</th>
+                        <th>Link Folder</th>
+                        <th>Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse($rows as $no => $item)
+                        @php
+                            $d          = $item['data'];
+                            $tanggal    = $d[7]  ?? '-';  // H: Tanggal Surat
+                            $kodeKlas   = $d[1]  ?? '-';  // B: Kode Klasifikasi
+                            $uraian     = $d[2]  ?? '-';  // C: Uraian Informasi Berkas
+                            $lokasi     = $d[10] ?? '-';  // K: Lokasi Simpan
+                            $linkFolder = $d[16] ?? '';   // Q: Link Folder
+                        @endphp
+                        <tr>
+                            <td class="td-center td-no">{{ $no + 1 }}</td>
+                            <td class="td-nowrap">{{ $tanggal }}</td>
+                            <td><span class="badge-kode">{{ $kodeKlas }}</span></td>
+                            <td class="td-uraian">{{ Str::limit($uraian, 60) }}</td>
+                            <td>{{ $lokasi }}</td>
+                            <td class="td-center">
+                                @if($linkFolder)
+                                    <a href="{{ $linkFolder }}" target="_blank" class="btn-pdf" title="Lihat PDF">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                                        PDF
+                                    </a>
+                                @else
+                                    <span class="td-muted">—</span>
+                                @endif
+                            </td>
+                            <td class="td-center">
+                                <button type="button" class="btn-hapus"
+                                    data-form="delete-sm-{{ $item['index'] }}"
+                                    data-label="surat masuk baris ke-{{ $no + 1 }}"
+                                    title="Hapus data ini">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+                                    Hapus
+                                </button>
+                                <form id="delete-sm-{{ $item['index'] }}"
+                                      action="{{ route('arsip.destroy', $item['index']) }}"
+                                      method="POST" style="display:none;">
+                                    @csrf
+                                    @method('DELETE')
+                                </form>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="7" class="td-empty">
+                                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                                <span>Belum ada data surat masuk tersimpan.</span>
+                            </td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+@endif
+
+{{-- Modal Konfirmasi Hapus --}}
+<div id="modal-hapus" class="modal-overlay" style="display:none;">
+    <div class="modal-box">
+        <div class="modal-icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+        </div>
+        <h4 class="modal-title">Konfirmasi Hapus</h4>
+        <p class="modal-desc">Apakah Anda yakin ingin menghapus <strong id="modal-label"></strong>? Tindakan ini tidak dapat dibatalkan dan akan menghapus data dari Google Sheets.</p>
+        <div class="modal-actions">
+            <button type="button" class="btn btn-secondary" id="modal-cancel">Batal</button>
+            <button type="button" class="btn btn-danger" id="modal-confirm">Ya, Hapus</button>
+        </div>
+    </div>
+</div>
+
+{{-- ── FORM INPUT SURAT MASUK ───────────────────────────────────────────── --}}
+@if($isAdmin ?? false)
+<div class="sm-form-divider">
+    <div class="sm-form-divider-line"></div>
+    <span class="sm-form-divider-label">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M19 12l-7 7-7-7"/></svg>
+        Tambah Surat Masuk Baru
+    </span>
+    <div class="sm-form-divider-line"></div>
+</div>
+@endif
 
 
 <form action="{{ route('arsip.store') }}" method="POST" enctype="multipart/form-data" class="form-container" id="arsip-form">
@@ -22,19 +144,11 @@
             </div>
         </div>
 
-        <div class="form-grid form-grid-3">
+        <div class="form-grid form-grid-2">
             <div class="form-group">
                 <label for="kode_klasifikasi" class="form-label">Kode Klasifikasi <span class="required">*</span></label>
-                <input type="text" name="kode_klasifikasi" id="kode_klasifikasi" class="form-input @error('kode_klasifikasi') input-error @enderror" value="{{ old('kode_klasifikasi') }}" placeholder="Contoh: KP.01" required>
+                <input type="text" name="kode_klasifikasi" id="kode_klasifikasi" class="form-input @error('kode_klasifikasi') input-error @enderror" value="{{ old('kode_klasifikasi') }}" placeholder="Contoh: PR, PL, KP, dll." required>
                 @error('kode_klasifikasi')
-                    <span class="error-text">{{ $message }}</span>
-                @enderror
-            </div>
-
-            <div class="form-group">
-                <label for="kode_surat" class="form-label">Kode Surat <span class="required">*</span></label>
-                <input type="text" name="kode_surat" id="kode_surat" class="form-input @error('kode_surat') input-error @enderror" value="{{ old('kode_surat') }}" placeholder='Contoh: 01.01' required>
-                @error('kode_surat')
                     <span class="error-text">{{ $message }}</span>
                 @enderror
             </div>
@@ -247,6 +361,107 @@
 @push('scripts')
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 <style>
+/* ── Form Divider (pemisah tabel & form) ─── */
+.sm-form-divider {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    margin: 1.75rem 0 1.5rem;
+}
+.sm-form-divider-line {
+    flex: 1;
+    height: 1px;
+    background: var(--color-border);
+    border-radius: 1px;
+}
+.sm-form-divider-label {
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+    padding: .3rem .9rem;
+    border: 1px solid var(--color-border);
+    border-radius: 999px;
+    font-size: .78rem;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    background: var(--color-surface);
+    white-space: nowrap;
+    letter-spacing: .01em;
+}
+
+/* ── Tabel Arsip ────────────────────────────────── */
+.arsip-table { width:100%; border-collapse:collapse; font-size:.875rem; }
+.arsip-table th {
+    background: var(--color-surface-elevated, #1e2535);
+    color: var(--color-text-muted, #8892a4);
+    font-weight:600; font-size:.75rem; text-transform:uppercase; letter-spacing:.05em;
+    padding:.65rem 1rem; text-align:left; border-bottom:1px solid var(--color-border, #2a3347);
+    white-space:nowrap;
+}
+.arsip-table td {
+    padding:.7rem 1rem; border-bottom:1px solid var(--color-border, #2a3347);
+    color: var(--color-text, #e2e8f0); vertical-align:middle;
+}
+.arsip-table tbody tr:last-child td { border-bottom:none; }
+.arsip-table tbody tr:hover td { background: rgba(99,102,241,.06); }
+.td-center { text-align:center; }
+.td-nowrap { white-space:nowrap; }
+.td-no { width:48px; font-weight:600; color:var(--color-text-muted,#8892a4); }
+.td-uraian { max-width:240px; }
+.td-muted { color:var(--color-text-muted,#8892a4); }
+.td-empty { text-align:center; padding:2.5rem 1rem !important; color:var(--color-text-muted,#8892a4); }
+.td-empty svg { display:block; margin:0 auto .75rem; opacity:.35; }
+.td-empty span { display:block; }
+.badge-kode {
+    display:inline-block; padding:.2rem .55rem; border-radius:.375rem; font-size:.75rem;
+    background:rgba(99,102,241,.15); color:#818cf8; font-weight:600; white-space:nowrap;
+}
+.btn-pdf {
+    display:inline-flex; align-items:center; gap:.3rem; padding:.3rem .65rem;
+    border-radius:.375rem; font-size:.75rem; font-weight:600; text-decoration:none;
+    background:rgba(16,185,129,.12); color:#34d399; border:1px solid rgba(16,185,129,.2);
+    transition:all .2s;
+}
+.btn-pdf:hover { background:rgba(16,185,129,.22); }
+.btn-hapus {
+    display:inline-flex; align-items:center; gap:.3rem; padding:.3rem .65rem;
+    border-radius:.375rem; font-size:.75rem; font-weight:600; cursor:pointer;
+    background:rgba(239,68,68,.1); color:#f87171; border:1px solid rgba(239,68,68,.2);
+    transition:all .2s;
+}
+.btn-hapus:hover { background:rgba(239,68,68,.2); }
+
+/* ── Modal ───────────────────────────────────────── */
+.modal-overlay {
+    position:fixed; inset:0; background:rgba(0,0,0,.6); backdrop-filter:blur(4px);
+    z-index:9999; display:flex; align-items:center; justify-content:center;
+    animation: fadeIn .15s ease;
+}
+@keyframes fadeIn { from{opacity:0} to{opacity:1} }
+.modal-box {
+    background:var(--color-surface, #1a2236); border:1px solid var(--color-border,#2a3347);
+    border-radius:1rem; padding:2rem; max-width:420px; width:90%; text-align:center;
+    box-shadow:0 20px 60px rgba(0,0,0,.5); animation:slideUp .2s ease;
+}
+@keyframes slideUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+.modal-icon {
+    width:56px; height:56px; border-radius:50%; background:rgba(239,68,68,.12);
+    display:flex; align-items:center; justify-content:center; margin:0 auto 1rem;
+    color:#f87171; border:1px solid rgba(239,68,68,.2);
+}
+.modal-title { font-size:1.125rem; font-weight:700; color:var(--color-text,#e2e8f0); margin:0 0 .5rem; }
+.modal-desc { font-size:.875rem; color:var(--color-text-muted,#8892a4); margin:0 0 1.5rem; line-height:1.6; }
+.modal-desc strong { color:var(--color-text,#e2e8f0); }
+.modal-actions { display:flex; gap:.75rem; justify-content:center; }
+.btn-danger {
+    background:linear-gradient(135deg,#ef4444,#dc2626); color:#fff; border:none;
+    padding:.6rem 1.4rem; border-radius:.5rem; font-weight:600; cursor:pointer; transition:all .2s;
+}
+.btn-danger:hover { opacity:.88; transform:translateY(-1px); }
+.alert { display:flex; align-items:center; gap:.5rem; padding:.75rem 1rem; border-radius:.5rem; font-size:.875rem; }
+.alert-error { background:rgba(239,68,68,.1); color:#f87171; border:1px solid rgba(239,68,68,.2); }
+
+/* ── Flatpickr ───────────────────────────────────── */
 .date-input-wrap { position: relative; }
 .date-input-wrap .form-input { padding-right: 2.5rem; cursor: pointer; }
 .date-icon {
@@ -259,6 +474,34 @@
 </style>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+
+    // ── Modal Hapus ──────────────────────────────────────────────
+    const modal       = document.getElementById('modal-hapus');
+    const modalLabel  = document.getElementById('modal-label');
+    const modalCancel = document.getElementById('modal-cancel');
+    const modalConfirm= document.getElementById('modal-confirm');
+    let   pendingForm = null;
+
+    document.querySelectorAll('.btn-hapus').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            pendingForm       = document.getElementById(btn.dataset.form);
+            modalLabel.textContent = btn.dataset.label;
+            modal.style.display   = 'flex';
+        });
+    });
+
+    modalCancel.addEventListener('click', function () {
+        modal.style.display = 'none';
+        pendingForm = null;
+    });
+
+    modalConfirm.addEventListener('click', function () {
+        if (pendingForm) pendingForm.submit();
+    });
+
+    modal.addEventListener('click', function (e) {
+        if (e.target === modal) { modal.style.display = 'none'; pendingForm = null; }
+    });
 
     // ── File Upload ──────────────────────────────────────────────
     const zone        = document.getElementById('upload-zone');
@@ -291,7 +534,6 @@ document.addEventListener('DOMContentLoaded', function () {
         zone.classList.remove('file-upload-has-file');
     }
 
-    // Click zona → buka file picker (preventDefault mencegah double-trigger)
     zone.addEventListener('click', function (e) {
         if (e.target.closest('#file-remove')) return;
         e.preventDefault();
@@ -299,20 +541,13 @@ document.addEventListener('DOMContentLoaded', function () {
         input.click();
     });
 
-    // Blokir bubbling dari input ke zone agar tidak double-trigger
-    input.addEventListener('click', function (e) {
-        e.stopPropagation();
-    });
-
-    // Pilih file via input
+    input.addEventListener('click', function (e) { e.stopPropagation(); });
     input.addEventListener('change', function () {
         if (this.files.length > 0) showPreview(this.files[0]);
     });
 
-    // Tombol hapus file
     removeBtn.addEventListener('click', clearFile);
 
-    // Drag & drop
     ['dragenter', 'dragover'].forEach(function (evt) {
         zone.addEventListener(evt, function (e) {
             e.preventDefault();
@@ -340,7 +575,6 @@ document.addEventListener('DOMContentLoaded', function () {
         showPreview(file);
     });
 
-    // ── Reset form (termasuk file) ───────────────────────────────
     document.getElementById('btn-reset').addEventListener('click', function () {
         document.getElementById('arsip-form').reset();
         clearFile();

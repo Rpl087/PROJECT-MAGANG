@@ -240,6 +240,27 @@
                 display: flex !important;
                 flex-direction: column !important;
             }
+            /* Header inner — rapat di mobile */
+            .header-inner {
+                padding: 0 12px !important;
+                gap: 8px;
+            }
+            /* Sembunyikan brand-subtitle di mobile kecil */
+            .brand-subtitle {
+                display: none;
+            }
+            /* Theme toggle selalu tampil di mobile */
+            .theme-toggle {
+                display: inline-flex !important;
+                flex-shrink: 0;
+            }
+            /* Footer mobile: margin nol */
+            .footer {
+                margin-left: 0 !important;
+            }
+            .footer-inner {
+                padding: 0 var(--space-5, 1.25rem);
+            }
         }
     </style>
 
@@ -424,6 +445,7 @@
         <aside class="sidebar" id="main-sidebar" aria-label="Menu navigasi">
             <p class="sidebar-label">Menu</p>
             <nav class="sidebar-nav">
+                @if(Auth::user()->isAdmin())
                 <a href="{{ route('dashboard.index') }}"
                    class="sidebar-link {{ request()->routeIs('dashboard.*') ? 'sidebar-link-active' : '' }}">
                     <span class="sidebar-link-icon">
@@ -434,6 +456,7 @@
                     </span>
                     Dashboard
                 </a>
+                @endif
                 <a href="{{ route('arsip.index') }}"
                    class="sidebar-link {{ request()->routeIs('arsip.*') ? 'sidebar-link-active' : '' }}">
                     <span class="sidebar-link-icon">

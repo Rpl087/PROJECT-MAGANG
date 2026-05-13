@@ -43,14 +43,24 @@ Route::get('/pdf/{type}/{filename}', function (string $type, string $filename) {
 // ── Protected Routes (wajib login) ───────────────────────────────────────────
 Route::middleware('auth')->group(function () {
 
-    // Dashboard
-    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard.index');
-
-    // Surat Masuk
+    // Surat Masuk — semua user login (admin & internship) bisa input form
     Route::get('/', [ArsipController::class, 'index'])->name('arsip.index');
     Route::post('/arsip', [ArsipController::class, 'store'])->name('arsip.store');
 
-    // Surat Keluar
+    // Surat Keluar — semua user login bisa input form
     Route::get('/surat-keluar', [SuratKeluarController::class, 'index'])->name('surat-keluar.index');
     Route::post('/surat-keluar', [SuratKeluarController::class, 'store'])->name('surat-keluar.store');
+});
+
+// ── Admin-only Routes (wajib login + role admin) ──────────────────────────────
+Route::middleware(['auth', \App\Http\Middleware\AdminOnly::class])->group(function () {
+
+    // Dashboard (hanya admin)
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard.index');
+
+    // Hapus Surat Masuk — hanya admin (dari sheet "SURAT MASUK")
+    Route::delete('/arsip/{rowIndex}', [ArsipController::class, 'destroy'])->name('arsip.destroy');
+
+    // Hapus Surat Keluar — hanya admin (dari sheet "SURAT KELUAR")
+    Route::delete('/surat-keluar/{rowIndex}', [SuratKeluarController::class, 'destroy'])->name('surat-keluar.destroy');
 });

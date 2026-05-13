@@ -103,6 +103,7 @@ body.sidebar-collapsed .main-content { margin-left:0; }
             </div>
             <h3 class="db-card-title">Rekap Bulanan Tahun {{ $currentYear }}</h3>
         </div>
+@php $bulanAktif = collect($monthlyRecap)->filter(fn($r) => $r['total'] > 0)->count(); @endphp
         <span class="db-badge">12 Bulan</span>
     </div>
     <div class="db-table-wrap">
@@ -360,17 +361,31 @@ body.sidebar-collapsed .main-content { margin-left:0; }
 .db-bar-sk { background: linear-gradient(90deg,#f472b6,#be185d); }
 .db-tfoot-row td { font-weight: 600; background: var(--color-bg); border-top: 2px solid var(--color-border); }
 
-/* ── Charts Grid ───────────────────── */
+/* ── Charts Grid ─────────────────── */
 .db-charts-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 1.25rem;
     margin-bottom: 2rem;
+    align-items: stretch;
 }
-.db-chart-container { padding: 1.25rem; display: flex; flex-direction: column; align-items: center; gap: 1rem; }
+.db-charts-grid .db-card {
+    display: flex;
+    flex-direction: column;
+}
+.db-chart-container {
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    flex: 1;
+    min-height: 340px;
+}
 .db-chart-container canvas { max-width: 220px; max-height: 220px; }
 .db-empty {
     display: flex; flex-direction: column; align-items: center; justify-content: center;
+    flex: 1; width: 100%;
     padding: 2.5rem 1rem; color: var(--color-text-muted); font-size: .85rem; text-align: center;
 }
 .db-legend { display: flex; flex-direction: column; gap: .4rem; width: 100%; }
@@ -429,7 +444,9 @@ body.sidebar-collapsed .main-content { margin-left:0; }
                         callbacks: {
                             label: function(ctx) {
                                 var pct = ((ctx.parsed / total) * 100).toFixed(1);
-                                return ' ' + ctx.label + ': ' + ctx.parsed + ' (' + pct + '%)';
+                                // Ambil prefix kode saja (sebelum titik): PR, KP, PL, dll
+                                var code = ctx.label.split('.')[0];
+                                return ' ' + code + ': ' + ctx.parsed + ' (' + pct + '%)';
                             }
                         }
                     }
@@ -442,11 +459,13 @@ body.sidebar-collapsed .main-content { margin-left:0; }
         if (!legendEl) return;
         labels.forEach(function(label, i) {
             var pct = total > 0 ? ((values[i] / total) * 100).toFixed(1) : '0.0';
+            // Ambil prefix kode saja (sebelum titik): PR, KP, PL, HM, UM, dll
+            var shortCode = label.split('.')[0];
             var item = document.createElement('div');
             item.className = 'db-legend-item';
             item.innerHTML =
                 '<span class="db-legend-dot" style="background:' + colors[i] + '"></span>' +
-                '<span class="db-legend-label" title="' + label + '">' + label + '</span>' +
+                '<span class="db-legend-label" title="' + label + '">' + shortCode + '</span>' +
                 '<span class="db-legend-val">' + values[i] + '</span>' +
                 '<span class="db-legend-pct">' + pct + '%</span>';
             legendEl.appendChild(item);
