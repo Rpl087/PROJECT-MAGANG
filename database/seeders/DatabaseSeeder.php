@@ -33,12 +33,6 @@ class DatabaseSeeder extends Seeder
             'role'     => 'internship',
         ]);
 
-        // ── User pengujian (hapus setelah selesai testing) ──
-        User::create([
-            'name'     => 'test',
-            'email'    => 'test@bpsdmp.go.id',
-            'password' => Hash::make('test123'),
-            'role'     => 'admin',
-        ]);
+
     }
 }
