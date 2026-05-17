@@ -34,11 +34,10 @@
                 <thead>
                     <tr>
                         <th>No</th>
-                        <th>Tanggal</th>
+                        <th>Tanggal Surat</th>
                         <th>Kode Klasifikasi</th>
                         <th>Kode Surat</th>
                         <th>Uraian Berkas</th>
-                        <th>Email</th>
                         <th>File PDF</th>
                         <th>Aksi</th>
                     </tr>
@@ -47,23 +46,34 @@
                     @forelse($rows as $no => $item)
                         @php
                             $d = $item['data'];
-                            $tanggal   = $d[10] ?? '-';
-                            $kodeKlas  = $d[2]  ?? '-';
-                            $kodeSurat = $d[3]  ?? '-';
-                            $uraian    = $d[4]  ?? '-';
-                            $email     = $d[1]  ?? '-';
-                            $filePath  = $d[8]  ?? '';
+                            // Indeks kolom sesuai struktur SURAT KELUAR (tanpa Email)
+                            // A(0)=Timestamp | B(1)=Kode Klas | C(2)=Kode Surat | D(3)=Uraian Berkas
+                            // E(4)=Kurun Waktu | F(5)=Jumlah Folder | G(6)=Nomor Item
+                            // H(7)=PDF Surat Keluar | I(8)=Uraian Arsip | J(9)=Tanggal Surat
+                            $tanggal   = $d[9]  ?? '-';  // J: Tanggal Surat
+                            $kodeKlasRaw = $d[1] ?? '';  // B: Kode Klasifikasi
+                            $kodeKlas  = (str_starts_with($kodeKlasRaw, '#') || $kodeKlasRaw === '') ? '—' : $kodeKlasRaw;
+                            $kodeSuratRaw = $d[2] ?? ''; // C: Kode Surat
+                            $kodeSurat = (str_starts_with($kodeSuratRaw, '#') || $kodeSuratRaw === '') ? '—' : $kodeSuratRaw;
+                            $uraian    = $d[3]  ?? '-';  // D: Uraian Informasi Berkas
+                            $rawFile  = trim($d[7] ?? '');  // H: Surat Keluar (filename atau URL lama)
+                            // Generate URL dinamis jika berupa filename; gunakan apa adanya jika sudah URL
+                            $pdfUrl = '';
+                            if ($rawFile !== '') {
+                                $pdfUrl = str_starts_with($rawFile, 'http')
+                                    ? $rawFile  // URL lama (legacy) — tetap dipakai
+                                    : route('pdf.view', ['type' => 'surat-keluar', 'filename' => $rawFile]);
+                            }
                         @endphp
                         <tr>
                             <td class="td-center td-no">{{ $no + 1 }}</td>
                             <td class="td-nowrap">{{ $tanggal }}</td>
-                            <td><span class="badge-kode">{{ $kodeKlas }}</span></td>
-                            <td><span class="badge-kode">{{ $kodeSurat }}</span></td>
+                            <td><span class="badge-kode {{ $kodeKlas === '—' ? 'badge-kode-empty' : '' }}">{{ $kodeKlas }}</span></td>
+                            <td><span class="badge-kode {{ $kodeSurat === '—' ? 'badge-kode-empty' : '' }}">{{ $kodeSurat }}</span></td>
                             <td class="td-uraian">{{ Str::limit($uraian, 60) }}</td>
-                            <td class="td-nowrap">{{ $email }}</td>
                             <td class="td-center">
-                                @if($filePath)
-                                    <a href="{{ $filePath }}" target="_blank" class="btn-pdf" title="Lihat PDF">
+                                @if($pdfUrl)
+                                    <a href="{{ $pdfUrl }}" target="_blank" class="btn-pdf" title="Lihat PDF">
                                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                                         PDF
                                     </a>
@@ -89,7 +99,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="8" class="td-empty">
+                            <td colspan="7" class="td-empty">
                                 <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                                 <span>Belum ada data surat keluar tersimpan.</span>
                             </td>
@@ -183,17 +193,7 @@
             </div>
         </div>
 
-        <div class="form-grid form-grid-2">
-            <div class="form-group">
-                <label for="email_address" class="form-label">Email Address <span class="required">*</span></label>
-                <input type="email" name="email_address" id="email_address"
-                       class="form-input @error('email_address') input-error @enderror"
-                       value="{{ old('email_address') }}" placeholder="Contoh: nama@instansi.go.id" required>
-                @error('email_address')
-                    <span class="error-text">{{ $message }}</span>
-                @enderror
-            </div>
-
+        <div class="form-grid">
             <div class="form-group">
                 <label for="uraian_informasi_berkas" class="form-label">Uraian Informasi Berkas <span class="required">*</span></label>
                 <textarea name="uraian_informasi_berkas" id="uraian_informasi_berkas"
@@ -205,14 +205,13 @@
             </div>
         </div>
 
-        {{-- Upload Surat Keluar — full width --}}
+        {{-- Upload Surat Keluar -- full width --}}
         <div class="form-grid">
             <div class="form-group form-group-upload">
                 <label for="surat_keluar" class="form-label">File Surat Keluar (PDF) <span class="required">*</span></label>
-                <div class="file-upload @error('surat_keluar') file-upload-error @enderror" id="upload-zone">
+                <label for="surat_keluar" class="file-upload @error('surat_keluar') file-upload-error @enderror" id="upload-zone">
                     <input type="file" name="surat_keluar" id="surat_keluar"
-                           class="file-upload-input" accept="application/pdf" required
-                           style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;">
+                           class="file-upload-input" accept="application/pdf" required>
                     <div class="file-upload-placeholder" id="upload-placeholder">
                         <div class="file-upload-icon">
                             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -243,7 +242,7 @@
                             </svg>
                         </button>
                     </div>
-                </div>
+                </label>
                 @error('surat_keluar')
                     <span class="error-text">{{ $message }}</span>
                 @enderror
@@ -264,8 +263,11 @@
         <div class="form-grid form-grid-3">
             <div class="form-group">
                 <label for="kurun_waktu" class="form-label">Kurun Waktu <span class="required">*</span></label>
-                <input type="text" name="kurun_waktu" id="kurun_waktu"
-                       class="form-input @error('kurun_waktu') input-error @enderror" value="{{ old('kurun_waktu') }}" placeholder="Contoh: 2023–2025" required>
+                <input type="number" name="kurun_waktu" id="kurun_waktu"
+                       class="form-input @error('kurun_waktu') input-error @enderror"
+                       value="{{ old('kurun_waktu') }}"
+                       placeholder="Contoh: 2024"
+                       min="1900" max="2100" required>
                 @error('kurun_waktu')<span class="error-text">{{ $message }}</span>@enderror
             </div>
 
@@ -430,33 +432,43 @@
     letter-spacing: .01em;
 }
 
-/* ── Tabel Arsip ────────────────────────────────── */
+/* ── Tabel Arsip ───────────────────────────────────────── */
 .arsip-table { width:100%; border-collapse:collapse; font-size:.875rem; }
 .arsip-table th {
-    background: var(--color-surface-elevated, #1e2535);
-    color: var(--color-text-muted, #8892a4);
-    font-weight:600; font-size:.75rem; text-transform:uppercase; letter-spacing:.05em;
-    padding:.65rem 1rem; text-align:left; border-bottom:1px solid var(--color-border, #2a3347);
+    background: var(--color-primary);
+    color: #ffffff;
+    font-weight:600; font-size:.72rem; text-transform:uppercase; letter-spacing:.06em;
+    padding:.7rem 1rem; text-align:left; border-bottom:none;
     white-space:nowrap;
 }
+[data-theme="dark"] .arsip-table th {
+    background: var(--color-primary-hover, #15314f);
+    color: #e2e8f0;
+}
 .arsip-table td {
-    padding:.7rem 1rem; border-bottom:1px solid var(--color-border, #2a3347);
-    color: var(--color-text, #e2e8f0); vertical-align:middle;
+    padding:.7rem 1rem; border-bottom:1px solid var(--color-border);
+    color: var(--color-text); vertical-align:middle;
 }
 .arsip-table tbody tr:last-child td { border-bottom:none; }
-.arsip-table tbody tr:hover td { background: rgba(99,102,241,.06); }
+.arsip-table tbody tr:hover td { background: var(--color-primary-light); }
 .td-center { text-align:center; }
 .td-nowrap { white-space:nowrap; }
-.td-no { width:48px; font-weight:600; color:var(--color-text-muted,#8892a4); }
+.td-no { width:48px; font-weight:600; color:var(--color-text-muted); }
 .td-uraian { max-width:240px; }
-.td-muted { color:var(--color-text-muted,#8892a4); }
-.td-empty { text-align:center; padding:2.5rem 1rem !important; color:var(--color-text-muted,#8892a4); }
+.td-muted { color:var(--color-text-muted); }
+.td-empty { text-align:center; padding:2.5rem 1rem !important; color:var(--color-text-muted); }
 .td-empty svg { display:block; margin:0 auto .75rem; opacity:.35; }
 .td-empty span { display:block; }
 .badge-kode {
     display:inline-block; padding:.2rem .55rem; border-radius:.375rem; font-size:.75rem;
-    background:rgba(99,102,241,.15); color:#818cf8; font-weight:600; white-space:nowrap;
+    background: var(--color-primary-light); color: var(--color-primary); font-weight:600; white-space:nowrap;
+    border: 1px solid var(--color-border);
 }
+.badge-kode-empty {
+    background: transparent; color: var(--color-text-muted);
+    border-color: var(--color-border); font-weight:400; opacity:0.6;
+}
+
 .btn-pdf {
     display:inline-flex; align-items:center; gap:.3rem; padding:.3rem .65rem;
     border-radius:.375rem; font-size:.75rem; font-weight:600; text-decoration:none;
@@ -539,7 +551,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (e.target === modal) { modal.style.display = 'none'; pendingForm = null; }
     });
 
-    // ── File Upload ──────────────────────────────────────────────
+    // ── File Upload (gunakan label sebagai trigger — tanpa JS click) ──
     const zone        = document.getElementById('upload-zone');
     const input       = document.getElementById('surat_keluar');
     const placeholder = document.getElementById('upload-placeholder');
@@ -570,24 +582,13 @@ document.addEventListener('DOMContentLoaded', function () {
         zone.classList.remove('file-upload-has-file');
     }
 
-    // Click zona → buka file picker (stopPropagation mencegah double-trigger)
-    zone.addEventListener('click', function (e) {
-        if (e.target.closest('#file-remove')) return;
-        e.preventDefault();
-        e.stopPropagation();
-        input.click();
-    });
-
-    // Blokir bubbling dari input ke zone
-    input.addEventListener('click', function (e) {
-        e.stopPropagation();
-    });
+    // Zone = <label>, sudah otomatis trigger input klik — hanya perlu handle drag & preview
+    // Tombol hapus: stop propagation agar tidak re-trigger label
+    removeBtn.addEventListener('click', function (e) { e.preventDefault(); clearFile(); });
 
     input.addEventListener('change', function () {
         if (this.files.length > 0) showPreview(this.files[0]);
     });
-
-    removeBtn.addEventListener('click', clearFile);
 
     ['dragenter', 'dragover'].forEach(function (evt) {
         zone.addEventListener(evt, function (e) {

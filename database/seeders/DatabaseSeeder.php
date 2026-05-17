@@ -10,7 +10,7 @@ class DatabaseSeeder extends Seeder
 {
     /**
      * Seed the application's database.
-     * Hanya 2 akun admin yang berwenang mengelola sistem arsip BPSDMP.
+     * Akun admin dan internship untuk sistem arsip BPSDMP.
      */
     public function run(): void
     {
@@ -19,9 +19,9 @@ class DatabaseSeeder extends Seeder
 
         // ── Admin utama ──────────────────────────────────────────────────────
         User::create([
-            'name'     => 'Andree Kosanto',
+            'name'     => 'Admin',
             'email'    => 'admin@bpsdmp.go.id',
-            'password' => Hash::make('AndreeKosanto#'),
+            'password' => Hash::make('admin_BPSDMP26'),
             'role'     => 'admin',
         ]);
 
@@ -32,7 +32,5 @@ class DatabaseSeeder extends Seeder
             'password' => Hash::make('internship_BPSDMP'),
             'role'     => 'internship',
         ]);
-
-
     }
 }

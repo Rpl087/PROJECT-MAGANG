@@ -325,6 +325,11 @@ body.header-is-hidden .sidebar {
     display: flex;
     flex-direction: column;
     gap: 2px;
+    flex: 1;          /* tumbuh mengisi sisa ruang sidebar */
+    min-height: 0;    /* izinkan shrink agar overflow-y bekerja */
+    overflow-y: auto; /* nav scrolls jika item terlalu banyak */
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-border) transparent;
 }
 
 .sidebar-link {
@@ -373,9 +378,11 @@ body.header-is-hidden .sidebar {
 .main-content {
     flex: 1;
     min-width: 0;
-    /* Offset sidebar yang kini position:fixed */
     margin-left: var(--sidebar-width);
     padding: var(--space-8) var(--space-8) var(--space-12);
+    overflow-x: hidden;
+    transition: margin-left 0.3s cubic-bezier(0.4,0,0.2,1),
+                padding 0.3s ease;
 }
 
 /* --- Page Header --- */
@@ -871,6 +878,8 @@ body.header-is-hidden .sidebar {
     border-top: 1px solid var(--color-border);
     background: var(--color-surface);
     padding: var(--space-6) 0;
+    margin-left: var(--sidebar-width);
+    transition: margin-left 0.3s cubic-bezier(0.4,0,0.2,1);
 }
 
 .footer-inner {
@@ -886,94 +895,54 @@ body.header-is-hidden .sidebar {
 }
 
 /* --- Responsive Design --- */
-/* ==========================================================
-   RESPONSIVE — 5 Breakpoints
+/* ──────────────────────────────────────────────────────────
+   RESPONSIVE — Breakpoints
+   1100px  Split-screen desktop (dihandle di app.blade.php)
    1024px  Tablet Landscape
-    768px  Tablet Portrait
+    768px  Tablet Portrait / Mobile Drawer (dihandle di app.blade.php)
     640px  Large Phone
     480px  Phone
     360px  Small Phone
-   ========================================================== */
+   ────────────────────────────────────────────────────────── */
 
-/* --- 1024px: Tablet Landscape --- */
+/* ── 1024px: Tablet Landscape ── */
 @media (max-width: 1024px) {
-    :root {
-        --sidebar-width: 200px;
-    }
-
+    :root { --sidebar-width: 210px; }
     .main-content {
         margin-left: var(--sidebar-width);
-        padding: var(--space-8) var(--space-6) var(--space-12);
+        padding: var(--space-8) var(--space-5) var(--space-12);
     }
-
-    /* 3-kolom → 2-kolom */
-    .form-grid-3 {
-        grid-template-columns: repeat(2, 1fr);
-    }
-
-    .form-section {
-        padding: var(--space-6) var(--space-6);
-    }
+    .footer { margin-left: var(--sidebar-width); }
+    .form-grid-3 { grid-template-columns: repeat(2, 1fr); }
+    .form-section { padding: var(--space-6); }
 }
 
-/* --- 768px: Mobile — sidebar menjadi drawer (dihandle via JS + CSS di app.blade.php) --- */
+/* ── 768px: Mobile (sidebar sudah jadi drawer di app.blade.php) ── */
 @media (max-width: 768px) {
-    :root {
-        --header-height: 60px;
+    /* Sidebar drawer: mulai dari TOP layar, bukan dari bawah header */
+    .sidebar {
+        top: 0 !important;
+        height: 100vh !important;
+        overflow-y: auto !important;
+        /* Pastikan flex-column agar margin-top: auto pada drawer-footer bekerja */
+        display: flex !important;
+        flex-direction: column !important;
     }
 
-    .layout-body {
-        flex-direction: column;
-        gap: 0;
-        padding: 0;
+    /* Sidebar nav fleksibel — drawer-footer tetap di bawah */
+    .sidebar-nav {
+        flex: 1;
     }
 
-    /* Main content tanpa margin kiri (sidebar sudah drawer) */
-    .main-content {
-        margin-left: 0;
-        padding: var(--space-6) var(--space-5) var(--space-10);
+    /* Drawer user info: selalu tampil di mobile */
+    .drawer-user-info {
+        display: flex !important;
     }
 
-    /* Header inner lebih compact */
-    .header-inner {
-        padding: 0 var(--space-5);
-    }
-
-    .page-title {
-        font-size: var(--font-size-xl);
-    }
-
-    /* Sembunyikan label nav di header */
-    .nav-label {
-        display: none;
-    }
-
-    /* 3-kolom → 2-kolom */
-    .form-grid-3 {
-        grid-template-columns: repeat(2, 1fr);
-    }
-
-    /* 2-kolom → 1-kolom */
-    .form-grid-2 {
-        grid-template-columns: 1fr;
-    }
-
-    .form-section {
-        padding: var(--space-6) var(--space-5);
-    }
-
-    .section-number {
-        font-size: var(--font-size-xl);
-        min-width: 28px;
-    }
-
-    .form-actions {
-        flex-direction: column-reverse;
-    }
-
-    .form-actions .btn {
-        width: 100%;
-        justify-content: center;
+    /* Drawer footer selalu terlihat */
+    .drawer-footer {
+        flex-shrink: 0;
+        padding-bottom: 1rem;
     }
 
     /* Footer mobile */
@@ -1034,6 +1003,22 @@ body.header-is-hidden .sidebar {
         gap: var(--space-1);
     }
 
+    /* File upload preview: wrap pada layar kecil */
+    .file-upload-preview {
+        flex-wrap: wrap;
+        gap: var(--space-2);
+    }
+
+    .file-preview-name {
+        font-size: var(--font-size-xs);
+        word-break: break-all;
+        white-space: normal;
+    }
+
+    .file-preview-remove {
+        margin-left: auto;
+    }
+
     .alert {
         padding: var(--space-3) var(--space-4);
         font-size: var(--font-size-sm);
@@ -1060,14 +1045,6 @@ body.header-is-hidden .sidebar {
         display: none;
     }
 
-    .sidebar-link {
-        padding: var(--space-3) var(--space-4);
-        font-size: var(--font-size-xs);
-    }
-
-    .sidebar-link-icon {
-        display: none;
-    }
 
     .main-content {
         padding: var(--space-4) var(--space-3) var(--space-8);

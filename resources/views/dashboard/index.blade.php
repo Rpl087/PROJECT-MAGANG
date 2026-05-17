@@ -1,46 +1,12 @@
 @extends('layouts.app')
 
-@section('title', 'Dashboard Rangkuman')
+@section('title', 'Dashboard')
 
 @section('content')
-<style>
-.db-page-header { display:flex; align-items:center; gap:1rem; margin-bottom:2rem; }
-.db-page-header .page-header { margin-bottom:0; flex:1; }
-.db-sidebar-toggle {
-    display:inline-flex; align-items:center; justify-content:center;
-    width:38px; height:38px; flex-shrink:0;
-    border:1px solid var(--color-border); border-radius:var(--radius-md);
-    background:var(--color-surface); color:var(--color-text-secondary);
-    cursor:pointer; transition:all 150ms ease;
-}
-.db-sidebar-toggle:hover { background:var(--color-primary-light); color:var(--color-primary); border-color:var(--color-primary); }
-.db-sidebar-toggle .bars { display:flex; flex-direction:column; gap:4px; }
-.db-sidebar-toggle .bar { display:block; width:16px; height:2px; background:currentColor; border-radius:2px; transition:transform 0.25s ease,opacity 0.2s ease,width 0.25s ease; transform-origin:left center; }
-body.sidebar-collapsed .db-sidebar-toggle .bar:nth-child(1) { transform:rotate(35deg) translateY(1px); width:10px; }
-body.sidebar-collapsed .db-sidebar-toggle .bar:nth-child(2) { width:16px; }
-body.sidebar-collapsed .db-sidebar-toggle .bar:nth-child(3) { transform:rotate(-35deg) translateY(-1px); width:10px; }
-.sidebar { transition:transform 0.3s cubic-bezier(0.4,0,0.2,1) !important; }
-.main-content { transition:margin-left 0.3s cubic-bezier(0.4,0,0.2,1) !important; }
-body.sidebar-collapsed .sidebar { transform:translateX(calc(-1 * var(--sidebar-width))); }
-body.sidebar-collapsed .main-content { margin-left:0; }
-@media (max-width:768px) {
-    .db-sidebar-toggle { display:none; }
-    body.sidebar-collapsed .sidebar { transform:none; }
-}
-</style>
 
-<div class="db-page-header">
-    <button type="button" class="db-sidebar-toggle" id="db-sidebar-toggle" aria-label="Toggle sidebar" title="Sembunyikan / tampilkan sidebar">
-        <span class="bars">
-            <span class="bar"></span>
-            <span class="bar"></span>
-            <span class="bar"></span>
-        </span>
-    </button>
-    <div class="page-header">
-        <h2 class="page-title">Dashboard Rangkuman</h2>
-        <p class="page-description">Rekap surat masuk &amp; keluar — Tahun {{ $currentYear }}</p>
-    </div>
+<div class="page-header">
+    <h2 class="page-title">Dashboard</h2>
+    <p class="page-description">Rekap surat masuk &amp; keluar — Tahun {{ $currentYear }}</p>
 </div>
 
 @if(isset($error))
@@ -476,25 +442,6 @@ body.sidebar-collapsed .main-content { margin-left:0; }
     buildPie('chart-sk-bulan', 'legend-sk-bulan', @json($skPieBulan));
     buildPie('chart-sm-tahun', 'legend-sm-tahun', @json($smPieTahun));
     buildPie('chart-sk-tahun', 'legend-sk-tahun', @json($skPieTahun));
-})();
-</script>
-<script>
-// ── Dashboard Sidebar Toggle ─────────────────────────────────
-(function () {
-    var btn  = document.getElementById('db-sidebar-toggle');
-    var body = document.body;
-
-    // Restore state dari localStorage
-    if (localStorage.getItem('dbSidebarCollapsed') === 'true') {
-        body.classList.add('sidebar-collapsed');
-    }
-
-    if (btn) {
-        btn.addEventListener('click', function () {
-            var isCollapsed = body.classList.toggle('sidebar-collapsed');
-            localStorage.setItem('dbSidebarCollapsed', isCollapsed);
-        });
-    }
 })();
 </script>
 @endpush

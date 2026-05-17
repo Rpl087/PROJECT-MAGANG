@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Google\Client;
 use Google\Service\Sheets;
 
@@ -13,8 +14,16 @@ class SuratKeluarController extends Controller
      */
     private function getSheetService(): array
     {
+        $credPath = env('GOOGLE_SERVICE_ACCOUNT_JSON');
+        if (empty($credPath)) {
+            throw new \RuntimeException('GOOGLE_SERVICE_ACCOUNT_JSON belum dikonfigurasi di .env');
+        }
+        $credFullPath = base_path($credPath);
+        if (!file_exists($credFullPath) || !is_file($credFullPath)) {
+            throw new \RuntimeException("File kredensial Google tidak ditemukan: {$credFullPath}");
+        }
         $client = new Client();
-        $client->setAuthConfig(base_path(env('GOOGLE_SERVICE_ACCOUNT_JSON')));
+        $client->setAuthConfig($credFullPath);
         $client->addScope(Sheets::SPREADSHEETS);
         $service       = new Sheets($client);
         $spreadsheetId = env('GOOGLE_SHEET_ID');
@@ -27,11 +36,17 @@ class SuratKeluarController extends Controller
     private function getSheetId(Sheets $service, string $spreadsheetId, string $sheetName): ?int
     {
         $spreadsheet = $service->spreadsheets->get($spreadsheetId);
+        $availableSheets = [];
         foreach ($spreadsheet->getSheets() as $sheet) {
-            if ($sheet->getProperties()->getTitle() === $sheetName) {
+            $title = $sheet->getProperties()->getTitle();
+            $availableSheets[] = $title;
+            // Gunakan trim() untuk toleransi whitespace tersembunyi
+            if (trim($title) === trim($sheetName)) {
+                Log::info('[SK getSheetId] Ditemukan sheet "' . $title . '" dengan ID: ' . $sheet->getProperties()->getSheetId());
                 return $sheet->getProperties()->getSheetId();
             }
         }
+        Log::warning('[SK getSheetId] Sheet "' . $sheetName . '" tidak ditemukan. Sheet tersedia: ' . implode(', ', $availableSheets));
         return null;
     }
 
@@ -49,14 +64,14 @@ class SuratKeluarController extends Controller
         if ($isAdmin) {
             try {
                 [$service, $spreadsheetId] = $this->getSheetService();
-                $response = $service->spreadsheets_values->get($spreadsheetId, 'SURAT KELUAR!A:S');
+                $response = $service->spreadsheets_values->get($spreadsheetId, 'SURAT KELUAR!A:R');
                 $values   = $response->getValues() ?? [];
 
                 // Skip baris header (index 0), simpan data beserta index aslinya di sheet
-                // Hanya tampilkan baris yang punya Tanggal Surat (col K/index 10) terisi
+                // Filter: hanya tampilkan baris yang punya Tanggal Surat (col J/index 9) terisi
                 foreach ($values as $i => $row) {
                     if ($i === 0) continue;
-                    $tanggal = trim($row[10] ?? '');
+                    $tanggal = trim($row[9] ?? ''); // J: Tanggal Surat
                     // Lewati baris tanpa tanggal — indikator baris kosong/invalid
                     if (empty($tanggal)) continue;
                     $rows[] = ['index' => $i, 'data' => $row];
@@ -70,17 +85,66 @@ class SuratKeluarController extends Controller
     }
 
     /**
-     * Hapus baris surat keluar dari Google Sheets (sheet: SURAT KELUAR) berdasarkan row index (0-based).
+     * Hapus baris surat keluar dari sheet "dbSK".
+     * - Tampilan membaca dari sheet "SURAT KELUAR"
+     * - Penghapusan dilakukan di sheet "dbSK" (sumber data asli)
+     * - Pencarian baris dilakukan berdasarkan PDF link sebagai unique identifier
+     *
+     * @param int $rowIndex  Row index (0-based) dari sheet SURAT KELUAR
      */
     public function destroy(int $rowIndex)
     {
         try {
+            Log::info('[SK destroy] rowIndex diterima dari SURAT KELUAR: ' . $rowIndex);
+
             [$service, $spreadsheetId] = $this->getSheetService();
-            $sheetId = $this->getSheetId($service, $spreadsheetId, 'SURAT KELUAR');
+
+            // ── Langkah 1: Ambil data dari SURAT KELUAR untuk mendapatkan PDF link ──
+            $skResponse = $service->spreadsheets_values->get($spreadsheetId, 'SURAT KELUAR!A:R');
+            $skRows     = $skResponse->getValues() ?? [];
+            $targetRow  = $skRows[$rowIndex] ?? null;
+
+            if ($targetRow === null) {
+                Log::warning('[SK destroy] Baris ' . $rowIndex . ' tidak ditemukan di SURAT KELUAR.');
+                return redirect()->route('surat-keluar.index')
+                    ->with('error', 'Data tidak ditemukan di sheet SURAT KELUAR.');
+            }
+
+            // PDF link ada di kolom H (index 7) di sheet SURAT KELUAR (tanpa kolom Email)
+            // Gunakan sebagai unique identifier untuk mencari row di dbSK
+            $pdfLink = trim($targetRow[7] ?? '');
+            Log::info('[SK destroy] PDF link yang dicari di dbSK: ' . $pdfLink);
+
+            // ── Langkah 2: Cari row yang cocok di dbSK berdasarkan PDF link ────────
+            // Struktur dbSK: A=Timestamp | B=Kode Klas | ... | H=Surat Keluar (PDF, index 7)
+            $dbskResponse = $service->spreadsheets_values->get($spreadsheetId, 'dbSK!A:R');
+            $dbskRows     = $dbskResponse->getValues() ?? [];
+            $dbskRowIndex = null;
+
+            if (!empty($pdfLink)) {
+                foreach ($dbskRows as $i => $row) {
+                    if ($i === 0) continue; // skip header
+                    // PDF link di dbSK ada di kolom H (index 7)
+                    if (trim($row[7] ?? '') === $pdfLink) {
+                        $dbskRowIndex = $i;
+                        Log::info('[SK destroy] Ditemukan di dbSK pada baris index: ' . $i);
+                        break;
+                    }
+                }
+            }
+
+            // Fallback: jika PDF link kosong atau tidak ditemukan, gunakan rowIndex langsung
+            if ($dbskRowIndex === null) {
+                Log::warning('[SK destroy] Fallback: PDF link tidak cocok, gunakan rowIndex=' . $rowIndex . ' langsung ke dbSK.');
+                $dbskRowIndex = $rowIndex;
+            }
+
+            // ── Langkah 3: Hapus baris dari dbSK ──────────────────────────────────
+            $sheetId = $this->getSheetId($service, $spreadsheetId, 'dbSK');
 
             if ($sheetId === null) {
                 return redirect()->route('surat-keluar.index')
-                    ->with('error', 'Sheet "SURAT KELUAR" tidak ditemukan di Spreadsheet.');
+                    ->with('error', 'Sheet "dbSK" tidak ditemukan di Spreadsheet.');
             }
 
             $requests = [[
@@ -88,18 +152,23 @@ class SuratKeluarController extends Controller
                     'range' => [
                         'sheetId'    => $sheetId,
                         'dimension'  => 'ROWS',
-                        'startIndex' => $rowIndex,
-                        'endIndex'   => $rowIndex + 1,
+                        'startIndex' => $dbskRowIndex,
+                        'endIndex'   => $dbskRowIndex + 1,
                     ],
                 ],
             ]];
 
+            Log::info('[SK destroy] Menghapus baris dbSK: startIndex=' . $dbskRowIndex);
+
             $body = new Sheets\BatchUpdateSpreadsheetRequest(['requests' => $requests]);
             $service->spreadsheets->batchUpdate($spreadsheetId, $body);
 
+            Log::info('[SK destroy] Berhasil menghapus baris ' . $dbskRowIndex . ' dari dbSK.');
+
             return redirect()->route('surat-keluar.index')
-                ->with('success', 'Data surat keluar berhasil dihapus dari Spreadsheet.');
+                ->with('success', 'Data surat keluar berhasil dihapus dari Spreadsheet (dbSK).');
         } catch (\Exception $e) {
+            Log::error('[SK destroy] ERROR: ' . $e->getMessage());
             return redirect()->route('surat-keluar.index')
                 ->with('error', 'Gagal menghapus data: ' . $e->getMessage());
         }
@@ -111,11 +180,10 @@ class SuratKeluarController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            "email_address"           => "required|email|max:255",
             "kode_klasifikasi"        => "required|string|max:255",
             "kode_surat"              => "required|string|max:255",
             "uraian_informasi_berkas" => "required|string|max:1000",
-            "kurun_waktu"             => "required|string|max:255",
+            "kurun_waktu"             => "required|numeric|min:1900|max:2100",
             "jumlah_folder"           => "required|string|max:255",
             "nomor_item_arsip"        => "required|numeric|min:1",
             "surat_keluar"            => "required|file|mimes:pdf|max:10240",
@@ -130,12 +198,13 @@ class SuratKeluarController extends Controller
             "retensi_inaktif"         => "required|string|max:255",
             "retensi_keterangan"      => "required|string|max:1000",
         ], [
-            "email_address.required"           => "Email Address wajib diisi.",
-            "email_address.email"              => "Format Email Address tidak valid.",
             "kode_klasifikasi.required"        => "Kode Klasifikasi wajib diisi.",
             "kode_surat.required"              => "Kode Surat wajib diisi.",
             "uraian_informasi_berkas.required" => "Uraian Informasi Berkas wajib diisi.",
             "kurun_waktu.required"             => "Kurun Waktu wajib diisi.",
+            "kurun_waktu.numeric"              => "Kurun Waktu harus berupa angka tahun (contoh: 2024).",
+            "kurun_waktu.min"                  => "Kurun Waktu minimal tahun 1900.",
+            "kurun_waktu.max"                  => "Kurun Waktu maksimal tahun 2100.",
             "jumlah_folder.required"           => "Jumlah Folder wajib diisi.",
             "nomor_item_arsip.required"        => "Nomor Item Arsip wajib diisi.",
             "nomor_item_arsip.numeric"         => "Nomor Item Arsip harus berupa angka.",
@@ -155,15 +224,21 @@ class SuratKeluarController extends Controller
 
         try {
             // Setup Google Client
+            $credPath = env('GOOGLE_SERVICE_ACCOUNT_JSON');
+            if (empty($credPath)) {
+                throw new \RuntimeException('GOOGLE_SERVICE_ACCOUNT_JSON belum dikonfigurasi di .env');
+            }
+            $credFullPath = base_path($credPath);
+            if (!file_exists($credFullPath) || !is_file($credFullPath)) {
+                throw new \RuntimeException("File kredensial Google tidak ditemukan: {$credFullPath}");
+            }
             $client = new Client();
-            $client->setAuthConfig(
-                base_path(env("GOOGLE_SERVICE_ACCOUNT_JSON")),
-            );
+            $client->setAuthConfig($credFullPath);
             $client->addScope(Sheets::SPREADSHEETS);
 
             $service = new Sheets($client);
             $spreadsheetId = env("GOOGLE_SHEET_ID");
-            $range = "dbSK!A:S";
+            $range = "dbSK!A:R";
 
             // Simpan file PDF surat keluar
             $file = $request->file("surat_keluar");
@@ -176,33 +251,37 @@ class SuratKeluarController extends Controller
                     $file->getClientOriginalName(),
                 );
             $file->storeAs("arsip/surat-keluar", $filename, "public");
-            $filePath = route('pdf.view', ['type' => 'surat-keluar', 'filename' => $filename]);
+            // Simpan hanya filename — URL di-generate dinamis saat tampil
+            $filePath = $filename;
 
             // Timestamp otomatis
             $timestamp = now()->format("Y-m-d H:i:s");
 
-            // Susun data sesuai urutan kolom spreadsheet dbSK (A–S)
+            // Susun data sesuai urutan kolom spreadsheet SURAT KELUAR (A–R)
+            // Struktur dbSK: Timestamp|Kode Klas|Kode Surat|Uraian Berkas|Kurun Waktu|
+            //                Jumlah Folder|Nomor Item|Surat Keluar(PDF)|Uraian Arsip|
+            //                Tanggal Surat|Jumlah Lembar|Tingkat Perkembangan|Lokasi Simpan|
+            //                Klas Keamanan|Tingkat Akses|Retensi Aktif|Retensi Inaktif|Retensi Ket
             $values = [
                 [
-                    $timestamp, // A: Timestamp
-                    $validated["email_address"], // B: Email Address
-                    $validated["kode_klasifikasi"], // C: Kode Klasifikasi
-                    $validated["kode_surat"], // D: Kode Surat
-                    $validated["uraian_informasi_berkas"], // E: Uraian Informasi Berkas
-                    $validated["kurun_waktu"] ?? "", // F: Kurun Waktu
-                    $validated["jumlah_folder"] ?? "", // G: Jumlah Folder
-                    $validated["nomor_item_arsip"] ?? "", // H: Nomor: Item Arsip
-                    $filePath, // I: Surat Keluar (path file PDF)
-                    $validated["uraian_informasi_arsip"] ?? "", // J: Uraian Informasi Arsip
-                    $validated["tanggal_surat"], // K: Tanggal Surat
-                    $validated["jumlah_lembar"] ?? "", // L: Jumlah Lembar
-                    $validated["tingkat_perkembangan"] ?? "", // M: Tingkat Perkembangan
-                    $validated["lokasi_simpan"] ?? "", // N: Lokasi Simpan
-                    $validated["klasifikasi_keamanan"] ?? "", // O: Klasifikasi Keamanan
-                    $validated["tingkat_akses"] ?? "", // P: Tingkat Akses
-                    $validated["retensi_aktif"] ?? "", // Q: Retensi "Aktif"
-                    $validated["retensi_inaktif"] ?? "", // R: Retensi "Inaktif"
-                    $validated["retensi_keterangan"] ?? "", // S: Retensi "Keterangan"
+                    $timestamp,                                 // A(0):  Timestamp
+                    $validated["kode_klasifikasi"],             // B(1):  Kode Klasifikasi
+                    $validated["kode_surat"],                   // C(2):  Kode Surat
+                    $validated["uraian_informasi_berkas"],      // D(3):  Uraian Informasi Berkas
+                    $validated["kurun_waktu"] ?? "",            // E(4):  Kurun Waktu
+                    $validated["jumlah_folder"] ?? "",          // F(5):  Jumlah Folder
+                    $validated["nomor_item_arsip"] ?? "",       // G(6):  Nomor: Item Arsip
+                    $filePath,                                  // H(7):  Surat Keluar (PDF)
+                    $validated["uraian_informasi_arsip"] ?? "", // I(8):  Uraian Informasi Arsip
+                    $validated["tanggal_surat"],                // J(9):  Tanggal Surat
+                    $validated["jumlah_lembar"] ?? "",          // K(10): Jumlah Lembar
+                    $validated["tingkat_perkembangan"] ?? "",   // L(11): Tingkat Perkembangan
+                    $validated["lokasi_simpan"] ?? "",          // M(12): Lokasi Simpan
+                    $validated["klasifikasi_keamanan"] ?? "",   // N(13): Klasifikasi Keamanan
+                    $validated["tingkat_akses"] ?? "",          // O(14): Tingkat Akses
+                    $validated["retensi_aktif"] ?? "",          // P(15): Retensi "Aktif"
+                    $validated["retensi_inaktif"] ?? "",        // Q(16): Retensi "Inaktif"
+                    $validated["retensi_keterangan"],           // R(17): Retensi "Keterangan"
                 ],
             ];
 

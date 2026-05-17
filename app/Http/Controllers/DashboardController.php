@@ -13,8 +13,18 @@ class DashboardController extends Controller
     public function index()
     {
         try {
+            $credPath = env('GOOGLE_SERVICE_ACCOUNT_JSON');
+            if (empty($credPath)) {
+                throw new \RuntimeException('GOOGLE_SERVICE_ACCOUNT_JSON belum dikonfigurasi di .env');
+            }
+
+            $credFullPath = base_path($credPath);
+            if (!file_exists($credFullPath) || !is_file($credFullPath)) {
+                throw new \RuntimeException("File kredensial Google tidak ditemukan: {$credFullPath}");
+            }
+
             $client = new Client();
-            $client->setAuthConfig(base_path(env('GOOGLE_SERVICE_ACCOUNT_JSON')));
+            $client->setAuthConfig($credFullPath);
             $client->addScope(Sheets::SPREADSHEETS_READONLY);
 
             $service       = new Sheets($client);

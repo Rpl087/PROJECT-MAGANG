@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="description" content="Sistem Arsip Surat Digital BPSDMP - Input dan kelola arsip surat secara efisien">
     <title>@yield('title', 'Arsip Surat') — BPSDMP</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -49,219 +49,238 @@
             color: #fca5a5;
         }
 
-        /* ── Drawer Footer (logout di sidebar, user-info hanya di mobile) ── */
-        .drawer-footer {
-            display: block; /* Tampil di desktop dan mobile */
-            margin-top: auto;
-            padding-top: 16px;
-            border-top: 1px solid var(--color-border, #e2e5ea);
-        }
-        /* Nama user di drawer: tersembunyi di desktop */
-        .drawer-user-info {
-            display: none !important;
-        }
-        /* Sidebar desktop: flex-column agar drawer-footer ke bawah */
-        .sidebar {
-            display: flex;
-            flex-direction: column;
-        }
-        /* Sembunyikan form logout dari header di desktop */
-        .header-logout-form {
-            display: none;
-        }
-        .drawer-user-info {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px 4px;
-            font-size: 0.85rem;
-            font-weight: 500;
-            color: var(--text-muted, #94a3b8);
-            margin-bottom: 8px;
-        }
-        .btn-logout-drawer {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            width: 100%;
-            padding: 10px 12px;
-            background: rgba(239, 68, 68, 0.08);
-            border: 1px solid rgba(239, 68, 68, 0.2);
-            border-radius: 8px;
-            font-size: 0.875rem;
-            font-weight: 500;
-            font-family: inherit;
-            color: #f87171;
-            cursor: pointer;
-            transition: background 0.2s ease, border-color 0.2s ease;
-        }
-        .btn-logout-drawer:hover {
-            background: rgba(239, 68, 68, 0.16);
-            border-color: rgba(239, 68, 68, 0.35);
-        }
-
-        /* ── Burger Button (hanya tampil di mobile/tablet) ── */
+        /* ══════════════════════════════════════════════════════════
+           BURGER BUTTON — tampil di semua ukuran layar, semua menu
+           ══════════════════════════════════════════════════════════ */
         .burger-btn {
-            display: none; /* Tersembunyi di desktop */
+            display: flex; /* SELALU tampil — global di semua halaman */
             align-items: center;
             justify-content: center;
             width: 38px;
             height: 38px;
+            flex-shrink: 0;
             background: transparent;
             border: 1px solid var(--color-border, #e2e5ea);
             border-radius: 8px;
             cursor: pointer;
             color: var(--color-text, #1e293b);
             margin-right: 8px;
-            flex-shrink: 0;
-            transition: background 0.2s ease, border-color 0.2s ease;
+            transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
         }
         .burger-btn:hover {
             background: var(--color-primary-light, #e8edf4);
             border-color: var(--color-primary, #1e3a5f);
             color: var(--color-primary, #1e3a5f);
         }
-        /* Animasi garis burger → X */
+        .burger-icon { display: flex; flex-direction: column; gap: 4px; }
         .burger-bar {
-            display: block;
-            width: 18px;
-            height: 2px;
-            background: currentColor;
-            border-radius: 2px;
-            transition: transform 0.3s ease, opacity 0.3s ease;
+            display: block; width: 18px; height: 2px;
+            background: currentColor; border-radius: 2px;
+            transition: transform 0.3s ease, opacity 0.3s ease, width 0.3s ease;
             transform-origin: center;
         }
-        .burger-icon {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
+        /* Animasi X saat drawer mobile terbuka */
+        .burger-btn.is-open .burger-bar:nth-child(1) { transform: translateY(6px) rotate(45deg); }
+        .burger-btn.is-open .burger-bar:nth-child(2) { opacity: 0; transform: scaleX(0); }
+        .burger-btn.is-open .burger-bar:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
+        /* is-collapsed: tidak ada animasi — burger selalu tampil sebagai ☰ */
+
+        /* ══════════════════════════════════════════════════════════
+           DESKTOP (>768px): Sidebar collapse via burger
+           ══════════════════════════════════════════════════════════ */
+        .sidebar { transition: transform 0.3s cubic-bezier(0.4,0,0.2,1); }
+        .main-content  { transition: margin-left 0.3s cubic-bezier(0.4,0,0.2,1); }
+        .footer        { transition: margin-left 0.3s cubic-bezier(0.4,0,0.2,1); }
+
+        /* State: sidebar tersembunyi (desktop) */
+        body.sidebar-collapsed .sidebar   { transform: translateX(calc(-1 * var(--sidebar-width, 240px))); }
+        body.sidebar-collapsed .main-content { margin-left: 0 !important; }
+        body.sidebar-collapsed .footer       { margin-left: 0 !important; }
+
+        /* ══════════════════════════════════════════════════════════
+           CENTERING — content di split-screen desktop
+           ══════════════════════════════════════════════════════════ */
+        .main-content-wrap {
+            max-width: 980px;
+            margin-left: auto;
+            margin-right: auto;
+            width: 100%;
         }
-        /* State terbuka: garis 1 & 3 membentuk X */
-        .burger-btn.is-open .burger-bar:nth-child(1) {
-            transform: translateY(6px) rotate(45deg);
+        body.sidebar-collapsed .main-content-wrap { max-width: 1080px; }
+
+        /* ══════════════════════════════════════════════════════════
+           SPLIT-SCREEN DESKTOP (769px - 1100px)
+           Auto-collapse sidebar agar konten punya ruang cukup
+           ══════════════════════════════════════════════════════════ */
+        @media (min-width: 769px) and (max-width: 1100px) {
+            /* Auto collapse sidebar di split-screen */
+            .sidebar { transform: translateX(calc(-1 * var(--sidebar-width, 240px))); }
+            .main-content { margin-left: 0 !important; }
+            .footer       { margin-left: 0 !important; }
+            /* Burger tampil dalam mode ‘collapsed’ secara default */
+            .burger-btn { border-color: var(--color-primary, #1e3a5f); }
+            /* Padding lebih kecil — extend konten ke kiri */
+            .main-content { padding-left: 1rem !important; padding-right: 1rem !important; }
+            .main-content-wrap { max-width: 100%; }
         }
-        .burger-btn.is-open .burger-bar:nth-child(2) {
-            opacity: 0;
-            transform: scaleX(0);
-        }
-        .burger-btn.is-open .burger-bar:nth-child(3) {
-            transform: translateY(-6px) rotate(-45deg);
+        /* Override: jika user membuka sidebar di split-screen */
+        @media (min-width: 769px) and (max-width: 1100px) {
+            body.sidebar-open .sidebar { transform: translateX(0); }
+            body.sidebar-open .main-content { margin-left: var(--sidebar-width, 240px) !important; }
+            body.sidebar-open .footer       { margin-left: var(--sidebar-width, 240px) !important; }
         }
 
-        /* ── Overlay gelap saat drawer terbuka ── */
+        /* ══════════════════════════════════════════════════════════
+           OVERLAY — untuk drawer mobile
+           ══════════════════════════════════════════════════════════ */
         .sidebar-overlay {
             display: none;
-            position: fixed;
-            inset: 0;
-            background: rgba(15, 23, 42, 0.45);
+            position: fixed; inset: 0;
+            background: rgba(15,23,42,0.5);
             z-index: 88;
-            opacity: 0;
-            pointer-events: none; /* Tidak menghalangi klik saat tertutup */
+            opacity: 0; pointer-events: none;
             transition: opacity 0.3s ease;
             backdrop-filter: blur(2px);
         }
-        .sidebar-overlay.is-visible {
-            opacity: 1;
-            pointer-events: auto; /* Aktif saat drawer terbuka */
-        }
+        .sidebar-overlay.is-visible { opacity: 1; pointer-events: auto; }
 
-        /* ── Responsive: tampilkan burger, ubah sidebar jadi drawer ── */
+        /* ══════════════════════════════════════════════════════════
+           MOBILE (≤768px): Sidebar jadi DRAWER dari kiri
+           ══════════════════════════════════════════════════════════ */
         @media (max-width: 768px) {
-            .burger-btn {
-                display: flex;
-            }
-            .sidebar-overlay {
-                display: block;
-                pointer-events: none; /* Tetap tidak menghalangi klik saat tertutup */
-            }
-            /* Override: sidebar jadi drawer dari kiri */
+            /* Aktifkan overlay */
+            .sidebar-overlay { display: block; pointer-events: none; }
+            /* drawer-footer-fixed: visible di mobile, dikontrol JS (display:none/block) */
+            .drawer-footer-fixed { display: none; } /* JS akan set display:block saat openDrawer */
+
+            /* ── Sidebar = drawer fixed dari kiri ── */
             .sidebar {
                 position: fixed !important;
-                top: 0 !important;
-                left: 0 !important;
+                top: var(--header-height, 64px) !important; left: 0 !important;
                 width: 260px !important;
-                height: 100vh !important;
-                padding: var(--space-6, 1.5rem) var(--space-5, 1.25rem) !important;
+                height: calc(100dvh - var(--header-height, 64px)) !important;
+                height: calc(100vh - var(--header-height, 64px)) !important;
+                padding: 1.25rem 1.25rem 0 !important;
                 border-right: 1px solid var(--color-border, #e2e5ea) !important;
-                border-bottom: none !important;
-                box-shadow: 4px 0 24px rgba(0,0,0,0.12) !important;
+                box-shadow: 4px 0 24px rgba(0,0,0,0.14) !important;
                 z-index: 90 !important;
-                transform: translateX(-100%);
-                transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-                overflow-y: auto !important;
+                transform: translateX(-100%) !important;
+                transition: transform 0.3s cubic-bezier(0.4,0,0.2,1) !important;
+                overflow: hidden !important;
+                /* overflow:hidden diperlukan agar tidak ada scroll horizontal,
+                   tapi footer absolute bisa tampil karena sidebar = fixed container */ 
+                display: flex !important;
+                flex-direction: column !important;
             }
-            .sidebar.is-open {
-                transform: translateX(0);
-            }
-            /* Batalkan sticky top 0 saat header hilang — tidak relevan untuk drawer */
-            body.header-is-hidden .sidebar {
-                top: 0 !important;
-                height: 100vh !important;
-            }
-            /* Kembalikan sidebar-label & nav ke mode vertikal */
+            /* Drawer terbuka */
+            .sidebar.is-open { transform: translateX(0) !important; }
+
+            /* ── Label "Menu": selalu di atas, tidak bisa dikecilkan ── */
             .sidebar-label {
                 display: block !important;
+                flex-shrink: 0 !important;
+                margin-bottom: 0.5rem !important;
             }
+
+            /* ── Nav: mengisi sisa ruang, scroll internal jika item terlalu banyak ── */
             .sidebar-nav {
+                flex: 1 !important;
+                min-height: 0 !important;
+                overflow-y: auto !important;
                 flex-direction: column !important;
                 gap: 2px !important;
                 padding: 0 !important;
-                overflow-x: unset !important;
+                overflow-x: hidden !important;
             }
             .sidebar-link {
-                padding: var(--space-3, 0.75rem) var(--space-3, 0.75rem) !important;
-                border-radius: 6px !important;
-                border-bottom: none !important;
-                white-space: normal !important;
-                font-size: 0.9375rem !important;
+                padding: 0.75rem !important;
+                border-radius: 6px !important; border-bottom: none !important;
+                white-space: normal !important; font-size: 0.9375rem !important;
             }
-            .sidebar-link-active {
-                background: var(--color-primary-light, #e8edf4) !important;
-                color: var(--color-primary, #1e3a5f) !important;
-                border-bottom-color: transparent !important;
+            .sidebar-link-icon { display: flex !important; }
+
+            /* ── Drawer footer mobile: FIXED terpisah dari sidebar ── */
+            /* Ini satu-satunya cara andal agar tidak terpotong overflow:hidden sidebar */
+            .drawer-footer-fixed {
+                display: none; /* disembunyikan secara default */
+                position: fixed !important;
+                bottom: 0 !important;
+                left: 0 !important;
+                width: 260px !important;
+                background: var(--color-surface, #ffffff) !important;
+                padding: 12px 1.25rem !important;
+                padding-bottom: max(1rem, env(safe-area-inset-bottom, 1rem)) !important;
+                border-top: 1px solid var(--color-border, #e2e5ea) !important;
+                border-right: 1px solid var(--color-border, #e2e5ea) !important;
+                z-index: 91 !important; /* di atas sidebar (z-index:90) */
+                pointer-events: auto !important;
+                transform: translateX(-100%) !important;
+                transition: transform 0.3s cubic-bezier(0.4,0,0.2,1) !important;
             }
-            .sidebar-link-icon {
+            /* Tampil & slide masuk bersamaan dengan drawer */
+            .drawer-footer-fixed.is-open {
+                transform: translateX(0) !important;
+            }
+            /* ── Drawer footer desktop: sembunyikan di mobile (gunakan drawer-footer-fixed) ── */
+            #drawer-footer-desktop {
+                display: none !important;
+            }
+            .drawer-user-info { display: flex !important; }
+            .btn-logout-drawer {
                 display: flex !important;
+                pointer-events: auto !important;
             }
-            /* Main content: tidak ada margin kiri */
-            .main-content {
-                margin-left: 0 !important;
-            }
-            /* Sembunyikan nav-label dan header-user di header (sudah ada di drawer) */
-            .nav-label, .header-user {
-                display: none;
-            }
-            /* Tampilkan nama user di drawer (di desktop tersembunyi) */
-            .drawer-user-info {
-                display: flex !important;
-            }
-            /* Sidebar harus flex-column agar footer selalu di bawah */
-            .sidebar {
-                display: flex !important;
-                flex-direction: column !important;
-            }
-            /* Header inner — rapat di mobile */
-            .header-inner {
-                padding: 0 12px !important;
-                gap: 8px;
-            }
-            /* Sembunyikan brand-subtitle di mobile kecil */
-            .brand-subtitle {
-                display: none;
-            }
-            /* Theme toggle selalu tampil di mobile */
-            .theme-toggle {
-                display: inline-flex !important;
-                flex-shrink: 0;
-            }
-            /* Footer mobile: margin nol */
-            .footer {
-                margin-left: 0 !important;
-            }
-            .footer-inner {
-                padding: 0 var(--space-5, 1.25rem);
-            }
+
+            /* ── Main content: tanpa margin kiri ── */
+            .main-content { margin-left: 0 !important; padding-left: 1rem !important; padding-right: 1rem !important; }
+            .footer { margin-left: 0 !important; }
+            .main-content-wrap { max-width: 100%; }
+            /* Header */
+            .header-inner { padding: 0 12px !important; gap: 8px; }
+            .nav-label { display: none; }
+            .brand-subtitle { display: none; }
+            .theme-toggle { display: inline-flex !important; flex-shrink: 0; }
         }
+
+        /* Drawer user-info: tampil di sidebar */
+        .drawer-user-info {
+            display: flex;
+            align-items: center; gap: 8px; padding: 8px 4px;
+            font-size: 0.85rem; font-weight: 500;
+            color: var(--color-text-muted, #94a3b8); margin-bottom: 8px;
+        }
+        .btn-logout-drawer {
+            display: flex; align-items: center; gap: 8px; width: 100%;
+            padding: 10px 12px;
+            background: rgba(239,68,68,0.08);
+            border: 1px solid rgba(239,68,68,0.2);
+            border-radius: 8px; font-size: 0.875rem; font-weight: 600;
+            font-family: inherit; color: #f87171; cursor: pointer;
+            transition: background 0.2s ease, border-color 0.2s ease;
+        }
+        .btn-logout-drawer:hover { background: rgba(239,68,68,0.16); border-color: rgba(239,68,68,0.4); }
+
+        /* Sidebar flex-column agar footer ke bawah (desktop) */
+        .sidebar { display: flex; flex-direction: column; }
+
+        /* ── Header-left: burger + brand berdampingan ── */
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 0;
+            min-width: 0;
+        }
+
+        /* Drawer footer — global: flex-shrink:0 agar selalu tampil */
+        .drawer-footer {
+            flex-shrink: 0;
+            padding-top: 16px;
+            border-top: 1px solid var(--color-border, #e2e5ea);
+        }
+
+        /* drawer-footer-fixed: hanya tampil di mobile via JS */
+        .drawer-footer-fixed { display: none; }
+
     </style>
 
     {{-- ── Toast Notification System ── --}}
@@ -367,52 +386,35 @@
     <!-- Header -->
     <header class="header" id="main-header">
         <div class="header-inner">
-            <!-- Burger Button (muncul di ≤768px) — sebelum logo -->
-            <button type="button" class="burger-btn" id="burger-btn" aria-label="Buka menu navigasi" aria-expanded="false" aria-controls="main-sidebar">
-                <span class="burger-icon" aria-hidden="true">
-                    <span class="burger-bar"></span>
-                    <span class="burger-bar"></span>
-                    <span class="burger-bar"></span>
-                </span>
-            </button>
-            <div class="brand">
-                <div class="brand-icon">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                        <polyline points="14 2 14 8 20 8"/>
-                        <line x1="16" y1="13" x2="8" y2="13"/>
-                        <line x1="16" y1="17" x2="8" y2="17"/>
-                        <polyline points="10 9 9 9 8 9"/>
-                    </svg>
-                </div>
-                <div>
-                    <h1 class="brand-title">Arsip Surat</h1>
-                    <p class="brand-subtitle">BPSDMP</p>
+            <!-- Kiri: Burger + Brand -->
+            <div class="header-left">
+                <button type="button" class="burger-btn" id="burger-btn" aria-label="Buka menu navigasi" aria-expanded="false" aria-controls="main-sidebar">
+                    <span class="burger-icon" aria-hidden="true">
+                        <span class="burger-bar"></span>
+                        <span class="burger-bar"></span>
+                        <span class="burger-bar"></span>
+                    </span>
+                </button>
+                <div class="brand">
+                    <div class="brand-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                            <polyline points="14 2 14 8 20 8"/>
+                            <line x1="16" y1="13" x2="8" y2="13"/>
+                            <line x1="16" y1="17" x2="8" y2="17"/>
+                            <polyline points="10 9 9 9 8 9"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h1 class="brand-title">Arsip Surat BPSDMP</h1>
+                    </div>
                 </div>
             </div>
+
+            <!-- Kanan: Status + Theme Toggle -->
             <nav class="header-nav">
                 <span class="nav-indicator"></span>
                 <span class="nav-label">Sistem Pengarsipan Digital</span>
-                <div class="header-user">
-                    <span class="header-user-icon">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                            <circle cx="12" cy="7" r="4"/>
-                        </svg>
-                    </span>
-                    <span class="header-user-name">{{ Auth::user()->name }}</span>
-                    <form action="{{ route('logout') }}" method="POST" style="margin:0;" class="header-logout-form">
-                        @csrf
-                        <button type="submit" class="btn-logout" title="Keluar dari sistem">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-                                <polyline points="16 17 21 12 16 7"/>
-                                <line x1="21" y1="12" x2="9" y2="12"/>
-                            </svg>
-                            Keluar
-                        </button>
-                    </form>
-                </div>
                 {{-- Dark / Light Toggle --}}
                 <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Toggle dark mode" title="Ganti tema">
                     <!-- Moon icon (tampil di light mode) -->
@@ -477,16 +479,17 @@
                     </span>
                     Surat Keluar
                 </a>
+            <!-- nav tidak perlu padding-bottom besar karena footer ada di luar sidebar -->
             </nav>
 
-            <!-- Drawer Footer: Info user + Tombol Keluar (hanya tampil di mobile drawer) -->
-            <div class="drawer-footer">
+            <!-- Drawer Footer Desktop: di dalam sidebar (disembunyikan di mobile) -->
+            <div class="drawer-footer" id="drawer-footer-desktop">
                 <div class="drawer-user-info">
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
                         <circle cx="12" cy="7" r="4"/>
                     </svg>
-                    <span>{{ Auth::user()->name }}</span>
+                    <span style="text-transform:uppercase;letter-spacing:.04em;">{{ Auth::user()->name }}</span>
                 </div>
                 <form action="{{ route('logout') }}" method="POST" style="margin:0;">
                     @csrf
@@ -502,9 +505,36 @@
             </div>
         </aside>
 
+        <!-- ═══════════════════════════════════════════════════════
+             Drawer Footer Mobile: FIXED terpisah dari sidebar
+             Tidak terpengaruh overflow:hidden sidebar
+             ═══════════════════════════════════════════════════════ -->
+        <div class="drawer-footer-fixed" id="drawer-footer-fixed">
+            <div class="drawer-user-info">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                    <circle cx="12" cy="7" r="4"/>
+                </svg>
+                <span style="text-transform:uppercase;letter-spacing:.04em;">{{ Auth::user()->name }}</span>
+            </div>
+            <form action="{{ route('logout') }}" method="POST" style="margin:0;">
+                @csrf
+                <button type="submit" class="btn-logout-drawer" id="btn-logout-mobile">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                        <polyline points="16 17 21 12 16 7"/>
+                        <line x1="21" y1="12" x2="9" y2="12"/>
+                    </svg>
+                    Keluar
+                </button>
+            </form>
+        </div>
+
         <!-- Main Content -->
         <main class="main-content">
-            @yield('content')
+            <div class="main-content-wrap">
+                @yield('content')
+            </div>
         </main>
 
     </div>
@@ -516,65 +546,151 @@
         </div>
     </footer>
 
-    @stack('scripts')
-
     <script>
-        (function () {
-            var burgerBtn  = document.getElementById('burger-btn');
-            var sidebar    = document.getElementById('main-sidebar');
-            var overlay    = document.getElementById('sidebar-overlay');
-            var isMobile   = function () { return window.innerWidth <= 768; };
+    // ══════════════════════════════════════════════════════════════════
+    //  BURGER — Global, semua halaman, semua ukuran layar
+    //  Desktop >1100px  : toggle sidebar collapse (margin-left)
+    //  Split-screen 769-1100px : toggle sidebar collapse juga
+    //  Mobile ≤0768px  : toggle drawer (is-open + overlay)
+    // ══════════════════════════════════════════════════════════════════
+    (function () {
+        var btn         = document.getElementById('burger-btn');
+        var sidebar     = document.getElementById('main-sidebar');
+        var overlay     = document.getElementById('sidebar-overlay');
+        var drawerFooter = document.getElementById('drawer-footer-fixed');
+        var body        = document.body;
+        var STORAGE     = 'sidebarCollapsed';
 
-            function openDrawer() {
-                sidebar.classList.add('is-open');
-                overlay.classList.add('is-visible');
-                burgerBtn.classList.add('is-open');
-                burgerBtn.setAttribute('aria-expanded', 'true');
-                document.body.style.overflow = 'hidden'; // Cegah scroll body
+        function isMobile() { return window.innerWidth <= 768; }
+        function isSplitScreen() { return window.innerWidth > 768 && window.innerWidth <= 1100; }
+
+        // ── Inisialisasi state desktop berdasarkan localStorage ──
+        function initDesktopState() {
+            if (localStorage.getItem(STORAGE) === 'true') {
+                body.classList.add('sidebar-collapsed');
+            } else {
+                body.classList.remove('sidebar-collapsed');
             }
+            // Burger selalu tampil sebagai ☰ di desktop
+        }
 
-            function closeDrawer() {
-                sidebar.classList.remove('is-open');
-                overlay.classList.remove('is-visible');
-                burgerBtn.classList.remove('is-open');
-                burgerBtn.setAttribute('aria-expanded', 'false');
-                document.body.style.overflow = '';
+        // Split-screen: default collapsed, kecuali user pernah buka
+        function initSplitScreenState() {
+            if (localStorage.getItem('splitSidebarOpen') === 'true') {
+                body.classList.add('sidebar-open');
+            } else {
+                body.classList.remove('sidebar-open');
             }
+            // Burger selalu tampil sebagai ☰ di split-screen
+        }
 
-            // Toggle saat burger diklik
-            burgerBtn.addEventListener('click', function () {
-                if (sidebar.classList.contains('is-open')) {
-                    closeDrawer();
+        // ── Open / Close drawer (mobile) ──
+        function openDrawer() {
+            sidebar.classList.add('is-open');
+            if (overlay) overlay.classList.add('is-visible');
+            if (drawerFooter) {
+                drawerFooter.style.display = 'block';
+                // Trigger reflow sebelum menambah class agar transisi berjalan
+                drawerFooter.getBoundingClientRect();
+                drawerFooter.classList.add('is-open');
+            }
+            btn.classList.add('is-open');
+            btn.setAttribute('aria-expanded', 'true');
+            body.style.overflow = 'hidden';
+        }
+        function closeDrawer() {
+            sidebar.classList.remove('is-open');
+            if (overlay) overlay.classList.remove('is-visible');
+            if (drawerFooter) {
+                drawerFooter.classList.remove('is-open');
+                // Sembunyikan setelah transisi selesai (300ms)
+                setTimeout(function () {
+                    if (!drawerFooter.classList.contains('is-open')) {
+                        drawerFooter.style.display = 'none';
+                    }
+                }, 320);
+            }
+            btn.classList.remove('is-open');
+            // Mobile: pastikan burger button TIDAK menampilkan panah ← (is-collapsed hanya untuk desktop)
+            if (isMobile()) btn.classList.remove('is-collapsed');
+            btn.setAttribute('aria-expanded', 'false');
+            body.style.overflow = '';
+        }
+
+        // ── Inisialisasi saat load ──
+        if (!isMobile()) {
+            if (isSplitScreen()) {
+                initSplitScreenState();
+            } else {
+                initDesktopState();
+            }
+        } else {
+            // Mobile: pastikan burger button selalu tampil sebagai ☰, bukan ←
+            if (btn) btn.classList.remove('is-collapsed');
+        }
+
+        // ── Klik burger ──
+        if (btn) {
+            btn.addEventListener('click', function () {
+                if (isMobile()) {
+                    // Mobile: toggle drawer
+                    sidebar.classList.contains('is-open') ? closeDrawer() : openDrawer();
+
+                } else if (isSplitScreen()) {
+                    // Split-screen: toggle sidebar-open (sidebar tersembunyi by default)
+                    var isOpen = body.classList.toggle('sidebar-open');
+                    btn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+                    localStorage.setItem('splitSidebarOpen', isOpen);
+
                 } else {
-                    openDrawer();
+                    // Desktop lebar: toggle sidebar-collapsed
+                    var isCollapsed = body.classList.toggle('sidebar-collapsed');
+                    btn.setAttribute('aria-expanded', isCollapsed ? 'false' : 'true');
+                    localStorage.setItem(STORAGE, isCollapsed);
                 }
             });
+        }
 
-            // Tutup saat overlay diklik
-            overlay.addEventListener('click', closeDrawer);
+        // ── Overlay klik = tutup drawer ──
+        if (overlay) overlay.addEventListener('click', closeDrawer);
 
-            // Tutup saat link sidebar diklik (navigasi)
+        // ── Tutup drawer saat link diklik (mobile) ──
+        if (sidebar) {
             sidebar.querySelectorAll('.sidebar-link').forEach(function (link) {
                 link.addEventListener('click', function () {
                     if (isMobile()) closeDrawer();
                 });
             });
+        }
 
-            // Tutup saat Escape ditekan
-            document.addEventListener('keydown', function (e) {
-                if (e.key === 'Escape' && sidebar.classList.contains('is-open')) {
-                    closeDrawer();
-                    burgerBtn.focus();
-                }
-            });
+        // ── Escape = tutup drawer ──
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape' && sidebar && sidebar.classList.contains('is-open')) {
+                closeDrawer();
+                if (btn) btn.focus();
+            }
+        });
 
-            // Tutup drawer otomatis saat resize ke desktop
-            window.addEventListener('resize', function () {
-                if (!isMobile()) {
-                    closeDrawer();
-                }
-            });
-        })();
+        // ── Resize: transisi antar mode ──
+        window.addEventListener('resize', function () {
+            if (isMobile()) {
+                // Pindah ke mobile: bersihkan state desktop, pastikan burger tetap burger
+                body.classList.remove('sidebar-collapsed', 'sidebar-open');
+                if (btn) btn.classList.remove('is-collapsed');
+                closeDrawer();
+            } else if (isSplitScreen()) {
+                // Pindah ke split-screen: tutup drawer, inisialisasi split-screen
+                closeDrawer();
+                body.classList.remove('sidebar-collapsed');
+                initSplitScreenState();
+            } else {
+                // Pindah ke desktop lebar: tutup drawer, inisialisasi desktop
+                closeDrawer();
+                body.classList.remove('sidebar-open');
+                initDesktopState();
+            }
+        });
+    })();
     </script>
 
     <script>
@@ -741,5 +857,7 @@
             }, { passive: true });
         });
     </script>
+    {{-- ── Script dari child views (modal, file upload, flatpickr, dll.) ── --}}
+    @stack('scripts')
 </body>
 </html>
