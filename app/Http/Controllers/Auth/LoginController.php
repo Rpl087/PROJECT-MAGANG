@@ -42,23 +42,6 @@ class LoginController extends Controller
         if (Auth::attempt($credentials, $request->boolean('remember'))) {
             $request->session()->regenerate();
 
-            // Jika "Ingat saya" dicentang, batasi cookie hanya 1 hari (bukan default 5 tahun)
-            if ($request->boolean('remember')) {
-                $rememberTokenName = Auth::getRecallerName(); // "remember_web_..."
-                cookie()->queue(
-                    cookie($rememberTokenName,
-                        cookie()->get($rememberTokenName) ?? '',
-                        60 * 24,          // 1 hari = 1440 menit
-                        config('session.path'),
-                        config('session.domain'),
-                        config('session.secure'),
-                        config('session.http_only'),
-                        false,
-                        config('session.same_site')
-                    )
-                );
-            }
-
             // Internship hanya bisa akses form input, langsung ke arsip.index
             // Admin diarahkan ke route yang dimaksud (atau arsip.index sebagai default)
             $intendedDefault = route('arsip.index');
