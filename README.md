@@ -11,9 +11,10 @@ Aplikasi web berbasis **Laravel 13.8** untuk pengarsipan surat masuk dan surat k
 - 📥 **Arsip Surat Masuk** — Input 17 field data + upload file PDF (maks. 10MB)
 - 📤 **Arsip Surat Keluar** — Input 18 field data + upload file PDF (maks. 10MB)
 - 🗑️ **Hapus Data** — Hanya Admin yang dapat menghapus baris data dari Google Sheets
-- 📊 **Google Sheets Integration** — Data tersimpan otomatis ke spreadsheet (sheet `dbSM` dan `dbSK`)
+- 📊 **Google Sheets Integration** — Data tersimpan ke `dbSM`/`dbSK`; tabel tampilan membaca dari sheet `SURAT MASUK` & `SURAT KELUAR`
 - 📎 **PDF Publik** — File PDF surat dapat diakses publik via URL `/pdf/{type}/{filename}` tanpa login
-- 📈 **Dashboard Rangkuman** — Statistik bulanan & tahunan surat masuk/keluar + pie chart kode klasifikasi (hanya Admin)
+- 📈 **Dashboard Rangkuman** — Statistik bulanan & tahunan + pie chart klasifikasi; header tabel seragam navy (hanya Admin)
+- 🖼️ **Logo Komdigi** — Logo resmi Komdigi ditampilkan di header aplikasi (menggantikan ikon generik)
 - 📱 **Responsive** — Hamburger/drawer menu untuk tampilan mobile & tablet
 - 🌐 **Ngrok Ready** — Trusted proxy dikonfigurasi agar bekerja lewat tunnel HTTPS
 - ⚡ **Apache Ready** — Virtual host Laragon dikonfigurasi, tidak perlu `php artisan serve`
@@ -372,7 +373,9 @@ project-magang/
 
 ## 📋 Kolom Google Sheets
 
-### Sheet `dbSM` — Surat Masuk (Kolom A–R)
+> Sheet `dbSM` dan `dbSK` adalah **sumber data tulis** (tempat form menyimpan data). Sheet `SURAT MASUK` dan `SURAT KELUAR` adalah **sheet tampilan** yang sudah di-combine per baris dan dibaca oleh tabel di aplikasi.
+
+### Sheet `dbSM` — Sumber Data Surat Masuk (Kolom A–R)
 
 | Kolom | Field |
 |---|---|
@@ -393,31 +396,58 @@ project-magang/
 | O | Retensi Aktif |
 | P | Retensi Inaktif |
 | Q | Retensi Keterangan |
-| R | **URL Publik File PDF** *(dapat diklik langsung dari spreadsheet)* |
+| R | **Filename PDF** *(digunakan untuk generate URL publik secara dinamis)* |
 
-### Sheet `dbSK` — Surat Keluar (Kolom A–S)
+### Sheet `SURAT MASUK` — Tampilan Tabel Aplikasi (Kolom A–Q)
+
+> Sheet ini dibaca oleh `ArsipController::index()` untuk ditampilkan di tabel admin. Data sudah di-combine menjadi 1 baris per entri.
+
+| Kolom | Field |
+|---|---|
+| A | No |
+| B | Kode Klasifikasi |
+| C | Uraian Berkas |
+| D | Kurun Waktu |
+| E | Jumlah Folder |
+| F | Nomor Item |
+| G | Uraian Arsip |
+| H | Tanggal Surat |
+| I | Jumlah Lembar |
+| J | Tingkat Perkembangan |
+| K | Lokasi Simpan |
+| L | Klasifikasi Keamanan |
+| M | Tingkat Akses |
+| N | Retensi Aktif |
+| O | Retensi Inaktif |
+| P | Retensi Keterangan |
+| Q | **Filename PDF** |
+
+### Sheet `dbSK` — Sumber Data Surat Keluar (Kolom A–S)
 
 | Kolom | Field |
 |---|---|
 | A | Timestamp |
-| B | Email Address |
-| C | Kode Klasifikasi |
-| D | Kode Surat |
-| E | Uraian Informasi Berkas |
-| F | Kurun Waktu |
-| G | Jumlah Folder |
-| H | Nomor Item Arsip |
-| I | **URL Publik File PDF** *(dapat diklik langsung dari spreadsheet)* |
-| J | Uraian Informasi Arsip |
-| K | Tanggal Surat |
-| L | Jumlah Lembar |
-| M | Tingkat Perkembangan |
-| N | Lokasi Simpan |
-| O | Klasifikasi Keamanan |
-| P | Tingkat Akses |
-| Q | Retensi Aktif |
-| R | Retensi Inaktif |
-| S | Retensi Keterangan |
+| B | Kode Klasifikasi |
+| C | Kode Surat |
+| D | Uraian Informasi Berkas |
+| E | Kurun Waktu |
+| F | Jumlah Folder |
+| G | Nomor Item Arsip |
+| H | **Filename PDF** |
+| I | Uraian Informasi Arsip |
+| J | Tanggal Surat |
+| K | Jumlah Lembar |
+| L | Tingkat Perkembangan |
+| M | Lokasi Simpan |
+| N | Klasifikasi Keamanan |
+| O | Tingkat Akses |
+| P | Retensi Aktif |
+| Q | Retensi Inaktif |
+| R | Retensi Keterangan |
+
+### Sheet `SURAT KELUAR` — Tampilan Tabel Aplikasi
+
+> Sheet ini dibaca oleh `SuratKeluarController::index()` untuk ditampilkan di tabel admin.
 
 ---
 
@@ -439,6 +469,10 @@ project-magang/
 | v1.7 | Fix `BadMethodCallException`: hapus blok cookie manual yang memanggil `CookieJar::get()` yang tidak ada |
 | v1.7 | Upgrade framework ke **Laravel 13.8** / PHP 8.4.20 |
 | v1.7 | Navigasi drawer: icon burger konsisten (☰ saat tutup, ← saat buka) di semua ukuran layar |
+| v1.8 | **Logo Komdigi**: header aplikasi menggunakan `komdigi-logo.png` menggantikan SVG generik |
+| v1.8 | **Tabel Surat Masuk**: baca dari sheet `SURAT MASUK` (sudah di-combine per baris) bukan `dbSM` |
+| v1.8 | **Kolom Kode Surat** dihapus dari tampilan tabel surat masuk (tidak tersedia di sheet display) |
+| v1.8 | **Warna header tabel** Dashboard diseragamkan dengan tabel arsip (navy primary + teks putih) |
 
 ---
 
