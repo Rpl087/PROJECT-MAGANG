@@ -303,9 +303,13 @@
 .db-table { width: 100%; border-collapse: collapse; font-size: .875rem; }
 .db-table th {
     padding: .65rem 1rem; text-align: left; font-size: .75rem; font-weight: 600;
-    color: var(--color-text-muted); text-transform: uppercase; letter-spacing: .06em;
-    background: var(--color-bg); border-bottom: 1px solid var(--color-border);
+    color: #ffffff; text-transform: uppercase; letter-spacing: .06em;
+    background: var(--color-primary); border-bottom: none;
     white-space: nowrap;
+}
+[data-theme="dark"] .db-table th {
+    background: var(--color-primary-hover, #15314f);
+    color: #e2e8f0;
 }
 .db-table td { padding: .65rem 1rem; border-bottom: 1px solid var(--color-border); vertical-align: middle; color: var(--color-text); }
 .db-table tbody tr:last-child td { border-bottom: none; }

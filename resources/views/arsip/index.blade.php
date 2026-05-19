@@ -22,7 +22,7 @@
             </div>
             <div>
                 <h3 class="section-title">Daftar Surat Masuk Tersimpan</h3>
-                <p class="section-desc">Data diambil langsung dari Google Spreadsheet (sheet: dbSM)</p>
+                <p class="section-desc">Data diambil langsung dari Google Spreadsheet (sheet: SURAT MASUK)</p>
             </div>
         </div>
 
@@ -40,7 +40,6 @@
                         <th>No</th>
                         <th>Tanggal Surat</th>
                         <th>Kode Klasifikasi</th>
-                        <th>Kode Surat</th>
                         <th>Uraian Berkas</th>
                         <th>Link Folder</th>
                         <th>Aksi</th>
@@ -50,17 +49,15 @@
                     @forelse($rows as $no => $item)
                         @php
                             $d           = $item['data'];
-                            // Indeks kolom sesuai struktur dbSM (A–R):
-                            // A(0)=Timestamp | B(1)=Kode Klas | C(2)=Kode Surat | D(3)=Uraian Berkas
-                            // E(4)=Kurun Waktu | F(5)=Jumlah Folder | G(6)=Nomor Item | H(7)=Uraian Arsip
-                            // I(8)=Tanggal Surat | J(9)=Jumlah Lembar | ... | R(17)=Link Folder
-                            $tanggal      = $d[8]  ?? '-';  // I: Tanggal Surat
+                            // Indeks kolom sesuai struktur SURAT MASUK (A–Q):
+                            // A(0)=NO | B(1)=Kode Klas | C(2)=Uraian Berkas | D(3)=Kurun Waktu
+                            // E(4)=Jumlah Folder | F(5)=Nomor Item | G(6)=Uraian Arsip
+                            // H(7)=Tanggal Surat | I(8)=Jumlah Lembar | ... | Q(16)=Link Folder
+                            $tanggal      = $d[7]  ?? '-';  // H: Tanggal Surat
                             $kodeKlasRaw  = $d[1]  ?? '';   // B: Kode Klasifikasi
                             $kodeKlas     = (str_starts_with($kodeKlasRaw, '#') || $kodeKlasRaw === '') ? '—' : $kodeKlasRaw;
-                            $kodeSuratRaw = $d[2]  ?? '';   // C: Kode Surat
-                            $kodeSurat    = (str_starts_with($kodeSuratRaw, '#') || $kodeSuratRaw === '') ? '—' : $kodeSuratRaw;
-                            $uraian       = $d[3]  ?? '-';  // D: Uraian Informasi Berkas
-                            $rawLink      = trim($d[17] ?? '');  // R: Link Folder (filename atau URL lama)
+                            $uraian       = $d[2]  ?? '-';  // C: Uraian Berkas
+                            $rawLink      = trim($d[16] ?? '');  // Q: Link Folder (filename atau URL lama)
                             // Generate URL dinamis jika berupa filename; gunakan apa adanya jika sudah URL
                             $pdfUrl = '';
                             if ($rawLink !== '') {
@@ -73,7 +70,6 @@
                             <td class="td-center td-no">{{ $no + 1 }}</td>
                             <td class="td-nowrap">{{ $tanggal }}</td>
                             <td><span class="badge-kode {{ $kodeKlas === '—' ? 'badge-kode-empty' : '' }}">{{ $kodeKlas }}</span></td>
-                            <td><span class="badge-kode {{ $kodeSurat === '—' ? 'badge-kode-empty' : '' }}">{{ $kodeSurat }}</span></td>
                             <td class="td-uraian">{{ Str::limit($uraian, 60) }}</td>
                             <td class="td-center">
                                 @if($pdfUrl)
@@ -103,7 +99,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="td-empty">
+                            <td colspan="6" class="td-empty">
                                 <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                                 <span>Belum ada data surat masuk tersimpan.</span>
                             </td>

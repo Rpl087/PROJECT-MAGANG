@@ -396,14 +396,8 @@
                     </span>
                 </button>
                 <div class="brand">
-                    <div class="brand-icon">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                            <polyline points="14 2 14 8 20 8"/>
-                            <line x1="16" y1="13" x2="8" y2="13"/>
-                            <line x1="16" y1="17" x2="8" y2="17"/>
-                            <polyline points="10 9 9 9 8 9"/>
-                        </svg>
+                    <div class="brand-icon" style="background:transparent;border:none;box-shadow:none;padding:0;display:flex;align-items:center;">
+                        <img src="{{ asset('komdigi-logo.png') }}" alt="Logo Komdigi" style="height:36px;width:auto;object-fit:contain;display:block;">
                     </div>
                     <div>
                         <h1 class="brand-title">Arsip Surat BPSDMP</h1>

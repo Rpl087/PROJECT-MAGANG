@@ -45,15 +45,15 @@ class ArsipController extends Controller
 
     /**
      * Tampilkan daftar surat masuk dari Google Sheets + form input.
-     * - Admin      : membaca dari sheet "dbSM" (sumber data asli, sama dengan grafik dashboard)
+     * - Admin      : membaca dari sheet "SURAT MASUK" (sheet tampilan — sudah di-combine 1 baris/entri)
      * - Internship : hanya menampilkan form input (rows kosong, tanpa tabel)
      *
-     * Struktur dbSM (A–R):
-     *   A(0)=Timestamp | B(1)=Kode Klas | C(2)=Kode Surat | D(3)=Uraian Berkas
-     *   E(4)=Kurun Waktu | F(5)=Jumlah Folder | G(6)=Nomor Item | H(7)=Uraian Arsip
-     *   I(8)=Tanggal Surat | J(9)=Jumlah Lembar | K(10)=Tingkat Perkembangan
-     *   L(11)=Lokasi Simpan | M(12)=Klas Keamanan | N(13)=Tingkat Akses
-     *   O(14)=Retensi Aktif | P(15)=Retensi Inaktif | Q(16)=Retensi Ket | R(17)=Link Folder
+     * Struktur SURAT MASUK (A–Q):
+     *   A(0)=NO | B(1)=Kode Klas | C(2)=Uraian Berkas | D(3)=Kurun Waktu
+     *   E(4)=Jumlah Folder | F(5)=Nomor Item | G(6)=Uraian Arsip
+     *   H(7)=Tanggal Surat | I(8)=Jumlah Lembar | J(9)=Tingkat Perkembangan
+     *   K(10)=Lokasi Simpan | L(11)=Klas Keamanan | M(12)=Tingkat Akses
+     *   N(13)=Retensi Aktif | O(14)=Retensi Inaktif | P(15)=Retensi Ket | Q(16)=Link Folder
      */
     public function index()
     {
@@ -64,15 +64,16 @@ class ArsipController extends Controller
         if ($isAdmin) {
             try {
                 [$service, $spreadsheetId] = $this->getSheetService();
-                // Baca dari dbSM — sumber data asli, SAMA dengan yang digunakan grafik dashboard
-                $response = $service->spreadsheets_values->get($spreadsheetId, 'dbSM!A:R');
+                // Baca dari sheet tampilan "SURAT MASUK" (sudah di-combine 1 baris per entri)
+                // HANYA untuk tampilan tabel ini — store() & destroy() tetap menarget dbSM
+                $response = $service->spreadsheets_values->get($spreadsheetId, 'SURAT MASUK!A:Q');
                 $values   = $response->getValues() ?? [];
 
                 // Skip baris header (index 0), simpan data beserta index aslinya di sheet
-                // Filter: hanya tampilkan baris yang punya Tanggal Surat (col I/index 8) terisi
+                // Filter: hanya tampilkan baris yang punya Tanggal Surat (col H/index 7) terisi
                 foreach ($values as $i => $row) {
                     if ($i === 0) continue;
-                    $tanggal = trim($row[8] ?? ''); // I: Tanggal Surat (index 8 di dbSM)
+                    $tanggal = trim($row[7] ?? ''); // H: Tanggal Surat (index 7 di SURAT MASUK)
                     // Lewati baris tanpa tanggal — indikator baris kosong/invalid
                     if (empty($tanggal)) continue;
                     $rows[] = ['index' => $i, 'data' => $row];
