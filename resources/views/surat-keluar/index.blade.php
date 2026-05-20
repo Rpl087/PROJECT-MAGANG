@@ -5,7 +5,11 @@
 @section('content')
 <div class="page-header">
     <h2 class="page-title">Surat Keluar</h2>
-    <p class="page-description">Daftar arsip surat keluar dan formulir penambahan data baru.</p>
+    @if($isAdmin ?? false)
+        <p class="page-description">Lihat daftar arsip tersimpan dan tambah surat keluar baru ke dalam sistem.</p>
+    @else
+        <p class="page-description">Gunakan formulir di bawah untuk mengarsipkan surat keluar ke dalam sistem.</p>
+    @endif
 </div>
 
 {{-- ── TABEL DAFTAR SURAT KELUAR (hanya tampil untuk admin) ───────────────── --}}
@@ -36,9 +40,8 @@
                         <th>No</th>
                         <th>Tanggal Surat</th>
                         <th>Kode Klasifikasi</th>
-                        <th>Kode Surat</th>
                         <th>Uraian Berkas</th>
-                        <th>File PDF</th>
+                        <th>Link Folder</th>
                         <th>Aksi</th>
                     </tr>
                 </thead>
@@ -46,17 +49,17 @@
                     @forelse($rows as $no => $item)
                         @php
                             $d = $item['data'];
-                            // Indeks kolom sesuai struktur SURAT KELUAR (tanpa Email)
-                            // A(0)=Timestamp | B(1)=Kode Klas | C(2)=Kode Surat | D(3)=Uraian Berkas
-                            // E(4)=Kurun Waktu | F(5)=Jumlah Folder | G(6)=Nomor Item
-                            // H(7)=PDF Surat Keluar | I(8)=Uraian Arsip | J(9)=Tanggal Surat
-                            $tanggal   = $d[9]  ?? '-';  // J: Tanggal Surat
-                            $kodeKlasRaw = $d[1] ?? '';  // B: Kode Klasifikasi
-                            $kodeKlas  = (str_starts_with($kodeKlasRaw, '#') || $kodeKlasRaw === '') ? '—' : $kodeKlasRaw;
-                            $kodeSuratRaw = $d[2] ?? ''; // C: Kode Surat
-                            $kodeSurat = (str_starts_with($kodeSuratRaw, '#') || $kodeSuratRaw === '') ? '—' : $kodeSuratRaw;
-                            $uraian    = $d[3]  ?? '-';  // D: Uraian Informasi Berkas
-                            $rawFile  = trim($d[7] ?? '');  // H: Surat Keluar (filename atau URL lama)
+                            // Indeks kolom sesuai struktur SURAT KELUAR (A–Q):
+                            // A(0)=NO | B(1)=Kode Klasifikasi | C(2)=Uraian Informasi Berkas | D(3)=Kurun Waktu
+                            // E(4)=Jumlah Folder | F(5)=Nomor Item Arsip | G(6)=Uraian Informasi Arsip
+                            // H(7)=Tanggal Surat | I(8)=Jumlah Lembar | J(9)=Tingkat Perkembangan
+                            // K(10)=Lokasi Simpan | L(11)=Klas Keamanan | M(12)=Tingkat Akses
+                            // N(13)=Retensi Aktif | O(14)=Retensi Inaktif | P(15)=Retensi Ket | Q(16)=Link Folder
+                            $tanggal     = $d[7]  ?? '-';  // H: Tanggal Surat
+                            $kodeKlasRaw = $d[1]  ?? '';   // B: Kode Klasifikasi
+                            $kodeKlas    = (str_starts_with($kodeKlasRaw, '#') || $kodeKlasRaw === '') ? '—' : $kodeKlasRaw;
+                            $uraian      = $d[2]  ?? '-';  // C: Uraian Informasi Berkas
+                            $rawFile     = trim($d[16] ?? '');  // Q: Link Folder (filename atau URL lama)
                             // Generate URL dinamis jika berupa filename; gunakan apa adanya jika sudah URL
                             $pdfUrl = '';
                             if ($rawFile !== '') {
@@ -69,7 +72,6 @@
                             <td class="td-center td-no">{{ $no + 1 }}</td>
                             <td class="td-nowrap">{{ $tanggal }}</td>
                             <td><span class="badge-kode {{ $kodeKlas === '—' ? 'badge-kode-empty' : '' }}">{{ $kodeKlas }}</span></td>
-                            <td><span class="badge-kode {{ $kodeSurat === '—' ? 'badge-kode-empty' : '' }}">{{ $kodeSurat }}</span></td>
                             <td class="td-uraian">{{ Str::limit($uraian, 60) }}</td>
                             <td class="td-center">
                                 @if($pdfUrl)
@@ -99,7 +101,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="td-empty">
+                            <td colspan="6" class="td-empty">
                                 <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                                 <span>Belum ada data surat keluar tersimpan.</span>
                             </td>
@@ -454,7 +456,7 @@
 .td-center { text-align:center; }
 .td-nowrap { white-space:nowrap; }
 .td-no { width:48px; font-weight:600; color:var(--color-text-muted); }
-.td-uraian { max-width:240px; }
+.td-uraian { max-width:240px; word-break:break-word; overflow-wrap:break-word; white-space:normal; }
 .td-muted { color:var(--color-text-muted); }
 .td-empty { text-align:center; padding:2.5rem 1rem !important; color:var(--color-text-muted); }
 .td-empty svg { display:block; margin:0 auto .75rem; opacity:.35; }
@@ -626,6 +628,7 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 </script>
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/id.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     var BULAN_ID = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];

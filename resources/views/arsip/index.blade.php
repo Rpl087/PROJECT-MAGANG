@@ -432,7 +432,7 @@
 .td-center { text-align:center; }
 .td-nowrap { white-space:nowrap; }
 .td-no { width:48px; font-weight:600; color:var(--color-text-muted,#8892a4); }
-.td-uraian { max-width:240px; }
+.td-uraian { max-width:240px; word-break:break-word; overflow-wrap:break-word; white-space:normal; }
 .td-muted { color:var(--color-text-muted,#8892a4); }
 .td-empty { text-align:center; padding:2.5rem 1rem !important; color:var(--color-text-muted,#8892a4); }
 .td-empty svg { display:block; margin:0 auto .75rem; opacity:.35; }

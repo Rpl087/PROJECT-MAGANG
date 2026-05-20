@@ -52,8 +52,15 @@ class SuratKeluarController extends Controller
 
     /**
      * Tampilkan daftar surat keluar dari Google Sheets + form input.
-     * - Admin   : membaca dari sheet "SURAT KELUAR" dan dapat menghapus baris
-     * - Internship: hanya menampilkan form input (rows kosong, tanpa tabel)
+     * - Admin      : membaca dari sheet "SURAT KELUAR" (sheet tampilan)
+     * - Internship : hanya menampilkan form input (rows kosong, tanpa tabel)
+     *
+     * Struktur SURAT KELUAR (A–Q):
+     *   A(0)=NO | B(1)=Kode Klasifikasi | C(2)=Uraian Informasi Berkas | D(3)=Kurun Waktu
+     *   E(4)=Jumlah Folder | F(5)=Nomor Item Arsip | G(6)=Uraian Informasi Arsip
+     *   H(7)=Tanggal Surat | I(8)=Jumlah Lembar | J(9)=Tingkat Perkembangan
+     *   K(10)=Lokasi Simpan | L(11)=Klas Keamanan | M(12)=Tingkat Akses
+     *   N(13)=Retensi Aktif | O(14)=Retensi Inaktif | P(15)=Retensi Ket | Q(16)=Link Folder
      */
     public function index()
     {
@@ -64,14 +71,16 @@ class SuratKeluarController extends Controller
         if ($isAdmin) {
             try {
                 [$service, $spreadsheetId] = $this->getSheetService();
-                $response = $service->spreadsheets_values->get($spreadsheetId, 'SURAT KELUAR!A:R');
+                // Baca dari sheet tampilan "SURAT KELUAR" (sudah di-combine 1 baris per entri)
+                // HANYA untuk tampilan tabel — store() & destroy() tetap menarget dbSK
+                $response = $service->spreadsheets_values->get($spreadsheetId, 'SURAT KELUAR!A:Q');
                 $values   = $response->getValues() ?? [];
 
                 // Skip baris header (index 0), simpan data beserta index aslinya di sheet
-                // Filter: hanya tampilkan baris yang punya Tanggal Surat (col J/index 9) terisi
+                // Filter: hanya tampilkan baris yang punya Tanggal Surat (col H/index 7) terisi
                 foreach ($values as $i => $row) {
                     if ($i === 0) continue;
-                    $tanggal = trim($row[9] ?? ''); // J: Tanggal Surat
+                    $tanggal = trim($row[7] ?? ''); // H: Tanggal Surat (index 7 di SURAT KELUAR)
                     // Lewati baris tanpa tanggal — indikator baris kosong/invalid
                     if (empty($tanggal)) continue;
                     $rows[] = ['index' => $i, 'data' => $row];
@@ -110,9 +119,9 @@ class SuratKeluarController extends Controller
                     ->with('error', 'Data tidak ditemukan di sheet SURAT KELUAR.');
             }
 
-            // PDF link ada di kolom H (index 7) di sheet SURAT KELUAR (tanpa kolom Email)
+            // PDF link ada di kolom Q (index 16) di sheet SURAT KELUAR
             // Gunakan sebagai unique identifier untuk mencari row di dbSK
-            $pdfLink = trim($targetRow[7] ?? '');
+            $pdfLink = trim($targetRow[16] ?? '');
             Log::info('[SK destroy] PDF link yang dicari di dbSK: ' . $pdfLink);
 
             // ── Langkah 2: Cari row yang cocok di dbSK berdasarkan PDF link ────────
