@@ -351,9 +351,8 @@ project-magang/
 │       ├── auth/
 │       │   └── login.blade.php              ← Halaman login (dark glassmorphism)
 │       ├── arsip/
-│       │   └── index.blade.php              ← Tabel + form surat masuk (RBAC-aware)
-│       ├── surat-keluar/
-│       │   └── index.blade.php              ← Tabel + form surat keluar (RBAC-aware)
+│       │   ├── index.blade.php              ← Tabel + form surat masuk (RBAC-aware)
+│       │   └── surat-keluar.blade.php       ← Tabel + form surat keluar (RBAC-aware)
 │       ├── dashboard/
 │       │   └── index.blade.php              ← Dashboard statistik & chart (admin only)
 │       └── layouts/
@@ -473,6 +472,12 @@ project-magang/
 | v1.8 | **Tabel Surat Masuk**: baca dari sheet `SURAT MASUK` (sudah di-combine per baris) bukan `dbSM` |
 | v1.8 | **Kolom Kode Surat** dihapus dari tampilan tabel surat masuk (tidak tersedia di sheet display) |
 | v1.8 | **Warna header tabel** Dashboard diseragamkan dengan tabel arsip (navy primary + teks putih) |
+| v1.9 | **View Surat Keluar** dipindah ke `resources/views/arsip/surat-keluar.blade.php` (konsisten) |
+| v1.9 | **Anti-FOUC**: CSS tabel dipindah ke `@push('styles')` → dirender di `<head>`, bukan bottom of body |
+| v1.9 | **Skeleton Loading**: shimmer placeholder tabel sebelum data ditampilkan |
+| v1.9 | **Page Loading Bar**: indikator progress tipis di atas halaman saat navigasi |
+| v1.9 | **Google Fonts non-blocking**: preload + onload trick, tidak lagi render-blocking |
+| v1.9 | **Security**: `.gitignore` diperkuat — SQLite, credentials, ngrok, key files terlindungi |
 
 ---
 

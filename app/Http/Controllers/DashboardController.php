@@ -30,17 +30,15 @@ class DashboardController extends Controller
             $service       = new Sheets($client);
             $spreadsheetId = env('GOOGLE_SHEET_ID');
 
-            // ── Baca sheet dbSM (Surat Masuk) ──────────────────────────────
-            // Kolom: A=Timestamp, B=Kode Klasifikasi, I=Tanggal Surat
+            // Baca sheet dbSM (Surat Masuk)
             $smResponse = $service->spreadsheets_values->get($spreadsheetId, 'dbSM!A:R');
             $smRows     = $smResponse->getValues() ?? [];
 
-            // ── Baca sheet dbSK (Surat Keluar) ─────────────────────────────
-            // Kolom: A=Timestamp, C=Kode Klasifikasi, K=Tanggal Surat
-            $skResponse = $service->spreadsheets_values->get($spreadsheetId, 'dbSK!A:S');
+            // Baca sheet SURAT KELUAR
+            $skResponse = $service->spreadsheets_values->get($spreadsheetId, 'SURAT KELUAR!A:Q');
             $skRows     = $skResponse->getValues() ?? [];
 
-            // Hapus baris header (baris pertama)
+            // Hapus baris header
             if (!empty($smRows)) array_shift($smRows);
             if (!empty($skRows)) array_shift($skRows);
 
@@ -48,29 +46,30 @@ class DashboardController extends Controller
             $currentMonth = (int) date('m');
 
             // ── Proses Surat Masuk ─────────────────────────────────────────
-            // Index kolom: B=1 (Kode Klasifikasi), I=8 (Tanggal Surat)
+            // B(1)=Kode Klasifikasi, I(8)=Tanggal Surat
             $smData = $this->processRows($smRows, dateColIndex: 8, klasifikasiColIndex: 1);
 
             // ── Proses Surat Keluar ────────────────────────────────────────
-            // Index kolom: C=2 (Kode Klasifikasi), K=10 (Tanggal Surat)
-            $skData = $this->processRows($skRows, dateColIndex: 10, klasifikasiColIndex: 2);
+            // B(1)=Kode Klasifikasi, H(7)=Tanggal Surat — filter baris tanpa tanggal
+            $skRowsFiltered = array_filter($skRows, fn($r) => !empty(trim($r[7] ?? '')));
+            $skData = $this->processRows(array_values($skRowsFiltered), dateColIndex: 7, klasifikasiColIndex: 1);
 
             // ── Rekap Bulanan (12 bulan dalam tahun berjalan) ──────────────
-            $monthlyRecap = [];
-            $bulanNames   = [
+            $bulanNames = [
                 1  => 'Januari',  2  => 'Februari', 3  => 'Maret',
                 4  => 'April',    5  => 'Mei',       6  => 'Juni',
                 7  => 'Juli',     8  => 'Agustus',   9  => 'September',
                 10 => 'Oktober',  11 => 'November',  12 => 'Desember',
             ];
 
-            $totalSMYear = 0;
-            $totalSKYear = 0;
+            $monthlyRecap = [];
+            $totalSMYear  = 0;
+            $totalSKYear  = 0;
 
             for ($m = 1; $m <= 12; $m++) {
-                $key      = $currentYear . '-' . str_pad($m, 2, '0', STR_PAD_LEFT);
-                $smCount  = $smData['monthly'][$key] ?? 0;
-                $skCount  = $skData['monthly'][$key] ?? 0;
+                $key     = $currentYear . '-' . str_pad($m, 2, '0', STR_PAD_LEFT);
+                $smCount = $smData['monthly'][$key] ?? 0;
+                $skCount = $skData['monthly'][$key] ?? 0;
                 $totalSMYear += $smCount;
                 $totalSKYear += $skCount;
 
@@ -82,13 +81,13 @@ class DashboardController extends Controller
                 ];
             }
 
-            // ── Pie: Klasifikasi Surat Masuk bulan ini ─────────────────────
+            // ── Data Pie Klasifikasi ────────────────────────────────────────
             $currentMonthKey = $currentYear . '-' . str_pad($currentMonth, 2, '0', STR_PAD_LEFT);
 
-            $smPieBulan  = $smData['klasifikasiMonthly'][$currentMonthKey] ?? [];
-            $skPieBulan  = $skData['klasifikasiMonthly'][$currentMonthKey] ?? [];
-            $smPieTahun  = $smData['klasifikasiYearly'][$currentYear]      ?? [];
-            $skPieTahun  = $skData['klasifikasiYearly'][$currentYear]      ?? [];
+            $smPieBulan = $smData['klasifikasiMonthly'][$currentMonthKey] ?? [];
+            $skPieBulan = $skData['klasifikasiMonthly'][$currentMonthKey] ?? [];
+            $smPieTahun = $smData['klasifikasiYearly'][$currentYear]      ?? [];
+            $skPieTahun = $skData['klasifikasiYearly'][$currentYear]      ?? [];
 
             return view('dashboard.index', compact(
                 'monthlyRecap',
@@ -122,22 +121,20 @@ class DashboardController extends Controller
     /**
      * Memproses baris spreadsheet dan mengelompokkan per bulan & per tahun.
      *
-     * @param array $rows              Baris data (sudah tanpa header)
-     * @param int   $dateColIndex      Indeks kolom tanggal surat (0-based)
-     * @param int   $klasifikasiColIndex Indeks kolom kode klasifikasi (0-based)
+     * @param array $rows                 Baris data (sudah tanpa header)
+     * @param int   $dateColIndex         Indeks kolom tanggal surat (0-based)
+     * @param int   $klasifikasiColIndex  Indeks kolom kode klasifikasi (0-based)
      */
     private function processRows(array $rows, int $dateColIndex, int $klasifikasiColIndex): array
     {
-        $monthly              = [];   // ['YYYY-MM' => count]
-        $klasifikasiMonthly   = [];   // ['YYYY-MM' => ['KODE' => count]]
-        $klasifikasiYearly    = [];   // [YYYY => ['KODE' => count]]
+        $monthly            = [];  // ['YYYY-MM' => count]
+        $klasifikasiMonthly = [];  // ['YYYY-MM' => ['KODE' => count]]
+        $klasifikasiYearly  = [];  // [YYYY => ['KODE' => count]]
 
         foreach ($rows as $row) {
-            // Ambil tanggal surat (bisa kosong)
             $rawDate = $row[$dateColIndex] ?? '';
             if (empty($rawDate)) continue;
 
-            // Parse tanggal (mendukung nama bulan Indonesia & Inggris)
             $ts = $this->parseDate($rawDate);
             if ($ts === false) continue;
 
@@ -145,18 +142,23 @@ class DashboardController extends Controller
             $month = (int) date('m', $ts);
             $key   = $year . '-' . str_pad($month, 2, '0', STR_PAD_LEFT);
 
-            // Hitung per bulan
             $monthly[$key] = ($monthly[$key] ?? 0) + 1;
 
-            // Kode klasifikasi
-            $kode = trim($row[$klasifikasiColIndex] ?? 'Tidak Diketahui');
-            if (empty($kode)) $kode = 'Tidak Diketahui';
+            $kode = trim($row[$klasifikasiColIndex] ?? '');
+            // Abaikan formula error Google Sheets (misal #N/A, #REF!) untuk grouping
+            if (empty($kode) || str_starts_with($kode, '#')) {
+                $kode = 'Tidak Diketahui';
+            } else {
+                // Normalisasi: ambil hanya prefix huruf di awal kode
+                // Contoh: "KP 03" → "KP", "PR.02" → "PR", "KP/01" → "KP"
+                if (preg_match('/^([A-Za-z]+)/', $kode, $m)) {
+                    $kode = strtoupper($m[1]);
+                }
+            }
 
-            // Klasifikasi per bulan
             $klasifikasiMonthly[$key][$kode] = ($klasifikasiMonthly[$key][$kode] ?? 0) + 1;
-
-            // Klasifikasi per tahun
             $klasifikasiYearly[$year][$kode] = ($klasifikasiYearly[$year][$kode] ?? 0) + 1;
+
         }
 
         return compact('monthly', 'klasifikasiMonthly', 'klasifikasiYearly');
@@ -166,11 +168,11 @@ class DashboardController extends Controller
      * Parse tanggal dari berbagai format, termasuk nama bulan Indonesia.
      *
      * Format yang didukung:
-     *   - "11 Mei 2026"      → tanggal bulan(id) tahun
-     *   - "11 May 2026"      → tanggal bulan(en) tahun
-     *   - "2026-05-11"       → YYYY-MM-DD
-     *   - "11/05/2026"       → DD/MM/YYYY
-     *   - "11-05-2026"       → DD-MM-YYYY
+     *   - "11 Mei 2026"   → tanggal bulan(id) tahun
+     *   - "11 May 2026"   → tanggal bulan(en) tahun
+     *   - "2026-05-11"    → YYYY-MM-DD
+     *   - "11/05/2026"    → DD/MM/YYYY
+     *   - "11-05-2026"    → DD-MM-YYYY
      *
      * @return int|false  Unix timestamp atau false jika gagal
      */
@@ -179,7 +181,6 @@ class DashboardController extends Controller
         $raw = trim($raw);
         if (empty($raw)) return false;
 
-        // Tabel konversi nama bulan Indonesia → Inggris
         $idToEn = [
             'januari'   => 'January',
             'februari'  => 'February',
@@ -195,15 +196,14 @@ class DashboardController extends Controller
             'desember'  => 'December',
         ];
 
-        // Ganti nama bulan Indonesia (case-insensitive) dengan bahasa Inggris
         $normalized = preg_replace_callback(
             '/\b(' . implode('|', array_keys($idToEn)) . ')\b/ui',
             fn($m) => $idToEn[strtolower($m[1])],
             $raw
         );
 
-        // Format DD/MM/YYYY atau DD-MM-YYYY → ubah ke YYYY-MM-DD agar strtotime aman
-        if (preg_match('/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/', $normalized, $parts)) {
+        // DD/MM/YYYY atau DD-MM-YYYY → YYYY-MM-DD
+        if (preg_match('/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/', $normalized, $parts)) {
             $normalized = "{$parts[3]}-{$parts[2]}-{$parts[1]}";
         }
 

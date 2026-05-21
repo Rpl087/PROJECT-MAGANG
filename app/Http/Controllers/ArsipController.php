@@ -64,17 +64,12 @@ class ArsipController extends Controller
         if ($isAdmin) {
             try {
                 [$service, $spreadsheetId] = $this->getSheetService();
-                // Baca dari sheet tampilan "SURAT MASUK" (sudah di-combine 1 baris per entri)
-                // HANYA untuk tampilan tabel ini — store() & destroy() tetap menarget dbSM
                 $response = $service->spreadsheets_values->get($spreadsheetId, 'SURAT MASUK!A:Q');
                 $values   = $response->getValues() ?? [];
 
-                // Skip baris header (index 0), simpan data beserta index aslinya di sheet
-                // Filter: hanya tampilkan baris yang punya Tanggal Surat (col H/index 7) terisi
                 foreach ($values as $i => $row) {
                     if ($i === 0) continue;
-                    $tanggal = trim($row[7] ?? ''); // H: Tanggal Surat (index 7 di SURAT MASUK)
-                    // Lewati baris tanpa tanggal — indikator baris kosong/invalid
+                    $tanggal = trim($row[7] ?? '');
                     if (empty($tanggal)) continue;
                     $rows[] = ['index' => $i, 'data' => $row];
                 }

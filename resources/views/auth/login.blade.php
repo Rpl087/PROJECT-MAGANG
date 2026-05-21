@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Login – Sistem Arsip Surat Digital BPSDMP">
     <title>Login — Arsip Surat BPSDMP</title>
+    <link rel="icon" type="image/png" href="/komdigi-logo.png">
+    <link rel="shortcut icon" type="image/png" href="/komdigi-logo.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -146,20 +148,17 @@
         }
 
         .brand-icon-wrap {
-            width: 64px; height: 64px;
-            background: linear-gradient(135deg, rgba(59,130,246,0.25), rgba(99,102,241,0.2));
-            border: 1px solid rgba(59,130,246,0.3);
-            border-radius: 18px;
-            display: flex; align-items: center; justify-content: center;
+            width: auto;
+            height: auto;
+            background: transparent;
+            border: none;
+            border-radius: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             margin-bottom: 18px;
-            box-shadow:
-                0 0 32px rgba(59,130,246,0.2),
-                inset 0 1px 0 rgba(255,255,255,0.08);
-        }
-
-        .brand-icon-wrap svg {
-            color: #60a5fa;
-            filter: drop-shadow(0 0 8px rgba(96,165,250,0.6));
+            box-shadow: none;
+            gap: 0;
         }
 
         .brand-title {
@@ -396,13 +395,11 @@
             <!-- Brand -->
             <div class="brand">
                 <div class="brand-icon-wrap">
-                    <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                        <polyline points="14 2 14 8 20 8"/>
-                        <line x1="16" y1="13" x2="8" y2="13"/>
-                        <line x1="16" y1="17" x2="8" y2="17"/>
-                        <polyline points="10 9 9 9 8 9"/>
-                    </svg>
+                    <img src="/komdigi-logo.png"  alt="Logo Komdigi"
+                         style="height:64px;width:auto;object-fit:contain;display:block;flex-shrink:0;">
+                    <div style="width:1px;height:52px;background:rgba(255,255,255,0.15);border-radius:1px;margin:0 16px;flex-shrink:0;"></div>
+                    <img src="/blsdm-logo.png" alt="Logo BLSDM Komdigi Manado"
+                         style="height:64px;width:auto;object-fit:contain;display:block;flex-shrink:0;">
                 </div>
                 <h1 class="brand-title">Sistem Arsip Surat</h1>
                 <p class="brand-subtitle">BPSDMP</p>

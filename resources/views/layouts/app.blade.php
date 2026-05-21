@@ -5,10 +5,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="description" content="Sistem Arsip Surat Digital BPSDMP - Input dan kelola arsip surat secara efisien">
     <title>@yield('title', 'Arsip Surat') — BPSDMP</title>
+    <link rel="icon" type="image/png" href="{{ asset('komdigi-logo.png') }}">
+    <link rel="shortcut icon" type="image/png" href="{{ asset('komdigi-logo.png') }}">
+    {{-- Preconnect untuk font Google (non-blocking) --}}
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    {{-- Google Fonts: non-blocking via media trick (mencegah render-blocking / FOUT) --}}
+    <link rel="preload" as="style"
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+          onload="this.rel='stylesheet'">
+    <noscript>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap">
+    </noscript>
+    {{-- CSS Utama (render-blocking secara sengaja agar tidak ada FOUC dari design system) --}}
     <link rel="stylesheet" href="{{ asset('css/app.css') }}?v={{ filemtime(public_path('css/app.css')) }}">
+    {{-- CSS dari child views (tabel, modal, flatpickr, dll.) — diinjek di <head> agar tidak FOUC --}}
+    @stack('styles')
     <style>
         .header-user {
             display: flex;
@@ -32,21 +44,21 @@
             align-items: center;
             gap: 5px;
             padding: 5px 11px;
-            background: rgba(239, 68, 68, 0.1);
-            border: 1px solid rgba(239, 68, 68, 0.25);
+            background: rgba(239, 68, 68, 0.13);
+            border: 1px solid rgba(239, 68, 68, 0.38);
             border-radius: 7px;
             font-size: 0.78rem;
-            font-weight: 500;
+            font-weight: 600;
             font-family: inherit;
-            color: #f87171;
+            color: #dc2626;
             cursor: pointer;
             transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
             white-space: nowrap;
         }
         .btn-logout:hover {
-            background: rgba(239, 68, 68, 0.2);
-            border-color: rgba(239, 68, 68, 0.45);
-            color: #fca5a5;
+            background: rgba(239, 68, 68, 0.22);
+            border-color: rgba(239, 68, 68, 0.55);
+            color: #b91c1c;
         }
 
         /* ══════════════════════════════════════════════════════════
@@ -252,13 +264,13 @@
         .btn-logout-drawer {
             display: flex; align-items: center; gap: 8px; width: 100%;
             padding: 10px 12px;
-            background: rgba(239,68,68,0.08);
-            border: 1px solid rgba(239,68,68,0.2);
+            background: rgba(239,68,68,0.12);
+            border: 1px solid rgba(239,68,68,0.32);
             border-radius: 8px; font-size: 0.875rem; font-weight: 600;
-            font-family: inherit; color: #f87171; cursor: pointer;
+            font-family: inherit; color: #dc2626; cursor: pointer;
             transition: background 0.2s ease, border-color 0.2s ease;
         }
-        .btn-logout-drawer:hover { background: rgba(239,68,68,0.16); border-color: rgba(239,68,68,0.4); }
+        .btn-logout-drawer:hover { background: rgba(239,68,68,0.22); border-color: rgba(239,68,68,0.5); color: #b91c1c; }
 
         /* Sidebar flex-column agar footer ke bawah (desktop) */
         .sidebar { display: flex; flex-direction: column; }
@@ -383,6 +395,8 @@
             }
         })();
     </script>
+    {{-- Page Loading Bar: tampil selama halaman belum fully loaded, hilang di DOMContentLoaded --}}
+    <div id="page-loading-bar" role="progressbar" aria-label="Memuat halaman..."></div>
     <!-- Header -->
     <header class="header" id="main-header">
         <div class="header-inner">
@@ -493,7 +507,7 @@
                             <polyline points="16 17 21 12 16 7"/>
                             <line x1="21" y1="12" x2="9" y2="12"/>
                         </svg>
-                        Keluar
+                        Logout
                     </button>
                 </form>
             </div>
@@ -519,7 +533,7 @@
                         <polyline points="16 17 21 12 16 7"/>
                         <line x1="21" y1="12" x2="9" y2="12"/>
                     </svg>
-                    Keluar
+                    Logout
                 </button>
             </form>
         </div>
@@ -760,10 +774,18 @@
 
         document.addEventListener('DOMContentLoaded', function () {
 
-            // ── Fade-in page ──────────────────────────────────────
-            document.body.classList.add('loaded');
+            // ── Sembunyikan Page Loading Bar ──────────────────────────────
+            (function () {
+                var bar = document.getElementById('page-loading-bar');
+                if (!bar) return;
+                bar.classList.add('is-done');
+                // Hapus dari DOM setelah transisi selesai
+                setTimeout(function () {
+                    if (bar.parentNode) bar.parentNode.removeChild(bar);
+                }, 400);
+            })();
 
-            // ── Tampilkan flash session sebagai Toast (delay agar muncul setelah page load) ──
+            // ── Tampilkan flash session sebagai Toast ─────────────────────
             @if(session('success'))
                 setTimeout(function () {
                     showToast('{{ addslashes(session('success')) }}', 'success');
@@ -775,49 +797,39 @@
                 }, 400);
             @endif
 
-            // ── Scroll Reveal (form sections, header, actions, dashboard cards) ──
+            // ── Scroll Reveal — Bidirectional (fade in/out saat scroll) ────────
+            // PENTING: Elemen menggunakan class .pre-hide yang diset di HTML
+            // (opacity:0 dari CSS), sehingga tidak pernah ada kondisi
+            // "terlihat dulu, disembunyikan JS, terlihat lagi" (FOUC lama).
+            // JS hanya menambah/hapus .is-visible saat elemen masuk/keluar viewport.
             (function () {
-                if (!window.IntersectionObserver) return;
-
-                var targets = document.querySelectorAll(
-                    '.form-section, .page-header, .form-actions, .db-stat-card, .db-card'
-                );
-
-                // Set initial hidden state (dari bawah)
-                targets.forEach(function (el) {
-                    el.classList.add('reveal', 'reveal-from-bottom');
-                });
+                if (!window.IntersectionObserver) {
+                    // Fallback: langsung tampilkan semua jika IO tidak tersedia
+                    document.querySelectorAll('.pre-hide').forEach(function (el) {
+                        el.classList.add('is-visible');
+                    });
+                    return;
+                }
 
                 var observer = new IntersectionObserver(function (entries) {
                     entries.forEach(function (entry) {
                         if (entry.isIntersecting) {
-                            // Elemen masuk viewport → tampilkan
+                            // Elemen masuk viewport → fade IN
                             entry.target.classList.add('is-visible');
-                            entry.target.classList.remove(
-                                'reveal-from-bottom', 'reveal-from-top'
-                            );
                         } else {
-                            // Elemen keluar viewport → sembunyikan
+                            // Elemen keluar viewport → fade OUT
+                            // (animasi bisa re-trigger saat scroll balik)
                             entry.target.classList.remove('is-visible');
-
-                            // Tentukan arah: di atas atau di bawah viewport?
-                            if (entry.boundingClientRect.top > 0) {
-                                // Elemen ada di bawah viewport (scroll up)
-                                entry.target.classList.add('reveal-from-bottom');
-                                entry.target.classList.remove('reveal-from-top');
-                            } else {
-                                // Elemen ada di atas viewport (scroll down)
-                                entry.target.classList.add('reveal-from-top');
-                                entry.target.classList.remove('reveal-from-bottom');
-                            }
                         }
                     });
                 }, {
-                    threshold: 0.08,
-                    rootMargin: '-40px 0px -40px 0px'
+                    threshold: 0.06,
+                    rootMargin: '0px 0px -40px 0px'
                 });
 
-                targets.forEach(function (el) { observer.observe(el); });
+                document.querySelectorAll('.pre-hide').forEach(function (el) {
+                    observer.observe(el);
+                });
             })();
 
             // ── Auto-hide header on scroll ────────────────────────
@@ -825,6 +837,7 @@
             var lastY   = window.scrollY;
             var ticking = false;
             var OFFSET  = 80; // px sebelum header mulai disembunyikan
+
 
             function handleScroll() {
                 var y = window.scrollY;

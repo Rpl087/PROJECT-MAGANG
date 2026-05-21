@@ -26,3 +26,25 @@ Homestead.json
 Homestead.yaml
 Thumbs.db
 storage/app/*.json
+
+# ── Database SQLite (berisi data user & session — jangan di-commit) ──────────
+/database/*.sqlite
+/database/*.sqlite-wal
+/database/*.sqlite-shm
+/database/*.db
+
+# ── Kredensial Google Service Account (sensitif) ─────────────────────────────
+/storage/app/google-credentials.json
+*.p12
+*.pem
+*.key
+
+# ── File ngrok / tunnel (berisi authtoken sensitif) ──────────────────────────
+start-ngrok.bat
+ngrok.yml
+ngrok.yaml
+ngrok.exe
+
+# ── File konfigurasi lokal yang tidak perlu di-commit ────────────────────────
+*.local.php
+*.local.env

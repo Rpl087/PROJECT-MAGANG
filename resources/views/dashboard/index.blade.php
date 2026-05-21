@@ -4,7 +4,7 @@
 
 @section('content')
 
-<div class="page-header">
+<div class="page-header pre-hide">
     <h2 class="page-title">Dashboard</h2>
     <p class="page-description">Rekap surat masuk &amp; keluar — Tahun {{ $currentYear }}</p>
 </div>
@@ -22,7 +22,7 @@
 
 {{-- ── Kartu Ringkasan ──────────────────────────────────────────── --}}
 <div class="db-stats-grid">
-    <div class="db-stat-card db-stat-sm">
+    <div class="db-stat-card db-stat-sm pre-hide">
         <div class="db-stat-icon db-stat-icon-sm">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/>
@@ -34,7 +34,7 @@
             <span class="db-stat-value">{{ number_format($totalSMYear) }}</span>
         </div>
     </div>
-    <div class="db-stat-card db-stat-sk">
+    <div class="db-stat-card db-stat-sk pre-hide">
         <div class="db-stat-icon db-stat-icon-sk">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
@@ -45,7 +45,7 @@
             <span class="db-stat-value">{{ number_format($totalSKYear) }}</span>
         </div>
     </div>
-    <div class="db-stat-card db-stat-total">
+    <div class="db-stat-card db-stat-total pre-hide">
         <div class="db-stat-icon db-stat-icon-total">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/>
@@ -59,7 +59,7 @@
 </div>
 
 {{-- ── Tabel Rekap Bulanan ──────────────────────────────────────── --}}
-<div class="db-card" style="margin-bottom:1.5rem;">
+<div class="db-card pre-hide" style="margin-bottom:1.5rem;">
     <div class="db-card-header">
         <div class="db-card-title-wrap">
             <div class="db-card-icon db-card-icon-table">
@@ -127,7 +127,7 @@
 
 {{-- ── Grafik Pie — Per Bulan ──────────────────────────────────── --}}
 <div class="db-charts-grid">
-    <div class="db-card">
+    <div class="db-card pre-hide">
         <div class="db-card-header">
             <div class="db-card-title-wrap">
                 <div class="db-card-icon db-card-icon-sm">
@@ -155,7 +155,7 @@
         </div>
     </div>
 
-    <div class="db-card">
+    <div class="db-card pre-hide">
         <div class="db-card-header">
             <div class="db-card-title-wrap">
                 <div class="db-card-icon db-card-icon-sk">
@@ -182,7 +182,7 @@
         </div>
     </div>
 
-    <div class="db-card">
+    <div class="db-card pre-hide">
         <div class="db-card-header">
             <div class="db-card-title-wrap">
                 <div class="db-card-icon db-card-icon-sm">
@@ -210,7 +210,7 @@
         </div>
     </div>
 
-    <div class="db-card">
+    <div class="db-card pre-hide">
         <div class="db-card-header">
             <div class="db-card-title-wrap">
                 <div class="db-card-icon db-card-icon-sk">

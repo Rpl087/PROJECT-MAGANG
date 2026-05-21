@@ -3,7 +3,7 @@
 @section('title', 'Surat Masuk')
 
 @section('content')
-<div class="page-header">
+<div class="page-header pre-hide">
     <h2 class="page-title">Surat Masuk</h2>
     @if($isAdmin ?? false)
         <p class="page-description">Lihat daftar arsip tersimpan dan tambah surat masuk baru ke dalam sistem.</p>
@@ -14,7 +14,7 @@
 
 {{-- ── TABEL DAFTAR SURAT MASUK (hanya tampil untuk admin) ────────────────────── --}}
 @if($isAdmin ?? false)
-<div class="form-container" style="margin-bottom:2rem;">
+<div class="form-container pre-hide" style="margin-bottom:2rem;">
     <div class="form-section" style="margin-bottom:0;">
         <div class="section-header">
             <div class="section-number">
@@ -33,7 +33,30 @@
             </div>
         @endif
 
-        <div style="overflow-x:auto; margin-top:.5rem;">
+        {{-- ── Skeleton Loader (tampil 1 tick sebelum tabel asli muncul) ── --}}
+        <div id="table-skeleton-sm" class="skeleton-table-wrapper" aria-hidden="true">
+            <div class="skeleton-header">
+                <div class="skeleton-header-cell"></div>
+                <div class="skeleton-header-cell"></div>
+                <div class="skeleton-header-cell"></div>
+                <div class="skeleton-header-cell"></div>
+                <div class="skeleton-header-cell"></div>
+                <div class="skeleton-header-cell"></div>
+            </div>
+            @for($i = 0; $i < 5; $i++)
+            <div class="skeleton-row">
+                <div class="skeleton-cell skeleton-shimmer"></div>
+                <div class="skeleton-cell skeleton-shimmer"></div>
+                <div class="skeleton-cell skeleton-shimmer"></div>
+                <div class="skeleton-cell skeleton-shimmer"></div>
+                <div class="skeleton-cell skeleton-shimmer"></div>
+                <div class="skeleton-cell skeleton-shimmer"></div>
+            </div>
+            @endfor
+        </div>
+
+        {{-- ── Tabel Sesungguhnya (hidden sampai skeleton diremove) ── --}}
+        <div id="table-content-sm" style="overflow-x:auto; margin-top:.5rem; display:none;">
             <table class="arsip-table">
                 <thead>
                     <tr>
@@ -107,7 +130,7 @@
                     @endforelse
                 </tbody>
             </table>
-        </div>
+        </div>{{-- /#table-content-sm --}}
     </div>
 </div>
 @endif
@@ -144,7 +167,7 @@
     @csrf
 
     {{-- Section 1: Informasi Utama --}}
-    <div class="form-section">
+    <div class="form-section pre-hide">
         <div class="section-header">
             <div class="section-number">01</div>
             <div>
@@ -210,7 +233,7 @@
     </div>
 
     {{-- Section 2: Detail Arsip --}}
-    <div class="form-section">
+    <div class="form-section pre-hide">
         <div class="section-header">
             <div class="section-number">02</div>
             <div>
@@ -299,7 +322,7 @@
     </div>
 
     {{-- Section 3: Keamanan & Retensi --}}
-    <div class="form-section">
+    <div class="form-section pre-hide">
         <div class="section-header">
             <div class="section-number">03</div>
             <div>
@@ -361,7 +384,7 @@
     </div>
 
     {{-- Submit Button --}}
-    <div class="form-actions">
+    <div class="form-actions pre-hide">
         <button type="button" class="btn btn-secondary" id="btn-reset">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="1 4 1 10 7 10"/>
@@ -379,8 +402,13 @@
         </button>
     </div>
 </form>
-@push('scripts')
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+@push('styles')
+<link rel="preload" as="style"
+      href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css"
+      onload="this.rel='stylesheet'">
+<noscript>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+</noscript>
 <style>
 /* ── Form Divider (pemisah tabel & form) ─── */
 .sm-form-divider {
@@ -506,8 +534,31 @@
 .flatpickr-day.selected, .flatpickr-day.selected:hover { background: var(--color-primary) !important; border-color: var(--color-primary) !important; }
 .flatpickr-day:hover { background: var(--color-primary-light) !important; color: var(--color-primary) !important; }
 </style>
+@endpush
+
+@push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+
+    // ── Skeleton → Tabel: tampilkan tabel setelah 1 frame paint ──────────
+    // Ini memastikan tabel selalu punya style sebelum ditampilkan.
+    // Skeleton dibuang lewat requestAnimationFrame (≈ 16ms) setelah paint.
+    (function () {
+        var skeleton = document.getElementById('table-skeleton-sm');
+        var content  = document.getElementById('table-content-sm');
+        if (!skeleton || !content) return;
+        requestAnimationFrame(function () {
+            requestAnimationFrame(function () {
+                skeleton.style.transition = 'opacity 0.2s ease';
+                skeleton.style.opacity = '0';
+                content.style.display = '';
+                content.classList.add('table-content-ready');
+                setTimeout(function () {
+                    if (skeleton.parentNode) skeleton.parentNode.removeChild(skeleton);
+                }, 220);
+            });
+        });
+    })();
 
     // ── Modal Hapus ──────────────────────────────────────────────
     const modal       = document.getElementById('modal-hapus');

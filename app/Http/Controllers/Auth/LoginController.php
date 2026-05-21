@@ -13,9 +13,11 @@ class LoginController extends Controller
      */
     public function showLoginForm()
     {
-        // Jika sudah login, langsung ke halaman utama
+        // Jika sudah login, arahkan sesuai role
         if (Auth::check()) {
-            return redirect()->route('arsip.index');
+            return Auth::user()->isAdmin()
+                ? redirect()->route('dashboard.index')
+                : redirect()->route('arsip.index');
         }
         return view('auth.login');
     }
@@ -42,10 +44,11 @@ class LoginController extends Controller
         if (Auth::attempt($credentials, $request->boolean('remember'))) {
             $request->session()->regenerate();
 
-            // Internship hanya bisa akses form input, langsung ke arsip.index
-            // Admin diarahkan ke route yang dimaksud (atau arsip.index sebagai default)
-            $intendedDefault = route('arsip.index');
-            return redirect()->intended($intendedDefault);
+            // Admin → dashboard, Internship → form input arsip
+            if (Auth::user()->isAdmin()) {
+                return redirect()->intended(route('dashboard.index'));
+            }
+            return redirect()->intended(route('arsip.index'));
         }
 
         return back()

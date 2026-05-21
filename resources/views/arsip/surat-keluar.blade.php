@@ -3,7 +3,7 @@
 @section('title', 'Surat Keluar')
 
 @section('content')
-<div class="page-header">
+<div class="page-header pre-hide">
     <h2 class="page-title">Surat Keluar</h2>
     @if($isAdmin ?? false)
         <p class="page-description">Lihat daftar arsip tersimpan dan tambah surat keluar baru ke dalam sistem.</p>
@@ -12,9 +12,9 @@
     @endif
 </div>
 
-{{-- ── TABEL DAFTAR SURAT KELUAR (hanya tampil untuk admin) ───────────────── --}}
+{{-- ── TABEL DAFTAR SURAT KELUAR (hanya tampil untuk admin) ────────────────────── --}}
 @if($isAdmin ?? false)
-<div class="form-container" style="margin-bottom:2rem;">
+<div class="form-container pre-hide" style="margin-bottom:2rem;">
     <div class="form-section" style="margin-bottom:0;">
         <div class="section-header">
             <div class="section-number">
@@ -33,7 +33,30 @@
             </div>
         @endif
 
-        <div style="overflow-x:auto; margin-top:.5rem;">
+        {{-- ── Skeleton Loader (tampil 1 tick sebelum tabel asli muncul) ── --}}
+        <div id="table-skeleton-sk" class="skeleton-table-wrapper" aria-hidden="true">
+            <div class="skeleton-header">
+                <div class="skeleton-header-cell"></div>
+                <div class="skeleton-header-cell"></div>
+                <div class="skeleton-header-cell"></div>
+                <div class="skeleton-header-cell"></div>
+                <div class="skeleton-header-cell"></div>
+                <div class="skeleton-header-cell"></div>
+            </div>
+            @for($i = 0; $i < 5; $i++)
+            <div class="skeleton-row">
+                <div class="skeleton-cell skeleton-shimmer"></div>
+                <div class="skeleton-cell skeleton-shimmer"></div>
+                <div class="skeleton-cell skeleton-shimmer"></div>
+                <div class="skeleton-cell skeleton-shimmer"></div>
+                <div class="skeleton-cell skeleton-shimmer"></div>
+                <div class="skeleton-cell skeleton-shimmer"></div>
+            </div>
+            @endfor
+        </div>
+
+        {{-- ── Tabel Sesungguhnya (hidden sampai skeleton diremove) ── --}}
+        <div id="table-content-sk" style="overflow-x:auto; margin-top:.5rem; display:none;">
             <table class="arsip-table">
                 <thead>
                     <tr>
@@ -49,22 +72,16 @@
                     @forelse($rows as $no => $item)
                         @php
                             $d = $item['data'];
-                            // Indeks kolom sesuai struktur SURAT KELUAR (A–Q):
-                            // A(0)=NO | B(1)=Kode Klasifikasi | C(2)=Uraian Informasi Berkas | D(3)=Kurun Waktu
-                            // E(4)=Jumlah Folder | F(5)=Nomor Item Arsip | G(6)=Uraian Informasi Arsip
-                            // H(7)=Tanggal Surat | I(8)=Jumlah Lembar | J(9)=Tingkat Perkembangan
-                            // K(10)=Lokasi Simpan | L(11)=Klas Keamanan | M(12)=Tingkat Akses
-                            // N(13)=Retensi Aktif | O(14)=Retensi Inaktif | P(15)=Retensi Ket | Q(16)=Link Folder
-                            $tanggal     = $d[7]  ?? '-';  // H: Tanggal Surat
-                            $kodeKlasRaw = $d[1]  ?? '';   // B: Kode Klasifikasi
-                            $kodeKlas    = (str_starts_with($kodeKlasRaw, '#') || $kodeKlasRaw === '') ? '—' : $kodeKlasRaw;
-                            $uraian      = $d[2]  ?? '-';  // C: Uraian Informasi Berkas
-                            $rawFile     = trim($d[16] ?? '');  // Q: Link Folder (filename atau URL lama)
-                            // Generate URL dinamis jika berupa filename; gunakan apa adanya jika sudah URL
+                            $tanggal     = $d[7]  ?? '-';
+                            $kodeKlasRaw = trim($d[1] ?? '');
+                            $kodeKlas    = $kodeKlasRaw !== '' ? $kodeKlasRaw : '—';
+                            $uraian      = $d[2]  ?? '-';
+
+                            $rawFile     = trim($d[16] ?? '');
                             $pdfUrl = '';
                             if ($rawFile !== '') {
                                 $pdfUrl = str_starts_with($rawFile, 'http')
-                                    ? $rawFile  // URL lama (legacy) — tetap dipakai
+                                    ? $rawFile
                                     : route('pdf.view', ['type' => 'surat-keluar', 'filename' => $rawFile]);
                             }
                         @endphp
@@ -109,7 +126,7 @@
                     @endforelse
                 </tbody>
             </table>
-        </div>
+        </div>{{-- /#table-content-sk --}}
     </div>
 </div>
 @endif
@@ -145,7 +162,7 @@
     @csrf
 
     {{-- Section 1: Informasi Utama --}}
-    <div class="form-section">
+    <div class="form-section pre-hide">
         <div class="section-header">
             <div class="section-number">01</div>
             <div>
@@ -207,7 +224,6 @@
             </div>
         </div>
 
-        {{-- Upload Surat Keluar -- full width --}}
         <div class="form-grid">
             <div class="form-group form-group-upload">
                 <label for="surat_keluar" class="form-label">File Surat Keluar (PDF) <span class="required">*</span></label>
@@ -253,7 +269,7 @@
     </div>
 
     {{-- Section 2: Detail Arsip --}}
-    <div class="form-section">
+    <div class="form-section pre-hide">
         <div class="section-header">
             <div class="section-number">02</div>
             <div>
@@ -311,14 +327,13 @@
                           class="form-input form-textarea @error('uraian_informasi_arsip') input-error @enderror"
                           placeholder="Contoh: Surat keluar kepada Dinas Kominfo tentang permohonan data penggunaan spektrum frekuensi" rows="3" required>{{ old('uraian_informasi_arsip') }}</textarea>
                 @error('uraian_informasi_arsip')
-                    <span class="error-text">{{ $message }}</span>
-                @enderror
+                    <span class="error-text">{{ $message }}</span>@enderror
             </div>
         </div>
     </div>
 
     {{-- Section 3: Keamanan & Retensi --}}
-    <div class="form-section">
+    <div class="form-section pre-hide">
         <div class="section-header">
             <div class="section-number">03</div>
             <div>
@@ -384,7 +399,7 @@
     </div>
 
     {{-- Submit --}}
-    <div class="form-actions">
+    <div class="form-actions pre-hide">
         <button type="button" class="btn btn-secondary" id="btn-reset">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="1 4 1 10 7 10"/>
@@ -403,8 +418,9 @@
 </form>
 @endsection
 
-@push('scripts')
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+@push('styles')
+<link rel="preload" as="style" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" onload="this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css"></noscript>
 <style>
 /* ── Form Divider (pemisah tabel & form) ─── */
 .sm-form-divider {
@@ -525,8 +541,29 @@
 .flatpickr-day.selected, .flatpickr-day.selected:hover { background: var(--color-primary) !important; border-color: var(--color-primary) !important; }
 .flatpickr-day:hover { background: var(--color-primary-light) !important; color: var(--color-primary) !important; }
 </style>
+@endpush
+
+@push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+
+    // ── Skeleton → Tabel: tampilkan tabel setelah 1 frame paint ──────────
+    (function () {
+        var skeleton = document.getElementById('table-skeleton-sk');
+        var content  = document.getElementById('table-content-sk');
+        if (!skeleton || !content) return;
+        requestAnimationFrame(function () {
+            requestAnimationFrame(function () {
+                skeleton.style.transition = 'opacity 0.2s ease';
+                skeleton.style.opacity = '0';
+                content.style.display = '';
+                content.classList.add('table-content-ready');
+                setTimeout(function () {
+                    if (skeleton.parentNode) skeleton.parentNode.removeChild(skeleton);
+                }, 220);
+            });
+        });
+    })();
 
     // ── Modal Hapus ──────────────────────────────────────────────
     const modal        = document.getElementById('modal-hapus-sk');
@@ -553,7 +590,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (e.target === modal) { modal.style.display = 'none'; pendingForm = null; }
     });
 
-    // ── File Upload (gunakan label sebagai trigger — tanpa JS click) ──
+    // ── File Upload ──────────────────────────────────────────────
     const zone        = document.getElementById('upload-zone');
     const input       = document.getElementById('surat_keluar');
     const placeholder = document.getElementById('upload-placeholder');
@@ -584,8 +621,6 @@ document.addEventListener('DOMContentLoaded', function () {
         zone.classList.remove('file-upload-has-file');
     }
 
-    // Zone = <label>, sudah otomatis trigger input klik — hanya perlu handle drag & preview
-    // Tombol hapus: stop propagation agar tidak re-trigger label
     removeBtn.addEventListener('click', function (e) { e.preventDefault(); clearFile(); });
 
     input.addEventListener('change', function () {
@@ -619,7 +654,7 @@ document.addEventListener('DOMContentLoaded', function () {
         showPreview(file);
     });
 
-    // ── Reset ─────────────────────────────────────────
+    // ── Reset ───────────────────────────────────────────────────
     document.getElementById('btn-reset').addEventListener('click', function () {
         document.getElementById('surat-keluar-form').reset();
         clearFile();

@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 use Google\Client;
 use Google\Service\Sheets;
 
@@ -36,17 +35,12 @@ class SuratKeluarController extends Controller
     private function getSheetId(Sheets $service, string $spreadsheetId, string $sheetName): ?int
     {
         $spreadsheet = $service->spreadsheets->get($spreadsheetId);
-        $availableSheets = [];
         foreach ($spreadsheet->getSheets() as $sheet) {
             $title = $sheet->getProperties()->getTitle();
-            $availableSheets[] = $title;
-            // Gunakan trim() untuk toleransi whitespace tersembunyi
             if (trim($title) === trim($sheetName)) {
-                Log::info('[SK getSheetId] Ditemukan sheet "' . $title . '" dengan ID: ' . $sheet->getProperties()->getSheetId());
                 return $sheet->getProperties()->getSheetId();
             }
         }
-        Log::warning('[SK getSheetId] Sheet "' . $sheetName . '" tidak ditemukan. Sheet tersedia: ' . implode(', ', $availableSheets));
         return null;
     }
 
@@ -71,17 +65,12 @@ class SuratKeluarController extends Controller
         if ($isAdmin) {
             try {
                 [$service, $spreadsheetId] = $this->getSheetService();
-                // Baca dari sheet tampilan "SURAT KELUAR" (sudah di-combine 1 baris per entri)
-                // HANYA untuk tampilan tabel — store() & destroy() tetap menarget dbSK
                 $response = $service->spreadsheets_values->get($spreadsheetId, 'SURAT KELUAR!A:Q');
                 $values   = $response->getValues() ?? [];
 
-                // Skip baris header (index 0), simpan data beserta index aslinya di sheet
-                // Filter: hanya tampilkan baris yang punya Tanggal Surat (col H/index 7) terisi
                 foreach ($values as $i => $row) {
                     if ($i === 0) continue;
-                    $tanggal = trim($row[7] ?? ''); // H: Tanggal Surat (index 7 di SURAT KELUAR)
-                    // Lewati baris tanpa tanggal — indikator baris kosong/invalid
+                    $tanggal = trim($row[7] ?? '');
                     if (empty($tanggal)) continue;
                     $rows[] = ['index' => $i, 'data' => $row];
                 }
@@ -90,7 +79,7 @@ class SuratKeluarController extends Controller
             }
         }
 
-        return view('surat-keluar.index', compact('rows', 'fetchError', 'isAdmin'));
+        return view('arsip.surat-keluar', compact('rows', 'fetchError', 'isAdmin'));
     }
 
     /**
@@ -167,17 +156,12 @@ class SuratKeluarController extends Controller
                 ],
             ]];
 
-            Log::info('[SK destroy] Menghapus baris dbSK: startIndex=' . $dbskRowIndex);
-
             $body = new Sheets\BatchUpdateSpreadsheetRequest(['requests' => $requests]);
             $service->spreadsheets->batchUpdate($spreadsheetId, $body);
-
-            Log::info('[SK destroy] Berhasil menghapus baris ' . $dbskRowIndex . ' dari dbSK.');
 
             return redirect()->route('surat-keluar.index')
                 ->with('success', 'Data surat keluar berhasil dihapus dari Spreadsheet (dbSK).');
         } catch (\Exception $e) {
-            Log::error('[SK destroy] ERROR: ' . $e->getMessage());
             return redirect()->route('surat-keluar.index')
                 ->with('error', 'Gagal menghapus data: ' . $e->getMessage());
         }
