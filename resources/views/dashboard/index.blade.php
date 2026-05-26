@@ -72,7 +72,7 @@
 @php $bulanAktif = collect($monthlyRecap)->filter(fn($r) => $r['total'] > 0)->count(); @endphp
         <span class="db-badge">12 Bulan</span>
     </div>
-    <div class="db-table-wrap">
+    <div class="db-table-wrap" style="overflow-x:auto;">
         <table class="db-table" id="tabel-rekap">
             <thead>
                 <tr>
@@ -365,18 +365,30 @@
 .db-legend-val { font-weight: 600; color: var(--color-text); }
 .db-legend-pct { font-size: .72rem; color: var(--color-text-muted); }
 
-/* ── Responsive ────────────────────── */
+/* ── Responsive ────────────────── */
 @media (max-width: 1024px) {
     .db-stats-grid { grid-template-columns: repeat(3, 1fr); }
 }
 @media (max-width: 768px) {
-    .db-stats-grid { grid-template-columns: 1fr 1fr; }
+    .db-stats-grid  { grid-template-columns: 1fr 1fr; }
     .db-charts-grid { grid-template-columns: 1fr; }
-    .db-stat-value { font-size: 1.4rem; }
+    .db-stat-value  { font-size: 1.4rem; }
+    .db-chart-container { min-height: 260px; } /* reduce di tablet */
 }
 @media (max-width: 480px) {
-    .db-stats-grid { grid-template-columns: 1fr; }
+    .db-stats-grid  { grid-template-columns: 1fr; }
+    .db-chart-container { min-height: 220px; padding: .75rem; } /* reduce di HP */
+    .db-chart-container canvas { max-width: 180px; max-height: 180px; }
+    .db-stat-card { padding: 1rem; gap: .75rem; }
+    .db-stat-icon { width: 40px; height: 40px; }
+    .db-stat-value { font-size: 1.25rem; }
 }
+
+/* ── Dark mode stat icon overrides ──────── */
+[data-theme="dark"] .db-stat-icon-sm    { background: rgba(14,165,233,0.15);  color: #38bdf8; }
+[data-theme="dark"] .db-stat-icon-sk    { background: rgba(244,114,182,0.15); color: #f472b6; }
+[data-theme="dark"] .db-stat-icon-total { background: rgba(167,139,250,0.15); color: #a78bfa; }
+[data-theme="dark"] .db-stat-icon-month { background: rgba(52,211,153,0.15);  color: #34d399; }
 </style>
 
 @push('scripts')

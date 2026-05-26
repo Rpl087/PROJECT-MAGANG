@@ -295,7 +295,42 @@
 
     </style>
 
-    {{-- ── Toast Notification System ── --}}
+    {{-- ── Page Transition (fade antar halaman) ── --}}
+    <style>
+    /* Fade-out saat navigasi keluar */
+    body.page-leaving {
+        opacity: 0;
+        transition: opacity 0.18s ease;
+        pointer-events: none;
+    }
+    /* Fade-in saat halaman baru tiba */
+    body {
+        animation: pageFadeIn 0.22s ease both;
+    }
+    @keyframes pageFadeIn {
+        from { opacity: 0; }
+        to   { opacity: 1; }
+    }
+    </style>
+    <script>
+    // Intercept semua klik link internal — tambah class page-leaving sebelum navigasi
+    document.addEventListener('click', function (e) {
+        var link = e.target.closest('a[href]');
+        if (!link) return;
+        var href = link.getAttribute('href');
+        // Abaikan: anchor (#), external, mailto:, tel:, target=_blank, download
+        if (!href || href.startsWith('#') || href.startsWith('mailto:') ||
+            href.startsWith('tel:') || link.target === '_blank' ||
+            link.hasAttribute('download') || link.origin !== location.origin) return;
+        // Abaikan klik dengan modifier key (buka tab baru)
+        if (e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return;
+        e.preventDefault();
+        document.body.classList.add('page-leaving');
+        setTimeout(function () { location.href = href; }, 180);
+    });
+    </script>
+
+
     <style>
     /* Toast container: pojok kanan bawah */
     #toast-container {

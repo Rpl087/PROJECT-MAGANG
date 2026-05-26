@@ -493,12 +493,8 @@
 }
 .btn-hapus:hover { background:rgba(239,68,68,.2); }
 
-/* ── Modal ───────────────────────────────────────── */
-.modal-overlay {
-    position:fixed; inset:0; background:rgba(0,0,0,.6); backdrop-filter:blur(4px);
-    z-index:9999; display:flex; align-items:center; justify-content:center;
-    animation: fadeIn .15s ease;
-}
+/* ── Modal ────────────────────────────────────────────── */
+/* .modal-overlay: didefinisikan di app.css secara global */
 @keyframes fadeIn { from{opacity:0} to{opacity:1} }
 .modal-box {
     background:var(--color-surface, #1a2236); border:1px solid var(--color-border,#2a3347);
@@ -567,25 +563,42 @@ document.addEventListener('DOMContentLoaded', function () {
     const modalConfirm= document.getElementById('modal-confirm');
     let   pendingForm = null;
 
+    // Pindahkan modal ke document.body agar position:fixed
+    // tidak terpengaruh stacking context dari ancestor (transform/animation)
+    document.body.appendChild(modal);
+
+    function openModal(label, form) {
+        pendingForm = form;
+        modalLabel.textContent = label;
+        modal.style.display    = 'flex';
+        document.body.style.overflow = 'hidden'; // lock scroll
+    }
+
+    function closeModal() {
+        modal.style.display = 'none';
+        pendingForm = null;
+        document.body.style.overflow = ''; // unlock scroll
+    }
+
     document.querySelectorAll('.btn-hapus').forEach(function (btn) {
         btn.addEventListener('click', function () {
-            pendingForm       = document.getElementById(btn.dataset.form);
-            modalLabel.textContent = btn.dataset.label;
-            modal.style.display   = 'flex';
+            openModal(btn.dataset.label, document.getElementById(btn.dataset.form));
         });
     });
 
-    modalCancel.addEventListener('click', function () {
-        modal.style.display = 'none';
-        pendingForm = null;
-    });
+    modalCancel.addEventListener('click', closeModal);
 
     modalConfirm.addEventListener('click', function () {
         if (pendingForm) pendingForm.submit();
     });
 
     modal.addEventListener('click', function (e) {
-        if (e.target === modal) { modal.style.display = 'none'; pendingForm = null; }
+        if (e.target === modal) closeModal();
+    });
+
+    // Escape key menutup modal
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && modal.style.display === 'flex') closeModal();
     });
 
     // ── File Upload (gunakan label sebagai trigger — tanpa JS click) ──
