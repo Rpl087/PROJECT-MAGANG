@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="description" content="Sistem Arsip Surat Digital BPSDMP - Input dan kelola arsip surat secara efisien">
     <title>@yield('title', 'Arsip Surat') — BPSDMP</title>
-    <link rel="icon" type="image/png" href="{{ asset('komdigi-logo.png') }}">
-    <link rel="shortcut icon" type="image/png" href="{{ asset('komdigi-logo.png') }}">
+    <link rel="icon" type="image/png" href="{{ route('image.view', 'komdigi-logo.png') }}">
+    <link rel="shortcut icon" type="image/png" href="{{ route('image.view', 'komdigi-logo.png') }}">
     {{-- Preconnect untuk font Google (non-blocking) --}}
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -446,7 +446,7 @@
                 </button>
                 <div class="brand">
                     <div class="brand-icon" style="background:transparent;border:none;box-shadow:none;padding:0;display:flex;align-items:center;">
-                        <img src="{{ asset('komdigi-logo.png') }}" alt="Logo Komdigi" style="height:36px;width:auto;object-fit:contain;display:block;">
+                        <img src="{{ route('image.view', 'komdigi-logo.png') }}" alt="Logo Komdigi" style="height:36px;width:auto;object-fit:contain;display:block;">
                     </div>
                     <div>
                         <h1 class="brand-title">Arsip Surat BPSDMP</h1>
@@ -823,12 +823,12 @@
             // ── Tampilkan flash session sebagai Toast ─────────────────────
             @if(session('success'))
                 setTimeout(function () {
-                    showToast('{{ addslashes(session('success')) }}', 'success');
+                    showToast({!! json_encode(session('success')) !!}, 'success');
                 }, 400);
             @endif
             @if(session('error'))
                 setTimeout(function () {
-                    showToast('{{ addslashes(session('error')) }}', 'error');
+                    showToast({!! json_encode(session('error')) !!}, 'error');
                 }, 400);
             @endif
 

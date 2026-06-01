@@ -70,7 +70,7 @@
             <h3 class="db-card-title">Rekap Bulanan Tahun {{ $currentYear }}</h3>
         </div>
 @php $bulanAktif = collect($monthlyRecap)->filter(fn($r) => $r['total'] > 0)->count(); @endphp
-        <span class="db-badge">12 Bulan</span>
+        <span class="db-badge">{{ $bulanAktif > 0 ? $bulanAktif . ' Bulan Aktif' : '0 Bulan' }}</span>
     </div>
     <div class="db-table-wrap" style="overflow-x:auto;">
         <table class="db-table" id="tabel-rekap">
@@ -411,11 +411,14 @@
         var total  = values.reduce(function(a,b){ return a+b; }, 0);
         var colors = labels.map(function(_,i){ return COLORS[i % COLORS.length]; });
 
+        var borderColor = getComputedStyle(document.documentElement)
+            .getPropertyValue('--color-surface').trim() || '#ffffff';
+
         new Chart(canvas, {
             type: 'doughnut',
             data: {
                 labels: labels,
-                datasets: [{ data: values, backgroundColor: colors, borderWidth: 2, borderColor: '#fff', hoverOffset: 6 }]
+                datasets: [{ data: values, backgroundColor: colors, borderWidth: 2, borderColor: borderColor, hoverOffset: 6 }]
             },
             options: {
                 responsive: true,

@@ -13,7 +13,7 @@ class DashboardController extends Controller
     public function index()
     {
         try {
-            $credPath = env('GOOGLE_SERVICE_ACCOUNT_JSON');
+            $credPath = config('google.service_account_json');
             if (empty($credPath)) {
                 throw new \RuntimeException('GOOGLE_SERVICE_ACCOUNT_JSON belum dikonfigurasi di .env');
             }
@@ -28,7 +28,7 @@ class DashboardController extends Controller
             $client->addScope(Sheets::SPREADSHEETS_READONLY);
 
             $service       = new Sheets($client);
-            $spreadsheetId = env('GOOGLE_SHEET_ID');
+            $spreadsheetId = config('google.sheet_id');
 
             // Baca sheet dbSM (Surat Masuk)
             $smResponse = $service->spreadsheets_values->get($spreadsheetId, 'dbSM!A:R');

@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="description" content="Login – Sistem Arsip Surat Digital BPSDMP">
     <title>Login — Arsip Surat BPSDMP</title>
-    <link rel="icon" type="image/png" href="/komdigi-logo.png">
-    <link rel="shortcut icon" type="image/png" href="/komdigi-logo.png">
+    <link rel="icon" type="image/png" href="{{ route('image.view', 'komdigi-logo.png') }}">
+    <link rel="shortcut icon" type="image/png" href="{{ route('image.view', 'komdigi-logo.png') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -395,10 +395,10 @@
             <!-- Brand -->
             <div class="brand">
                 <div class="brand-icon-wrap">
-                    <img src="/komdigi-logo.png"  alt="Logo Komdigi"
+                    <img src="{{ route('image.view', 'komdigi-logo.png') }}"  alt="Logo Komdigi"
                          style="height:64px;width:auto;object-fit:contain;display:block;flex-shrink:0;">
                     <div style="width:1px;height:52px;background:rgba(255,255,255,0.15);border-radius:1px;margin:0 16px;flex-shrink:0;"></div>
-                    <img src="/blsdm-logo.png" alt="Logo BLSDM Komdigi Manado"
+                    <img src="{{ route('image.view', 'blsdm-logo.png') }}" alt="Logo BLSDM Komdigi Manado"
                          style="height:64px;width:auto;object-fit:contain;display:block;flex-shrink:0;">
                 </div>
                 <h1 class="brand-title">Sistem Arsip Surat</h1>

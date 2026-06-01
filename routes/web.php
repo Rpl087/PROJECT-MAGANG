@@ -40,6 +40,36 @@ Route::get('/pdf/{type}/{filename}', function (string $type, string $filename) {
     ]);
 })->name('pdf.view')->where('filename', '.+');
 
+// ── Public Image Access ───────────────────────────────────────────────────────
+// Melayani logo & aset gambar dari storage/image/ tanpa butuh symlink
+Route::get('/image/{filename}', function (string $filename) {
+    // Keamanan: hanya izinkan ekstensi gambar yang valid & cegah path traversal
+    if (!preg_match('/^[\w\-. ]+\.(png|jpg|jpeg|gif|svg|webp|ico)$/i', $filename)) {
+        abort(403, 'Akses ditolak.');
+    }
+
+    $path = storage_path('image/' . $filename);
+
+    if (!file_exists($path)) {
+        abort(404, 'Gambar tidak ditemukan.');
+    }
+
+    $ext  = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+    $mime = match ($ext) {
+        'svg'  => 'image/svg+xml',
+        'ico'  => 'image/x-icon',
+        'jpg', 'jpeg' => 'image/jpeg',
+        'gif'  => 'image/gif',
+        'webp' => 'image/webp',
+        default => 'image/png',
+    };
+
+    return response()->file($path, [
+        'Content-Type'  => $mime,
+        'Cache-Control' => 'public, max-age=31536000, immutable',
+    ]);
+})->name('image.view')->where('filename', '.+');
+
 // ── Protected Routes (wajib login) ───────────────────────────────────────────
 Route::middleware('auth')->group(function () {
 

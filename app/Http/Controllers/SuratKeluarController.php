@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Google\Client;
 use Google\Service\Sheets;
 
@@ -13,7 +14,7 @@ class SuratKeluarController extends Controller
      */
     private function getSheetService(): array
     {
-        $credPath = env('GOOGLE_SERVICE_ACCOUNT_JSON');
+        $credPath = config('google.service_account_json');
         if (empty($credPath)) {
             throw new \RuntimeException('GOOGLE_SERVICE_ACCOUNT_JSON belum dikonfigurasi di .env');
         }
@@ -25,7 +26,7 @@ class SuratKeluarController extends Controller
         $client->setAuthConfig($credFullPath);
         $client->addScope(Sheets::SPREADSHEETS);
         $service       = new Sheets($client);
-        $spreadsheetId = env('GOOGLE_SHEET_ID');
+        $spreadsheetId = config('google.sheet_id');
         return [$service, $spreadsheetId];
     }
 
@@ -217,7 +218,7 @@ class SuratKeluarController extends Controller
 
         try {
             // Setup Google Client
-            $credPath = env('GOOGLE_SERVICE_ACCOUNT_JSON');
+            $credPath = config('google.service_account_json');
             if (empty($credPath)) {
                 throw new \RuntimeException('GOOGLE_SERVICE_ACCOUNT_JSON belum dikonfigurasi di .env');
             }
@@ -230,7 +231,7 @@ class SuratKeluarController extends Controller
             $client->addScope(Sheets::SPREADSHEETS);
 
             $service = new Sheets($client);
-            $spreadsheetId = env("GOOGLE_SHEET_ID");
+            $spreadsheetId = config('google.sheet_id');
             $range = "dbSK!A:R";
 
             // Simpan file PDF surat keluar
