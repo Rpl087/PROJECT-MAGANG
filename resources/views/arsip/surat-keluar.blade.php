@@ -241,7 +241,10 @@
                 <label for="kode_klasifikasi" class="form-label">Kode Klasifikasi <span class="required">*</span></label>
                 <input type="text" name="kode_klasifikasi" id="kode_klasifikasi"
                        class="form-input @error('kode_klasifikasi') input-error @enderror"
-               value="{{ old('kode_klasifikasi') }}" placeholder="Contoh: PR, PL, KP, dll." required>
+                       value="{{ old('kode_klasifikasi') }}"
+                       placeholder="Contoh: PR" maxlength="2"
+                       style="text-transform:uppercase;letter-spacing:.1em;"
+                       autocomplete="off" required>
                 @error('kode_klasifikasi')
                     <span class="error-text">{{ $message }}</span>
                 @enderror
@@ -487,7 +490,6 @@
         </button>
     </div>
 </form>
-@endsection
 
 @push('styles')
 <link rel="preload" as="style" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" onload="this.rel='stylesheet'">
@@ -873,12 +875,11 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 });
 </script>
-@push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/id.js"></script>
 <script>
 (function() {
-    // ── Live Clock (independen dari flatpickr) ─────────────────────────────────────────────
+    // ── Live Clock ──────────────────────────────────────────────────────────
     var BIDS = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
     var HIDS = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
     function pad(n) { return String(n).padStart(2,'0'); }
@@ -892,30 +893,46 @@ document.addEventListener('DOMContentLoaded', function () {
     tickSK();
     setInterval(tickSK, 1000);
 
-    // ── Flatpickr ─────────────────────────────────────────────────────────────────
-    document.addEventListener('DOMContentLoaded', function() {
-        var BULAN_ID = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
-        var BULAN_ID_SHORT = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
-        try {
-            if (typeof flatpickr !== 'undefined' && document.getElementById('tanggal-wrap-sk')) {
-                window._fpSK = flatpickr('#tanggal-wrap-sk', {
-                    wrap: true,
-                    dateFormat: 'j F Y',
-                    locale: {
-                        months: { longhand: BULAN_ID, shorthand: BULAN_ID_SHORT },
-                        weekdays: {
-                            longhand: ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'],
-                            shorthand: ['Min','Sen','Sel','Rab','Kam','Jum','Sab']
-                        },
-                        firstDayOfWeek: 1
+    // ── Flatpickr: mode direct (lebih reliabel dari wrap mode) ───────────────
+    var BULAN_ID       = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+    var BULAN_ID_SHORT = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+    try {
+        var fpInputSK = document.getElementById('tanggal_surat');
+        if (typeof flatpickr !== 'undefined' && fpInputSK) {
+            window._fpSK = flatpickr(fpInputSK, {
+                dateFormat: 'j F Y',
+                locale: {
+                    months: { longhand: BULAN_ID, shorthand: BULAN_ID_SHORT },
+                    weekdays: {
+                        longhand: ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'],
+                        shorthand: ['Min','Sen','Sel','Rab','Kam','Jum','Sab']
                     },
-                    allowInput: false,
-                    disableMobile: true,
-                });
+                    firstDayOfWeek: 1
+                },
+                allowInput: false,
+                disableMobile: true,
+            });
+            // Klik icon kalender → buka flatpickr
+            var fpIconSK = document.querySelector('#tanggal-wrap-sk .date-icon');
+            if (fpIconSK) fpIconSK.addEventListener('click', function() { window._fpSK.open(); });
+        }
+    } catch(e) { console.warn('Flatpickr SK error:', e); }
+
+    // ── Kode Klasifikasi: paksa uppercase & max 2 karakter ───────────────────
+    var kodeInputSK = document.getElementById('kode_klasifikasi');
+    if (kodeInputSK) {
+        kodeInputSK.addEventListener('input', function() {
+            var v = this.value.replace(/[^A-Za-z]/g, '').toUpperCase().slice(0, 2);
+            if (this.value !== v) this.value = v;
+        });
+        kodeInputSK.addEventListener('keydown', function(e) {
+            if (this.value.length >= 2 && e.key.length === 1 && !e.ctrlKey && !e.metaKey) {
+                e.preventDefault();
             }
-        } catch(e) { console.warn('Flatpickr SK init error:', e); }
-    });
+        });
+    }
 })();
 </script>
 @endpush
 
+@endsection

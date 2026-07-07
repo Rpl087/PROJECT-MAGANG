@@ -626,7 +626,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var sections = document.querySelectorAll('.report-section');
 
     function showTab(target) {
-        tabs.forEach(function(t) { t.classList.remove('active'); });
+        // Hanya atur visibility section — active class dikelola di click handler
         sections.forEach(function(sec) {
             sec.style.display = (sec.id === 'tab-' + target) ? '' : 'none';
         });
@@ -634,27 +634,48 @@ document.addEventListener('DOMContentLoaded', function () {
 
     tabs.forEach(function(tab) {
         tab.addEventListener('click', function() {
+            // Hapus active dari semua, lalu tambah ke yang diklik
+            tabs.forEach(function(t) { t.classList.remove('active'); });
             this.classList.add('active');
             showTab(this.dataset.tab);
         });
     });
 
-    function showAllForPrint() {
+    // Set active class ke tab pertama pada load (sudah ada 'active' di HTML, tapi pastikan)
+    var initActiveTab = document.querySelector('.report-tab.active');
+    if (!initActiveTab && tabs.length > 0) {
+        tabs[0].classList.add('active');
+    }
+
+    // ── Print: cetak HANYA tab yang sedang aktif ─────────────────────────
+    function preparePrint() {
+        // Dapatkan tab aktif
+        var activeTab = document.querySelector('.report-tab.active');
+        var activeId  = activeTab ? activeTab.dataset.tab : 'bulanan';
+
+        // Tampilkan HANYA section yang aktif
         sections.forEach(function(sec) {
-            sec.style.display      = 'block';
-            sec.style.marginBottom = '1.5rem';
-            // KRITIS: Hapus pre-hide agar opacity:0 tidak menyembunyikan konten
-            sec.classList.remove('pre-hide');
-            sec.classList.add('is-visible');
-        });
-        // Tampilkan semua baris detail klasifikasi per tahun
-        document.querySelectorAll('.row-kode-detail').forEach(function(r) {
-            r.style.display = 'table-row';
-        });
-        document.querySelectorAll('.tahun-toggle-icon').forEach(function(ic) {
-            ic.style.transform = 'rotate(90deg)';
+            if (sec.id === 'tab-' + activeId) {
+                sec.style.display      = 'block';
+                sec.style.marginBottom = '0';
+                sec.classList.remove('pre-hide');
+                sec.classList.add('is-visible');
+            } else {
+                sec.style.display = 'none';
+            }
         });
 
+        // Jika tab tahunan aktif: buka semua accordion detail kode
+        if (activeId === 'tahunan') {
+            document.querySelectorAll('.row-kode-detail').forEach(function(r) {
+                r.style.display = 'table-row';
+            });
+            document.querySelectorAll('.tahun-toggle-icon').forEach(function(ic) {
+                ic.style.transform = 'rotate(90deg)';
+            });
+        }
+
+        // Tampilkan print header & signature, sembunyikan page header
         var hdr      = document.getElementById('print-header-wrap');
         var sig      = document.getElementById('print-signature-wrap');
         var pgHeader = document.getElementById('report-page-header');
@@ -662,6 +683,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (sig)      sig.style.display      = 'block';
         if (pgHeader) pgHeader.style.display = 'none';
 
+        // Update teks tanggal cetak
         var metaDate = document.getElementById('print-meta-date');
         if (metaDate) {
             var n = new Date();
@@ -670,7 +692,6 @@ document.addEventListener('DOMContentLoaded', function () {
         var sigDate = document.getElementById('sig-date');
         if (sigDate) sigDate.textContent = formatDateShortID(new Date());
     }
-
 
     function restoreAfterPrint() {
         var activeTab = document.querySelector('.report-tab.active');
@@ -687,20 +708,21 @@ document.addEventListener('DOMContentLoaded', function () {
         if (pgHeader) pgHeader.style.display = '';
     }
 
-    window.addEventListener('beforeprint', showAllForPrint);
+    // beforeprint/afterprint events
+    window.addEventListener('beforeprint', preparePrint);
     window.addEventListener('afterprint',  restoreAfterPrint);
 
-    // Tombol Cetak: showAllForPrint() lalu window.print()
-    // window.print() akan trigger beforeprint (showAllForPrint) lagi — tidak masalah
+    // Tombol Cetak
     var btnPrint = document.getElementById('btn-print');
     if (btnPrint) {
         btnPrint.addEventListener('click', function() {
-            showAllForPrint();
+            preparePrint();
             window.print();
         });
     }
 
     // ── Accordion Rekap Tahunan ────────────────────────────────────────
+
     document.querySelectorAll('.row-tahun').forEach(function(row) {
         row.addEventListener('click', function() {
             var year   = this.getAttribute('data-year');
