@@ -492,7 +492,7 @@
             <nav class="sidebar-nav">
                 @if(Auth::user()->isAdmin())
                 <a href="{{ route('dashboard.index') }}"
-                   class="sidebar-link {{ request()->routeIs('dashboard.*') ? 'sidebar-link-active' : '' }}">
+                   class="sidebar-link {{ request()->routeIs('dashboard.index') ? 'sidebar-link-active' : '' }}">
                     <span class="sidebar-link-icon">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
@@ -500,6 +500,16 @@
                         </svg>
                     </span>
                     Dashboard
+                </a>
+                <a href="{{ route('dashboard.report') }}"
+                   class="sidebar-link {{ request()->routeIs('dashboard.report') ? 'sidebar-link-active' : '' }}">
+                    <span class="sidebar-link-icon">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+                            <line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
+                        </svg>
+                    </span>
+                    Report Rekap
                 </a>
                 @endif
                 <a href="{{ route('arsip.index') }}"
@@ -823,12 +833,12 @@
             // ── Tampilkan flash session sebagai Toast ─────────────────────
             @if(session('success'))
                 setTimeout(function () {
-                    showToast({!! json_encode(session('success')) !!}, 'success');
+                    showToast({{ json_encode(session('success'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) }}, 'success');
                 }, 400);
             @endif
             @if(session('error'))
                 setTimeout(function () {
-                    showToast({!! json_encode(session('error')) !!}, 'error');
+                    showToast({{ json_encode(session('error'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) }}, 'error');
                 }, 400);
             @endif
 

@@ -13,7 +13,7 @@ class ArsipController extends Controller
      */
     private function getSheetService(): array
     {
-        $credPath = env('GOOGLE_SERVICE_ACCOUNT_JSON');
+        $credPath = config('google.service_account_json');
         if (empty($credPath)) {
             throw new \RuntimeException('GOOGLE_SERVICE_ACCOUNT_JSON belum dikonfigurasi di .env');
         }
@@ -25,7 +25,7 @@ class ArsipController extends Controller
         $client->setAuthConfig($credFullPath);
         $client->addScope(Sheets::SPREADSHEETS);
         $service       = new Sheets($client);
-        $spreadsheetId = env('GOOGLE_SHEET_ID');
+        $spreadsheetId = config('google.sheet_id');
         return [$service, $spreadsheetId];
     }
 
@@ -55,7 +55,7 @@ class ArsipController extends Controller
      *   K(10)=Lokasi Simpan | L(11)=Klas Keamanan | M(12)=Tingkat Akses
      *   N(13)=Retensi Aktif | O(14)=Retensi Inaktif | P(15)=Retensi Ket | Q(16)=Link Folder
      */
-    public function index()
+    public function index(Request $request)
     {
         $rows       = [];
         $fetchError = null;
@@ -78,7 +78,38 @@ class ArsipController extends Controller
             }
         }
 
-        return view('arsip.index', compact('rows', 'fetchError', 'isAdmin'));
+        // Filter bulan dari request
+        $filterBulan = $request->get('bulan', '');
+        $filterTahun = $request->get('tahun', '');
+
+        return view('arsip.index', compact('rows', 'fetchError', 'isAdmin', 'filterBulan', 'filterTahun'));
+    }
+
+    /**
+     * Tampilkan daftar surat masuk dalam mode READ-ONLY untuk tamu (WiFi Tamu).
+     * Tidak memerlukan autentikasi. Hanya menampilkan data tanpa form input atau tombol hapus.
+     */
+    public function indexGuest()
+    {
+        $rows       = [];
+        $fetchError = null;
+
+        try {
+            [$service, $spreadsheetId] = $this->getSheetService();
+            $response = $service->spreadsheets_values->get($spreadsheetId, 'SURAT MASUK!A:Q');
+            $values   = $response->getValues() ?? [];
+
+            foreach ($values as $i => $row) {
+                if ($i === 0) continue;
+                $tanggal = trim($row[7] ?? '');
+                if (empty($tanggal)) continue;
+                $rows[] = ['index' => $i, 'data' => $row];
+            }
+        } catch (\Exception $e) {
+            $fetchError = 'Gagal memuat data dari Google Sheets: ' . $e->getMessage();
+        }
+
+        return view('tamu.index', compact('rows', 'fetchError'));
     }
 
     /**
@@ -207,27 +238,19 @@ class ArsipController extends Controller
         ]);
 
         try {
-            $credPath = env('GOOGLE_SERVICE_ACCOUNT_JSON');
-            if (empty($credPath)) {
-                throw new \RuntimeException('GOOGLE_SERVICE_ACCOUNT_JSON belum dikonfigurasi di .env');
-            }
-            $credFullPath = base_path($credPath);
-            if (!file_exists($credFullPath) || !is_file($credFullPath)) {
-                throw new \RuntimeException("File kredensial Google tidak ditemukan: {$credFullPath}");
-            }
-            $client = new Client();
-            $client->setAuthConfig($credFullPath);
-            $client->addScope(Sheets::SPREADSHEETS);
+            [$service, $spreadsheetId] = $this->getSheetService();
 
-            $service       = new Sheets($client);
-            $spreadsheetId = env('GOOGLE_SHEET_ID');
             // Target: sheet dbSM (sumber data asli)
-            $sheetRange    = 'dbSM!A:R';
+            $sheetRange = 'dbSM!A:R';
 
-            // ── Upload file PDF → simpan URL sebagai Link Folder (kolom R) ────
-            $file       = $request->file('surat_masuk');
-            $filename   = now()->format('Ymd_His') . '_' .
-                          preg_replace('/[^a-zA-Z0-9._-]/', '_', $file->getClientOriginalName());
+            // ── Upload file PDF dengan nama pendek berisi kode klasifikasi ────
+            $file = $request->file('surat_masuk');
+
+            // Format: SM_{KodeKlas}_{KodeSurat}_{Ymd_His}.pdf
+            $kodeKlasSlug = preg_replace('/[^a-zA-Z0-9]/', '', $validated['kode_klasifikasi']);
+            $kodeSuratSlug = preg_replace('/[^a-zA-Z0-9]/', '', $validated['kode_surat']);
+            $filename = 'SM_' . strtoupper($kodeKlasSlug) . '_' . $kodeSuratSlug . '_' . now()->format('Ymd_His') . '.pdf';
+
             $file->storeAs('arsip/surat-masuk', $filename, 'public');
             // Simpan hanya filename — URL di-generate dinamis saat tampil
             $linkFolder = $filename;

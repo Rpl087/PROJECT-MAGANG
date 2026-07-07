@@ -57,7 +57,7 @@ class SuratKeluarController extends Controller
      *   K(10)=Lokasi Simpan | L(11)=Klas Keamanan | M(12)=Tingkat Akses
      *   N(13)=Retensi Aktif | O(14)=Retensi Inaktif | P(15)=Retensi Ket | Q(16)=Link Folder
      */
-    public function index()
+    public function index(Request $request)
     {
         $rows       = [];
         $fetchError = null;
@@ -80,7 +80,38 @@ class SuratKeluarController extends Controller
             }
         }
 
-        return view('arsip.surat-keluar', compact('rows', 'fetchError', 'isAdmin'));
+        // Filter bulan dari request
+        $filterBulan = $request->get('bulan', '');
+        $filterTahun = $request->get('tahun', '');
+
+        return view('arsip.surat-keluar', compact('rows', 'fetchError', 'isAdmin', 'filterBulan', 'filterTahun'));
+    }
+
+    /**
+     * Tampilkan daftar surat keluar dalam mode READ-ONLY untuk tamu (WiFi Tamu).
+     * Tidak memerlukan autentikasi. Hanya menampilkan data tanpa form input atau tombol hapus.
+     */
+    public function indexGuest()
+    {
+        $rows       = [];
+        $fetchError = null;
+
+        try {
+            [$service, $spreadsheetId] = $this->getSheetService();
+            $response = $service->spreadsheets_values->get($spreadsheetId, 'SURAT KELUAR!A:Q');
+            $values   = $response->getValues() ?? [];
+
+            foreach ($values as $i => $row) {
+                if ($i === 0) continue;
+                $tanggal = trim($row[7] ?? '');
+                if (empty($tanggal)) continue;
+                $rows[] = ['index' => $i, 'data' => $row];
+            }
+        } catch (\Exception $e) {
+            $fetchError = 'Gagal memuat data dari Google Sheets: ' . $e->getMessage();
+        }
+
+        return view('tamu.surat-keluar', compact('rows', 'fetchError'));
     }
 
     /**
@@ -234,16 +265,14 @@ class SuratKeluarController extends Controller
             $spreadsheetId = config('google.sheet_id');
             $range = "dbSK!A:R";
 
-            // Simpan file PDF surat keluar
+            // Simpan file PDF surat keluar dengan nama pendek berisi kode klasifikasi
             $file = $request->file("surat_keluar");
-            $filename =
-                now()->format("Ymd_His") .
-                "_" .
-                preg_replace(
-                    "/[^a-zA-Z0-9._-]/",
-                    "_",
-                    $file->getClientOriginalName(),
-                );
+
+            // Format: SK_{KodeKlas}_{KodeSurat}_{Ymd_His}.pdf
+            $kodeKlasSlug  = preg_replace('/[^a-zA-Z0-9]/', '', $validated["kode_klasifikasi"]);
+            $kodeSuratSlug = preg_replace('/[^a-zA-Z0-9]/', '', $validated["kode_surat"]);
+            $filename = 'SK_' . strtoupper($kodeKlasSlug) . '_' . $kodeSuratSlug . '_' . now()->format("Ymd_His") . '.pdf';
+
             $file->storeAs("arsip/surat-keluar", $filename, "public");
             // Simpan hanya filename — URL di-generate dinamis saat tampil
             $filePath = $filename;

@@ -9,7 +9,9 @@ use App\Http\Controllers\Auth\LoginController;
 
 // ── Auth Routes ──────────────────────────────────────────────────────────────
 Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
-Route::post('/login', [LoginController::class, 'login'])->name('login.post');
+Route::post('/login', [LoginController::class, 'login'])
+    ->middleware('throttle:5,1')   // Maks 5 percobaan login per menit per IP
+    ->name('login.post');
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
 // ── Public PDF Access ─────────────────────────────────────────────────────────
@@ -75,18 +77,25 @@ Route::middleware('auth')->group(function () {
 
     // Surat Masuk — semua user login (admin & internship) bisa input form
     Route::get('/', [ArsipController::class, 'index'])->name('arsip.index');
-    Route::post('/arsip', [ArsipController::class, 'store'])->name('arsip.store');
+    Route::post('/arsip', [ArsipController::class, 'store'])
+        ->middleware('internal_only')
+        ->name('arsip.store');
 
     // Surat Keluar — semua user login bisa input form
     Route::get('/surat-keluar', [SuratKeluarController::class, 'index'])->name('surat-keluar.index');
-    Route::post('/surat-keluar', [SuratKeluarController::class, 'store'])->name('surat-keluar.store');
+    Route::post('/surat-keluar', [SuratKeluarController::class, 'store'])
+        ->middleware('internal_only')
+        ->name('surat-keluar.store');
 });
 
 // ── Admin-only Routes (wajib login + role admin) ──────────────────────────────
-Route::middleware(['auth', \App\Http\Middleware\AdminOnly::class])->group(function () {
+Route::middleware(['auth', \App\Http\Middleware\AdminOnly::class, 'internal_only'])->group(function () {
 
     // Dashboard (hanya admin)
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard.index');
+
+    // Report Rekapan (hanya admin)
+    Route::get('/dashboard/report', [DashboardController::class, 'report'])->name('dashboard.report');
 
     // Hapus Surat Masuk — hanya admin (dari sheet "SURAT MASUK")
     Route::delete('/arsip/{rowIndex}', [ArsipController::class, 'destroy'])->name('arsip.destroy');
@@ -94,3 +103,15 @@ Route::middleware(['auth', \App\Http\Middleware\AdminOnly::class])->group(functi
     // Hapus Surat Keluar — hanya admin (dari sheet "SURAT KELUAR")
     Route::delete('/surat-keluar/{rowIndex}', [SuratKeluarController::class, 'destroy'])->name('surat-keluar.destroy');
 });
+
+// ── Guest Network Routes (WiFi Tamu — read-only, tanpa login) ─────────────────
+// Hanya bisa diakses dari subnet WiFi Tamu atau Internal (via middleware GuestNetwork)
+Route::middleware('guest_network')->prefix('tamu')->name('tamu.')->group(function () {
+
+    // Halaman utama tamu: daftar surat masuk (read-only)
+    Route::get('/', [ArsipController::class, 'indexGuest'])->name('index');
+
+    // Halaman surat keluar tamu (read-only)
+    Route::get('/surat-keluar', [SuratKeluarController::class, 'indexGuest'])->name('surat-keluar');
+});
+

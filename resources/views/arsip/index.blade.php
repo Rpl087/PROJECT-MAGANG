@@ -3,13 +3,22 @@
 @section('title', 'Surat Masuk')
 
 @section('content')
-<div class="page-header pre-hide">
-    <h2 class="page-title">Surat Masuk</h2>
-    @if($isAdmin ?? false)
-        <p class="page-description">Lihat daftar arsip tersimpan dan tambah surat masuk baru ke dalam sistem.</p>
-    @else
-        <p class="page-description">Gunakan formulir di bawah untuk mengarsipkan surat masuk ke dalam sistem.</p>
-    @endif
+<div class="page-header pre-hide" style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:.75rem;">
+    <div>
+        <h2 class="page-title">Surat Masuk</h2>
+        @if($isAdmin ?? false)
+            <p class="page-description">Lihat daftar arsip tersimpan dan tambah surat masuk baru ke dalam sistem.</p>
+        @else
+            <p class="page-description">Gunakan formulir di bawah untuk mengarsipkan surat masuk ke dalam sistem.</p>
+        @endif
+    </div>
+    {{-- Live date/time --}}
+    <div class="live-date-badge" id="live-date-sm">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        <span id="live-clock-sm">--:--:--</span>
+        <span class="live-date-divider">|</span>
+        <span id="live-date-text-sm"></span>
+    </div>
 </div>
 
 {{-- ── TABEL DAFTAR SURAT MASUK (hanya tampil untuk admin) ────────────────────── --}}
@@ -32,6 +41,47 @@
                 {{ $fetchError }}
             </div>
         @endif
+
+        {{-- ── Filter Bulan & Tahun + Sort Klasifikasi ── --}}
+        <div class="table-filter-bar" id="filter-bar-sm">
+            <div class="filter-group">
+                <label for="filter-bulan-sm" class="filter-label">Filter Bulan:</label>
+                <select id="filter-bulan-sm" class="filter-select">
+                    <option value="">Semua Bulan</option>
+                    <option value="1">Januari</option>
+                    <option value="2">Februari</option>
+                    <option value="3">Maret</option>
+                    <option value="4">April</option>
+                    <option value="5">Mei</option>
+                    <option value="6">Juni</option>
+                    <option value="7">Juli</option>
+                    <option value="8">Agustus</option>
+                    <option value="9">September</option>
+                    <option value="10">Oktober</option>
+                    <option value="11">November</option>
+                    <option value="12">Desember</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="filter-tahun-sm" class="filter-label">Tahun:</label>
+                <select id="filter-tahun-sm" class="filter-select">
+                    <option value="">Semua Tahun</option>
+                    @php
+                        $tahunList = [];
+                        foreach($rows as $item) {
+                            $t = trim($item['data'][7] ?? '');
+                            if(preg_match('/(\d{4})/', $t, $m)) $tahunList[$m[1]] = true;
+                        }
+                        krsort($tahunList);
+                    @endphp
+                    @foreach($tahunList as $thn => $_)
+                    <option value="{{ $thn }}">{{ $thn }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <button type="button" class="filter-reset" id="filter-reset-sm">Reset Filter</button>
+            <div class="filter-count" id="filter-count-sm"></div>
+        </div>
 
         {{-- ── Skeleton Loader (tampil 1 tick sebelum tabel asli muncul) ── --}}
         <div id="table-skeleton-sm" class="skeleton-table-wrapper" aria-hidden="true">
@@ -57,18 +107,18 @@
 
         {{-- ── Tabel Sesungguhnya (hidden sampai skeleton diremove) ── --}}
         <div id="table-content-sm" style="overflow-x:auto; margin-top:.5rem; display:none;">
-            <table class="arsip-table">
+            <table class="arsip-table" id="arsip-table-sm">
                 <thead>
                     <tr>
-                        <th>No</th>
-                        <th>Tanggal Surat</th>
-                        <th>Kode Klasifikasi</th>
+                        <th class="th-sortable" data-col="no" style="cursor:default;">No</th>
+                        <th class="th-sortable" data-col="tanggal">Tanggal Surat <span class="sort-icon">↕</span></th>
+                        <th class="th-sortable" data-col="kode" id="th-kode-sm">Kode Klasifikasi <span class="sort-icon">↕</span></th>
                         <th>Uraian Berkas</th>
                         <th>Link Folder</th>
                         <th>Aksi</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="tbody-sm">
                     @forelse($rows as $no => $item)
                         @php
                             $d           = $item['data'];
@@ -79,6 +129,7 @@
                             $tanggal      = $d[7]  ?? '-';  // H: Tanggal Surat
                             $kodeKlasRaw  = $d[1]  ?? '';   // B: Kode Klasifikasi
                             $kodeKlas     = (str_starts_with($kodeKlasRaw, '#') || $kodeKlasRaw === '') ? '—' : $kodeKlasRaw;
+                            $kodePrefix   = preg_match('/^([A-Za-z]+)/', $kodeKlasRaw, $km) ? strtoupper($km[1]) : '';
                             $uraian       = $d[2]  ?? '-';  // C: Uraian Berkas
                             $rawLink      = trim($d[16] ?? '');  // Q: Link Folder (filename atau URL lama)
                             // Generate URL dinamis jika berupa filename; gunakan apa adanya jika sudah URL
@@ -88,9 +139,23 @@
                                     ? $rawLink  // URL lama (legacy) — tetap dipakai
                                     : route('pdf.view', ['type' => 'surat-masuk', 'filename' => $rawLink]);
                             }
+                            // Parse bulan & tahun untuk filter
+                            $bulanNum = '';
+                            $tahunNum = '';
+                            if (preg_match('/(\d{1,2})\s+\w+\s+(\d{4})/', $tanggal, $dm)) {
+                                $bulanIndo = ['januari'=>1,'februari'=>2,'maret'=>3,'april'=>4,'mei'=>5,'juni'=>6,'juli'=>7,'agustus'=>8,'september'=>9,'oktober'=>10,'november'=>11,'desember'=>12,'january'=>1,'february'=>2,'march'=>3,'may'=>5,'june'=>6,'july'=>7,'august'=>8,'october'=>10,'december'=>12];
+                                preg_match('/\d{1,2}\s+(\w+)\s+\d{4}/i', $tanggal, $bm);
+                                $bulanStr = strtolower($bm[1] ?? '');
+                                $bulanNum = $bulanIndo[$bulanStr] ?? '';
+                                $tahunNum = $dm[2];
+                            } elseif (preg_match('/(\d{4})-(\d{2})-(\d{2})/', $tanggal, $dm)) {
+                                $tahunNum = $dm[1]; $bulanNum = (int)$dm[2];
+                            } elseif (preg_match('/(\d{1,2})\/(\d{1,2})\/(\d{4})/', $tanggal, $dm)) {
+                                $bulanNum = (int)$dm[2]; $tahunNum = $dm[3];
+                            }
                         @endphp
-                        <tr>
-                            <td class="td-center td-no">{{ $no + 1 }}</td>
+                        <tr data-bulan="{{ $bulanNum }}" data-tahun="{{ $tahunNum }}" data-kode="{{ $kodePrefix }}">
+                            <td class="td-center td-no row-no">{{ $no + 1 }}</td>
                             <td class="td-nowrap">{{ $tanggal }}</td>
                             <td><span class="badge-kode {{ $kodeKlas === '—' ? 'badge-kode-empty' : '' }}">{{ $kodeKlas }}</span></td>
                             <td class="td-uraian">{{ Str::limit($uraian, 60) }}</td>
@@ -195,13 +260,20 @@
 
             <div class="form-group">
                 <label for="tanggal_surat" class="form-label">Tanggal Surat <span class="required">*</span></label>
-                <div class="date-input-wrap">
+                @php
+                    // Tanggal hari ini dalam format Indonesia (misal: 7 Juli 2026)
+                    $_bulanID = ['','Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+                    $_todaySM = now()->day . ' ' . $_bulanID[now()->month] . ' ' . now()->year;
+                @endphp
+                {{-- flatpickr wrap mode: klik input ATAU ikon = buka kalender --}}
+                <div class="date-input-wrap" id="tanggal-wrap-sm">
                     <input type="text" name="tanggal_surat" id="tanggal_surat"
-                           class="form-input flatpickr-input @error('tanggal_surat') input-error @enderror"
-                           value="{{ old('tanggal_surat') }}"
+                           class="form-input @error('tanggal_surat') input-error @enderror"
+                           value="{{ old('tanggal_surat') ?: $_todaySM }}"
                            placeholder="Contoh: 11 Mei 2026"
-                           autocomplete="off" required readonly>
-                    <span class="date-icon">
+                           autocomplete="off" required
+                           data-input>
+                    <span class="date-icon" data-toggle style="cursor:pointer; pointer-events:auto;">
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
                         </svg>
@@ -410,6 +482,22 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 </noscript>
 <style>
+/* ── Live Date Badge ──────────────────────────────────── */
+.live-date-badge {
+    display: inline-flex; align-items: center; gap: .4rem;
+    padding: .4rem .85rem;
+    background: var(--color-primary-light);
+    border: 1px solid var(--color-border);
+    border-radius: 999px;
+    font-size: .8rem; font-weight: 600;
+    color: var(--color-text-muted);
+    flex-shrink: 0; white-space: nowrap;
+    transition: color .2s;
+}
+.live-date-badge svg { flex-shrink: 0; color: var(--color-primary); }
+.live-date-divider { opacity: .4; }
+#live-date-text-sm { font-weight: 500; }
+
 /* ── Form Divider (pemisah tabel & form) ─── */
 .sm-form-divider {
     display: flex;
@@ -438,6 +526,32 @@
     letter-spacing: .01em;
 }
 
+/* ── Filter Bar ─────────────────────────────────────── */
+.table-filter-bar {
+    display: flex; flex-wrap: wrap; align-items: center;
+    gap: .6rem; padding: .75rem 1rem;
+    background: var(--color-bg, #0f172a); border-bottom: 1px solid var(--color-border);
+    border-radius: .5rem .5rem 0 0;
+    margin-bottom: 0;
+}
+.filter-label { font-size: .78rem; font-weight: 600; color: var(--color-text-muted); white-space: nowrap; }
+.filter-group { display: flex; align-items: center; gap: .4rem; }
+.filter-select {
+    padding: .35rem .65rem; font-size: .8rem; font-family: inherit;
+    background: var(--color-surface); border: 1px solid var(--color-border);
+    border-radius: .375rem; color: var(--color-text); cursor: pointer;
+    outline: none; transition: border-color .2s;
+}
+.filter-select:focus { border-color: var(--color-primary); }
+.filter-reset {
+    padding: .35rem .75rem; font-size: .78rem; font-weight: 600; font-family: inherit;
+    background: transparent; border: 1px solid var(--color-border);
+    border-radius: .375rem; color: var(--color-text-muted); cursor: pointer;
+    transition: all .2s;
+}
+.filter-reset:hover { border-color: var(--color-primary); color: var(--color-primary); }
+.filter-count { font-size: .78rem; color: var(--color-text-muted); margin-left: auto; }
+
 /* ── Tabel Arsip ───────────────────────────────────────── */
 .arsip-table { width:100%; border-collapse:collapse; font-size:.875rem; }
 .arsip-table th {
@@ -451,12 +565,18 @@
     background: var(--color-primary-hover, #15314f);
     color: #e2e8f0;
 }
+.th-sortable { cursor: pointer; user-select: none; }
+.th-sortable:hover { background: var(--color-primary-hover, #15314f); }
+.th-sortable.sort-asc .sort-icon::after { content: ' ↑'; }
+.th-sortable.sort-desc .sort-icon::after { content: ' ↓'; }
+.sort-icon { opacity: .6; font-size: .8em; }
 .arsip-table td {
     padding:.7rem 1rem; border-bottom:1px solid var(--color-border, #2a3347);
     color: var(--color-text, #e2e8f0); vertical-align:middle;
 }
 .arsip-table tbody tr:last-child td { border-bottom:none; }
 .arsip-table tbody tr:hover td { background: rgba(99,102,241,.06); }
+.arsip-table tbody tr[style*="display:none"] { display:none !important; }
 .td-center { text-align:center; }
 .td-nowrap { white-space:nowrap; }
 .td-no { width:48px; font-weight:600; color:var(--color-text-muted,#8892a4); }
@@ -519,13 +639,18 @@
 .alert { display:flex; align-items:center; gap:.5rem; padding:.75rem 1rem; border-radius:.5rem; font-size:.875rem; }
 .alert-error { background:rgba(239,68,68,.1); color:#f87171; border:1px solid rgba(239,68,68,.2); }
 
-/* ── Flatpickr ───────────────────────────────────── */
+/* ── Flatpickr — wrap mode ───────────────────────────── */
 .date-input-wrap { position: relative; }
 .date-input-wrap .form-input { padding-right: 2.5rem; cursor: pointer; }
 .date-icon {
     position: absolute; right: .75rem; top: 50%; transform: translateY(-50%);
-    color: var(--color-text-muted); pointer-events: none; display: flex;
+    color: var(--color-text-muted);
+    pointer-events: auto;   /* icon bisa diklik! */
+    display: flex;
+    cursor: pointer;
+    z-index: 1;
 }
+.date-icon:hover { color: var(--color-primary); }
 .flatpickr-calendar { font-family: var(--font-family) !important; border-radius: var(--radius-lg) !important; box-shadow: var(--shadow-lg) !important; border: 1px solid var(--color-border) !important; }
 .flatpickr-day.selected, .flatpickr-day.selected:hover { background: var(--color-primary) !important; border-color: var(--color-primary) !important; }
 .flatpickr-day:hover { background: var(--color-primary-light) !important; color: var(--color-primary) !important; }
@@ -536,9 +661,7 @@
 <script>
 document.addEventListener('DOMContentLoaded', function () {
 
-    // ── Skeleton → Tabel: tampilkan tabel setelah 1 frame paint ──────────
-    // Ini memastikan tabel selalu punya style sebelum ditampilkan.
-    // Skeleton dibuang lewat requestAnimationFrame (≈ 16ms) setelah paint.
+    // ── Skeleton → Tabel ───────────────────────────────────────────────
     (function () {
         var skeleton = document.getElementById('table-skeleton-sm');
         var content  = document.getElementById('table-content-sm');
@@ -551,6 +674,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 content.classList.add('table-content-ready');
                 setTimeout(function () {
                     if (skeleton.parentNode) skeleton.parentNode.removeChild(skeleton);
+                    applyFilter(); // init filter setelah tabel muncul
                 }, 220);
             });
         });
@@ -563,21 +687,19 @@ document.addEventListener('DOMContentLoaded', function () {
     const modalConfirm= document.getElementById('modal-confirm');
     let   pendingForm = null;
 
-    // Pindahkan modal ke document.body agar position:fixed
-    // tidak terpengaruh stacking context dari ancestor (transform/animation)
     document.body.appendChild(modal);
 
     function openModal(label, form) {
         pendingForm = form;
         modalLabel.textContent = label;
         modal.style.display    = 'flex';
-        document.body.style.overflow = 'hidden'; // lock scroll
+        document.body.style.overflow = 'hidden';
     }
 
     function closeModal() {
         modal.style.display = 'none';
         pendingForm = null;
-        document.body.style.overflow = ''; // unlock scroll
+        document.body.style.overflow = '';
     }
 
     document.querySelectorAll('.btn-hapus').forEach(function (btn) {
@@ -587,21 +709,15 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     modalCancel.addEventListener('click', closeModal);
-
     modalConfirm.addEventListener('click', function () {
         if (pendingForm) pendingForm.submit();
     });
-
-    modal.addEventListener('click', function (e) {
-        if (e.target === modal) closeModal();
-    });
-
-    // Escape key menutup modal
+    modal.addEventListener('click', function (e) { if (e.target === modal) closeModal(); });
     document.addEventListener('keydown', function (e) {
         if (e.key === 'Escape' && modal.style.display === 'flex') closeModal();
     });
 
-    // ── File Upload (gunakan label sebagai trigger — tanpa JS click) ──
+    // ── File Upload ──────────────────────────────────────────────
     const zone        = document.getElementById('upload-zone');
     const input       = document.getElementById('surat_masuk');
     const placeholder = document.getElementById('upload-placeholder');
@@ -615,7 +731,6 @@ document.addEventListener('DOMContentLoaded', function () {
         if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
         return (bytes / 1048576).toFixed(2) + ' MB';
     }
-
     function showPreview(file) {
         fileName.textContent = file.name;
         fileSize.textContent = formatBytes(file.size);
@@ -624,22 +739,16 @@ document.addEventListener('DOMContentLoaded', function () {
         zone.classList.add('file-upload-has-file');
         zone.classList.remove('file-upload-error');
     }
-
     function clearFile() {
         input.value           = '';
         preview.style.display = 'none';
         placeholder.style.display = '';
         zone.classList.remove('file-upload-has-file');
     }
-
-    // Zone = <label>, sudah otomatis trigger input klik — hanya perlu handle drag & preview
-    // Tombol hapus: stop propagation agar tidak re-trigger label
     removeBtn.addEventListener('click', function (e) { e.preventDefault(); clearFile(); });
-
     input.addEventListener('change', function () {
         if (this.files.length > 0) showPreview(this.files[0]);
     });
-
     ['dragenter', 'dragover'].forEach(function (evt) {
         zone.addEventListener(evt, function (e) { e.preventDefault(); zone.classList.add('file-upload-drag'); });
     });
@@ -655,34 +764,175 @@ document.addEventListener('DOMContentLoaded', function () {
         input.files = dt.files;
         showPreview(file);
     });
-
     document.getElementById('btn-reset').addEventListener('click', function () {
         document.getElementById('arsip-form').reset();
         clearFile();
         if (window._fpSM) window._fpSM.clear();
     });
+
+    // ── Filter Bulan & Tahun ─────────────────────────────────────
+    const selBulan  = document.getElementById('filter-bulan-sm');
+    const selTahun  = document.getElementById('filter-tahun-sm');
+    const btnReset  = document.getElementById('filter-reset-sm');
+    const countEl   = document.getElementById('filter-count-sm');
+    const tbody     = document.getElementById('tbody-sm');
+
+    function applyFilter() {
+        if (!tbody) return;
+        const bulan = selBulan ? selBulan.value : '';
+        const tahun = selTahun ? selTahun.value : '';
+        const rows  = tbody.querySelectorAll('tr[data-bulan]');
+        let visible = 0;
+        rows.forEach(function (tr) {
+            const rb = tr.dataset.bulan;
+            const rt = tr.dataset.tahun;
+            const show = (!bulan || rb == bulan) && (!tahun || rt == tahun);
+            tr.style.display = show ? '' : 'none';
+            if (show) visible++;
+        });
+        // Renumber visible rows
+        let no = 1;
+        rows.forEach(function (tr) {
+            if (tr.style.display !== 'none') {
+                const noCell = tr.querySelector('.row-no');
+                if (noCell) noCell.textContent = no++;
+            }
+        });
+        if (countEl) {
+            const total = rows.length;
+            countEl.textContent = (bulan || tahun) ? (visible + ' dari ' + total + ' data ditampilkan') : '';
+        }
+    }
+
+    if (selBulan) selBulan.addEventListener('change', applyFilter);
+    if (selTahun) selTahun.addEventListener('change', applyFilter);
+    if (btnReset) btnReset.addEventListener('click', function () {
+        if (selBulan) selBulan.value = '';
+        if (selTahun) selTahun.value = '';
+        applyFilter();
+    });
+
+    // ── Sort per Klasifikasi ─────────────────────────────────────
+    // Urutan prioritas kode klasifikasi
+    const KODE_ORDER = ['PR','KP','OT','KU','HK','UM','PL','UP','HM','PW','LT','DL','DT','KI'];
+    let sortDir = ''; // '' = no sort, 'asc' = ascending, 'desc' = descending
+
+    function kodeRank(kode) {
+        const idx = KODE_ORDER.indexOf(kode.toUpperCase());
+        return idx === -1 ? 999 : idx;
+    }
+
+    const thKode = document.getElementById('th-kode-sm');
+    if (thKode && tbody) {
+        thKode.addEventListener('click', function () {
+            // Cycle: none → asc → desc → none
+            if (sortDir === '') sortDir = 'asc';
+            else if (sortDir === 'asc') sortDir = 'desc';
+            else sortDir = '';
+
+            // Update visual indicator
+            document.querySelectorAll('.th-sortable').forEach(th => {
+                th.classList.remove('sort-asc', 'sort-desc');
+            });
+            if (sortDir === 'asc') thKode.classList.add('sort-asc');
+            else if (sortDir === 'desc') thKode.classList.add('sort-desc');
+
+            const rows = Array.from(tbody.querySelectorAll('tr[data-kode]'));
+            if (sortDir === '') {
+                // Kembalikan ke urutan semula (berdasarkan data-original-order)
+                rows.sort(function (a, b) {
+                    return parseInt(a.dataset.originalOrder || 0) - parseInt(b.dataset.originalOrder || 0);
+                });
+            } else {
+                rows.sort(function (a, b) {
+                    const ra = kodeRank(a.dataset.kode);
+                    const rb = kodeRank(b.dataset.kode);
+                    return sortDir === 'asc' ? ra - rb : rb - ra;
+                });
+            }
+            rows.forEach(function (row) { tbody.appendChild(row); });
+            applyFilter(); // reapply filter after sort
+        });
+
+        // Simpan urutan asli
+        const rows = tbody.querySelectorAll('tr[data-kode]');
+        rows.forEach(function (row, i) {
+            row.dataset.originalOrder = i;
+        });
+    }
+
+    // Sortable Tanggal
+    const thTanggal = document.querySelector('#arsip-table-sm th[data-col="tanggal"]');
+    let sortTanggalDir = '';
+    if (thTanggal && tbody) {
+        thTanggal.addEventListener('click', function () {
+            if (sortTanggalDir === '') sortTanggalDir = 'asc';
+            else if (sortTanggalDir === 'asc') sortTanggalDir = 'desc';
+            else sortTanggalDir = '';
+            document.querySelectorAll('.th-sortable').forEach(th => th.classList.remove('sort-asc','sort-desc'));
+            if (sortTanggalDir === 'asc') thTanggal.classList.add('sort-asc');
+            else if (sortTanggalDir === 'desc') thTanggal.classList.add('sort-desc');
+
+            const rows = Array.from(tbody.querySelectorAll('tr[data-kode]'));
+            if (sortTanggalDir === '') {
+                rows.sort((a,b) => parseInt(a.dataset.originalOrder||0) - parseInt(b.dataset.originalOrder||0));
+            } else {
+                rows.sort(function(a,b) {
+                    const ta = a.dataset.tahun ? (a.dataset.tahun * 100 + parseInt(a.dataset.bulan||0)) : 0;
+                    const tb = b.dataset.tahun ? (b.dataset.tahun * 100 + parseInt(b.dataset.bulan||0)) : 0;
+                    return sortTanggalDir === 'asc' ? ta - tb : tb - ta;
+                });
+            }
+            rows.forEach(row => tbody.appendChild(row));
+            applyFilter();
+        });
+    }
 });
 </script>
+@push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/id.js"></script>
 <script>
-document.addEventListener('DOMContentLoaded', function () {
-    var BULAN_ID = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
-    var BULAN_ID_SHORT = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
-    window._fpSM = flatpickr('#tanggal_surat', {
-        dateFormat: 'j F Y',
-        locale: {
-            months: { longhand: BULAN_ID, shorthand: BULAN_ID_SHORT },
-            weekdays: {
-                longhand: ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'],
-                shorthand: ['Min','Sen','Sel','Rab','Kam','Jum','Sab']
-            },
-            firstDayOfWeek: 1
-        },
-        allowInput: false,
-        disableMobile: true,
+(function() {
+    // ── Live Clock (berjalan independen, tidak bergantung flatpickr) ─────────────────────────────
+    var BIDS = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+    var HIDS = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+    function pad(n) { return String(n).padStart(2,'0'); }
+    var clockEl = document.getElementById('live-clock-sm');
+    var dateEl  = document.getElementById('live-date-text-sm');
+    function tickSM() {
+        var d = new Date();
+        if (clockEl) clockEl.textContent = pad(d.getHours())+':'+pad(d.getMinutes())+':'+pad(d.getSeconds());
+        if (dateEl)  dateEl.textContent  = HIDS[d.getDay()]+', '+d.getDate()+' '+BIDS[d.getMonth()]+' '+d.getFullYear();
+    }
+    tickSM();
+    setInterval(tickSM, 1000);
+
+    // ── Flatpickr (di-init setelah DOM ready, di dalam try-catch) ─────────────────────────────
+    document.addEventListener('DOMContentLoaded', function() {
+        var BULAN_ID = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+        var BULAN_ID_SHORT = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+        try {
+            if (typeof flatpickr !== 'undefined' && document.getElementById('tanggal-wrap-sm')) {
+                window._fpSM = flatpickr('#tanggal-wrap-sm', {
+                    wrap: true,
+                    dateFormat: 'j F Y',
+                    locale: {
+                        months: { longhand: BULAN_ID, shorthand: BULAN_ID_SHORT },
+                        weekdays: {
+                            longhand: ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'],
+                            shorthand: ['Min','Sen','Sel','Rab','Kam','Jum','Sab']
+                        },
+                        firstDayOfWeek: 1
+                    },
+                    allowInput: false,
+                    disableMobile: true,
+                });
+            }
+        } catch(e) { console.warn('Flatpickr SM init error:', e); }
     });
-});
+})();
 </script>
 @endpush
+
 @endsection

@@ -119,6 +119,181 @@ class DashboardController extends Controller
     }
 
     /**
+     * Halaman Report Rekapan Bulanan & Tahunan (printable).
+     */
+    public function report()
+    {
+        try {
+            $credPath = config('google.service_account_json');
+            if (empty($credPath)) {
+                throw new \RuntimeException('GOOGLE_SERVICE_ACCOUNT_JSON belum dikonfigurasi di .env');
+            }
+
+            $credFullPath = base_path($credPath);
+            if (!file_exists($credFullPath) || !is_file($credFullPath)) {
+                throw new \RuntimeException("File kredensial Google tidak ditemukan: {$credFullPath}");
+            }
+
+            $client = new Client();
+            $client->setAuthConfig($credFullPath);
+            $client->addScope(Sheets::SPREADSHEETS_READONLY);
+
+            $service       = new Sheets($client);
+            $spreadsheetId = config('google.sheet_id');
+
+            // Baca sheet dbSM (Surat Masuk)
+            $smResponse = $service->spreadsheets_values->get($spreadsheetId, 'dbSM!A:R');
+            $smRows     = $smResponse->getValues() ?? [];
+
+            // Baca sheet SURAT KELUAR
+            $skResponse = $service->spreadsheets_values->get($spreadsheetId, 'SURAT KELUAR!A:Q');
+            $skRows     = $skResponse->getValues() ?? [];
+
+            // Hapus baris header
+            if (!empty($smRows)) array_shift($smRows);
+            if (!empty($skRows)) array_shift($skRows);
+
+            // ── Proses Surat Masuk — I(8)=Tanggal ──────────────────────────
+            $smData = $this->processRows($smRows, dateColIndex: 8, klasifikasiColIndex: 1);
+
+            // ── Proses Surat Keluar — H(7)=Tanggal ────────────────────────
+            $skRowsFiltered = array_filter($skRows, fn($r) => !empty(trim($r[7] ?? '')));
+            $skData = $this->processRows(array_values($skRowsFiltered), dateColIndex: 7, klasifikasiColIndex: 1);
+
+            $bulanNames = [
+                1  => 'Januari',  2  => 'Februari', 3  => 'Maret',
+                4  => 'April',    5  => 'Mei',       6  => 'Juni',
+                7  => 'Juli',     8  => 'Agustus',   9  => 'September',
+                10 => 'Oktober',  11 => 'November',  12 => 'Desember',
+            ];
+
+            $currentYear  = (int) date('Y');
+            $currentMonth = (int) date('m');
+
+            // ── Kumpulkan semua tahun yang ada datanya ─────────────────────
+            $allYears = array_unique(array_merge(
+                array_keys($smData['klasifikasiYearly']),
+                array_keys($skData['klasifikasiYearly'])
+            ));
+            sort($allYears);
+
+            // ── Rekap Bulanan per Tahun ─────────────────────────────────────
+            $rekapPerTahun = [];
+            foreach ($allYears as $year) {
+                $rows = [];
+                $totalSM = 0;
+                $totalSK = 0;
+                for ($m = 1; $m <= 12; $m++) {
+                    $key     = $year . '-' . str_pad($m, 2, '0', STR_PAD_LEFT);
+                    $smCount = $smData['monthly'][$key] ?? 0;
+                    $skCount = $skData['monthly'][$key] ?? 0;
+                    $totalSM += $smCount;
+                    $totalSK += $skCount;
+                    $rows[] = [
+                        'bulan'    => $bulanNames[$m],
+                        'bulan_no' => $m,
+                        'sm_count' => $smCount,
+                        'sk_count' => $skCount,
+                        'total'    => $smCount + $skCount,
+                    ];
+                }
+                $rekapPerTahun[$year] = [
+                    'tahun'    => $year,
+                    'rows'     => $rows,
+                    'total_sm' => $totalSM,
+                    'total_sk' => $totalSK,
+                    'total'    => $totalSM + $totalSK,
+                ];
+            }
+
+            // ── Rekap Tahunan (ringkasan per tahun) ───────────────────────────────────
+            $kodePriority = ['PR','KP','OT','KU','HK','UM','PL','UP','HM','PW','LT','DL','DT','KI'];
+            $rekapTahunan = [];
+            foreach ($allYears as $year) {
+                // Kumpulkan semua kode untuk tahun ini
+                $smKode  = $smData['klasifikasiYearly'][$year] ?? [];
+                $skKode  = $skData['klasifikasiYearly'][$year] ?? [];
+                $allK    = array_unique(array_merge(array_keys($smKode), array_keys($skKode)));
+                usort($allK, function ($a, $b) use ($kodePriority) {
+                    $ia = array_search($a, $kodePriority); $ib = array_search($b, $kodePriority);
+                    return ($ia === false ? 999 : $ia) <=> ($ib === false ? 999 : $ib);
+                });
+                $kodeDetail = [];
+                foreach ($allK as $kode) {
+                    $sm = $smKode[$kode] ?? 0;
+                    $sk = $skKode[$kode] ?? 0;
+                    $kodeDetail[] = ['kode' => $kode, 'sm_count' => $sm, 'sk_count' => $sk, 'total' => $sm + $sk];
+                }
+
+                $rekapTahunan[] = [
+                    'tahun'      => $year,
+                    'sm_count'   => $rekapPerTahun[$year]['total_sm'],
+                    'sk_count'   => $rekapPerTahun[$year]['total_sk'],
+                    'total'      => $rekapPerTahun[$year]['total'],
+                    'kode_detail'=> $kodeDetail,
+                ];
+            }
+
+            // ── Rekap Per Klasifikasi (semua tahun digabung) ───────────────
+            $klasifikasiSM = [];
+            foreach ($smData['klasifikasiYearly'] as $year => $kodes) {
+                foreach ($kodes as $kode => $count) {
+                    $klasifikasiSM[$kode] = ($klasifikasiSM[$kode] ?? 0) + $count;
+                }
+            }
+            $klasifikasiSK = [];
+            foreach ($skData['klasifikasiYearly'] as $year => $kodes) {
+                foreach ($kodes as $kode => $count) {
+                    $klasifikasiSK[$kode] = ($klasifikasiSK[$kode] ?? 0) + $count;
+                }
+            }
+
+            // Sort berdasarkan kodePriority
+            $allKodes = array_unique(array_merge(array_keys($klasifikasiSM), array_keys($klasifikasiSK)));
+            usort($allKodes, function ($a, $b) use ($kodePriority) {
+                $ia = array_search($a, $kodePriority);
+                $ib = array_search($b, $kodePriority);
+                $ia = $ia === false ? 999 : $ia;
+                $ib = $ib === false ? 999 : $ib;
+                return $ia <=> $ib;
+            });
+
+            $rekapKlasifikasi = [];
+            foreach ($allKodes as $kode) {
+                $sm = $klasifikasiSM[$kode] ?? 0;
+                $sk = $klasifikasiSK[$kode] ?? 0;
+                $rekapKlasifikasi[] = [
+                    'kode'     => $kode,
+                    'sm_count' => $sm,
+                    'sk_count' => $sk,
+                    'total'    => $sm + $sk,
+                ];
+            }
+
+            return view('dashboard.report', compact(
+                'rekapPerTahun',
+                'rekapTahunan',
+                'rekapKlasifikasi',
+                'allYears',
+                'currentYear',
+                'currentMonth',
+                'bulanNames',
+            ));
+        } catch (\Exception $e) {
+            return view('dashboard.report', [
+                'error'            => 'Gagal memuat data: ' . $e->getMessage(),
+                'rekapPerTahun'    => [],
+                'rekapTahunan'     => [],
+                'rekapKlasifikasi' => [],
+                'allYears'         => [],
+                'currentYear'      => (int) date('Y'),
+                'currentMonth'     => (int) date('m'),
+                'bulanNames'       => [],
+            ]);
+        }
+    }
+
+    /**
      * Memproses baris spreadsheet dan mengelompokkan per bulan & per tahun.
      *
      * @param array $rows                 Baris data (sudah tanpa header)

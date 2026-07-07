@@ -5,15 +5,24 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Str;
 
 class LoginController extends Controller
 {
+    /**
+     * Batas percobaan login per menit (per IP).
+     * Setelah melewati batas ini, user diblokir selama DECAY_MINUTES.
+     */
+    private const MAX_ATTEMPTS  = 5;
+    private const DECAY_MINUTES = 1;
+
     /**
      * Tampilkan halaman login.
      */
     public function showLoginForm()
     {
-        // Jika sudah login, arahkan sesuai role
         if (Auth::check()) {
             return Auth::user()->isAdmin()
                 ? redirect()->route('dashboard.index')
@@ -24,36 +33,75 @@ class LoginController extends Controller
 
     /**
      * Proses login: autentikasi menggunakan name (username) + password.
+     * Dilindungi rate limiting: maks 5 percobaan per menit per IP.
      */
     public function login(Request $request)
     {
         $request->validate([
-            'username' => 'required|string',
-            'password' => 'required|string',
+            'username' => 'required|string|max:100',
+            'password' => 'required|string|max:200',
         ], [
             'username.required' => 'Username wajib diisi.',
             'password.required' => 'Password wajib diisi.',
         ]);
 
-        // Auth::attempt menggunakan kolom 'name' sebagai username
+        // ── Cek Rate Limit (Brute Force Protection) ───────────────────────────
+        $throttleKey = $this->throttleKey($request);
+
+        if (RateLimiter::tooManyAttempts($throttleKey, self::MAX_ATTEMPTS)) {
+            $seconds = RateLimiter::availableIn($throttleKey);
+
+            // Log percobaan login yang diblokir
+            Log::warning('Login diblokir — terlalu banyak percobaan.', [
+                'ip'       => $request->ip(),
+                'username' => $request->input('username'),
+                'blocked_seconds_remaining' => $seconds,
+            ]);
+
+            return back()
+                ->withInput($request->only('username'))
+                ->with('login_error',
+                    "Terlalu banyak percobaan login. Coba lagi dalam {$seconds} detik."
+                );
+        }
+
+        // ── Proses Autentikasi ─────────────────────────────────────────────────
         $credentials = [
             'name'     => $request->username,
             'password' => $request->password,
         ];
 
         if (Auth::attempt($credentials, $request->boolean('remember'))) {
+            // Login berhasil — reset rate limiter dan regenerate session
+            RateLimiter::clear($throttleKey);
             $request->session()->regenerate();
 
-            // Admin → dashboard, Internship → form input arsip
+            // Log login sukses untuk audit trail
+            Log::info('Login berhasil.', [
+                'user_id'  => Auth::id(),
+                'username' => Auth::user()->name,
+                'role'     => Auth::user()->role,
+                'ip'       => $request->ip(),
+            ]);
+
             if (Auth::user()->isAdmin()) {
                 return redirect()->intended(route('dashboard.index'));
             }
             return redirect()->intended(route('arsip.index'));
         }
 
+        // ── Login Gagal — tambah hit rate limiter & log ───────────────────────
+        RateLimiter::hit($throttleKey, self::DECAY_MINUTES * 60);
+
+        Log::warning('Percobaan login gagal.', [
+            'ip'       => $request->ip(),
+            'username' => $request->input('username'),
+            'attempt'  => RateLimiter::attempts($throttleKey),
+        ]);
+
         return back()
             ->withInput($request->only('username'))
-            ->with('login_error', 'Username atau password salah. Akses ditolak.');
+            ->with('login_error', 'Username atau password tidak valid. Akses ditolak.');
     }
 
     /**
@@ -61,9 +109,25 @@ class LoginController extends Controller
      */
     public function logout(Request $request)
     {
+        Log::info('User logout.', [
+            'user_id'  => Auth::id(),
+            'username' => Auth::user()?->name,
+            'ip'       => $request->ip(),
+        ]);
+
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
         return redirect()->route('login');
     }
+
+    /**
+     * Buat throttle key unik berdasarkan username + IP address.
+     * Menggunakan kombinasi keduanya agar lebih akurat mendeteksi brute force.
+     */
+    private function throttleKey(Request $request): string
+    {
+        return Str::lower($request->input('username', '')) . '|' . $request->ip();
+    }
 }
+
