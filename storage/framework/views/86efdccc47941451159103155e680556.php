@@ -254,7 +254,7 @@ endif;
 unset($__errorArgs, $__bag); ?>"
                        value="<?php echo e(old('kode_klasifikasi')); ?>"
                        placeholder="Contoh: PR" maxlength="2"
-                       style="letter-spacing:.1em;"
+                       style=letter-spacing:.1em;"
                        autocomplete="off" required>
                 <?php $__errorArgs = ['kode_klasifikasi'];
 $__bag = $errors->getBag($__errorArgs[1] ?? 'default');
