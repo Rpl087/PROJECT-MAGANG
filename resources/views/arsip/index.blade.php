@@ -248,7 +248,7 @@
                        class="form-input @error('kode_klasifikasi') input-error @enderror"
                        value="{{ old('kode_klasifikasi') }}"
                        placeholder="Contoh: PR" maxlength="2"
-                       style=letter-spacing:.1em;"
+                       style="letter-spacing:.1em;"
                        autocomplete="off" required>
                 @error('kode_klasifikasi')
                     <span class="error-text">{{ $message }}</span>

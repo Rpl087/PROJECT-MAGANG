@@ -125,7 +125,7 @@
     </div>
 </div>
 
-{{-- ── Grafik Pie — Per Bulan ──────────────────────────────────── --}}
+{{-- ── Diagram Kolom — Klasifikasi ──────────────────────────────── --}}
 <div class="db-charts-grid">
     <div class="db-card pre-hide">
         <div class="db-card-header">
@@ -143,7 +143,6 @@
         <div class="db-chart-container">
             @if(count($smPieBulan) > 0)
                 <canvas id="chart-sm-bulan"></canvas>
-                <div class="db-legend" id="legend-sm-bulan"></div>
             @else
                 <div class="db-empty">
                     <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--color-text-muted);margin-bottom:8px">
@@ -170,7 +169,6 @@
         <div class="db-chart-container">
             @if(count($skPieBulan) > 0)
                 <canvas id="chart-sk-bulan"></canvas>
-                <div class="db-legend" id="legend-sk-bulan"></div>
             @else
                 <div class="db-empty">
                     <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--color-text-muted);margin-bottom:8px">
@@ -198,7 +196,6 @@
         <div class="db-chart-container">
             @if(count($smPieTahun) > 0)
                 <canvas id="chart-sm-tahun"></canvas>
-                <div class="db-legend" id="legend-sm-tahun"></div>
             @else
                 <div class="db-empty">
                     <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--color-text-muted);margin-bottom:8px">
@@ -225,7 +222,6 @@
         <div class="db-chart-container">
             @if(count($skPieTahun) > 0)
                 <canvas id="chart-sk-tahun"></canvas>
-                <div class="db-legend" id="legend-sk-tahun"></div>
             @else
                 <div class="db-empty">
                     <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--color-text-muted);margin-bottom:8px">
@@ -344,26 +340,24 @@
     flex-direction: column;
 }
 .db-chart-container {
-    padding: 1.25rem;
+    padding: 1.25rem 1.25rem 1rem;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    gap: 1rem;
+    align-items: stretch;
     flex: 1;
-    min-height: 340px;
+    min-height: 280px;
 }
-.db-chart-container canvas { max-width: 220px; max-height: 220px; }
+/* Bar chart: canvas melebar penuh, bukan dibatasi seperti pie */
+.db-chart-container canvas {
+    width: 100% !important;
+    max-width: 100% !important;
+    max-height: none !important;
+}
 .db-empty {
     display: flex; flex-direction: column; align-items: center; justify-content: center;
     flex: 1; width: 100%;
     padding: 2.5rem 1rem; color: var(--color-text-muted); font-size: .85rem; text-align: center;
 }
-.db-legend { display: flex; flex-direction: column; gap: .4rem; width: 100%; }
-.db-legend-item { display: flex; align-items: center; gap: .5rem; font-size: .78rem; }
-.db-legend-dot { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
-.db-legend-label { flex: 1; color: var(--color-text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.db-legend-val { font-weight: 600; color: var(--color-text); }
-.db-legend-pct { font-size: .72rem; color: var(--color-text-muted); }
 
 /* ── Responsive ────────────────── */
 @media (max-width: 1024px) {
@@ -395,72 +389,144 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
 (function () {
-    // Palet warna harmonis
-    var COLORS = [
-        '#3b82f6','#f59e0b','#10b981','#ef4444','#8b5cf6',
-        '#06b6d4','#f97316','#84cc16','#ec4899','#14b8a6',
-        '#a78bfa','#fb923c','#34d399','#f43f5e','#60a5fa',
-        '#fbbf24','#4ade80','#c084fc','#38bdf8','#e879f9'
+    // ── Deteksi dark mode ──────────────────────────────────────────────
+    var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    var gridColor   = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.06)';
+    var tickColor   = isDark ? '#8892a4' : '#6b7280';
+    var tooltipBg   = isDark ? '#1a2236' : '#ffffff';
+    var tooltipText = isDark ? '#e2e8f0' : '#1e293b';
+
+    // ── Palet warna harmonis (satu warna dominan per grafik) ───────────
+    // SM = biru; SK = pink/rose
+    var COLORS_SM = [
+        '#3b82f6','#60a5fa','#06b6d4','#38bdf8','#818cf8',
+        '#a78bfa','#34d399','#10b981','#84cc16','#fbbf24',
+        '#f59e0b','#f97316','#fb923c','#ef4444','#f43f5e',
+        '#ec4899','#e879f9','#c084fc','#4ade80','#2dd4bf'
+    ];
+    var COLORS_SK = [
+        '#f472b6','#ec4899','#fb7185','#f43f5e','#c084fc',
+        '#a78bfa','#e879f9','#f97316','#fb923c','#fbbf24',
+        '#f59e0b','#84cc16','#34d399','#10b981','#2dd4bf',
+        '#38bdf8','#60a5fa','#3b82f6','#818cf8','#4ade80'
     ];
 
-    function buildPie(canvasId, legendId, dataObj) {
+    /**
+     * Buat diagram kolom (bar chart) vertikal.
+     * @param {string}  canvasId  - ID elemen <canvas>
+     * @param {object}  dataObj   - { "KodeKlasifikasi": jumlah, ... }
+     * @param {string}  accentHex - Warna aksen utama (SM = biru, SK = pink)
+     * @param {string[]} palette  - Array palet warna per bar
+     */
+    function buildBar(canvasId, dataObj, accentHex, palette) {
         var canvas = document.getElementById(canvasId);
         if (!canvas) return;
-        var labels = Object.keys(dataObj);
-        var values = Object.values(dataObj);
-        var total  = values.reduce(function(a,b){ return a+b; }, 0);
-        var colors = labels.map(function(_,i){ return COLORS[i % COLORS.length]; });
 
-        var borderColor = getComputedStyle(document.documentElement)
-            .getPropertyValue('--color-surface').trim() || '#ffffff';
+        var labels = Object.keys(dataObj).map(function(k) {
+            // Tampilkan prefix kode saja: "PR.001" → "PR"
+            return k.split('.')[0];
+        });
+        var values = Object.values(dataObj);
+        var total  = values.reduce(function(a, b) { return a + b; }, 0);
+
+        // Buat gradient per bar menggunakan canvas context
+        var ctx = canvas.getContext('2d');
+        var bgColors = palette.slice(0, labels.length).map(function(hex) {
+            // Solid dengan opacity 85% untuk kesan modern
+            return hex;
+        });
+        var hoverColors = bgColors.map(function(hex) {
+            // Warna lebih terang saat hover: tambahkan channel putih
+            return hex;
+        });
 
         new Chart(canvas, {
-            type: 'doughnut',
+            type: 'bar',
             data: {
                 labels: labels,
-                datasets: [{ data: values, backgroundColor: colors, borderWidth: 2, borderColor: borderColor, hoverOffset: 6 }]
+                datasets: [{
+                    label: 'Jumlah Surat',
+                    data: values,
+                    backgroundColor: bgColors.map(function(hex) {
+                        // Konversi hex ke rgba dengan opacity 0.82
+                        var r = parseInt(hex.slice(1,3),16);
+                        var g = parseInt(hex.slice(3,5),16);
+                        var b = parseInt(hex.slice(5,7),16);
+                        return 'rgba('+r+','+g+','+b+',0.82)';
+                    }),
+                    borderColor: bgColors,
+                    borderWidth: 1.5,
+                    borderRadius: 6,
+                    borderSkipped: false,
+                    hoverBackgroundColor: bgColors,
+                    barPercentage: 0.72,
+                    categoryPercentage: 0.78,
+                }]
             },
             options: {
                 responsive: true,
-                cutout: '62%',
+                maintainAspectRatio: true,
+                aspectRatio: 1.9,
+                animation: {
+                    duration: 600,
+                    easing: 'easeOutQuart'
+                },
                 plugins: {
                     legend: { display: false },
                     tooltip: {
+                        backgroundColor: tooltipBg,
+                        borderColor: accentHex + '55',
+                        borderWidth: 1,
+                        titleColor: tooltipText,
+                        bodyColor: tickColor,
+                        padding: 10,
+                        cornerRadius: 8,
                         callbacks: {
+                            title: function(items) {
+                                // Tampilkan kode lengkap dari label asli
+                                var idx = items[0].dataIndex;
+                                var fullKey = Object.keys(dataObj)[idx];
+                                return fullKey;
+                            },
                             label: function(ctx) {
-                                var pct = ((ctx.parsed / total) * 100).toFixed(1);
-                                // Ambil prefix kode saja (sebelum titik): PR, KP, PL, dll
-                                var code = ctx.label.split('.')[0];
-                                return ' ' + code + ': ' + ctx.parsed + ' (' + pct + '%)';
+                                var pct = total > 0 ? ((ctx.parsed.y / total) * 100).toFixed(1) : '0.0';
+                                return '  Jumlah: ' + ctx.parsed.y + '  (' + pct + '% dari total)';
                             }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: { display: false },
+                        border: { display: false },
+                        ticks: {
+                            color: tickColor,
+                            font: { size: 11, weight: '600' },
+                            maxRotation: 0,
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: gridColor, lineWidth: 1 },
+                        border: { display: false, dash: [4, 4] },
+                        ticks: {
+                            color: tickColor,
+                            font: { size: 10 },
+                            precision: 0,
+                            maxTicksLimit: 6,
+                            callback: function(val) { return val % 1 === 0 ? val : ''; }
                         }
                     }
                 }
             }
         });
-
-        // Custom legend
-        var legendEl = document.getElementById(legendId);
-        if (!legendEl) return;
-        labels.forEach(function(label, i) {
-            var pct = total > 0 ? ((values[i] / total) * 100).toFixed(1) : '0.0';
-            // Ambil prefix kode saja (sebelum titik): PR, KP, PL, HM, UM, dll
-            var shortCode = label.split('.')[0];
-            var item = document.createElement('div');
-            item.className = 'db-legend-item';
-            item.innerHTML =
-                '<span class="db-legend-dot" style="background:' + colors[i] + '"></span>' +
-                '<span class="db-legend-label" title="' + label + '">' + shortCode + '</span>' +
-                '<span class="db-legend-val">' + values[i] + '</span>' +
-                '<span class="db-legend-pct">' + pct + '%</span>';
-            legendEl.appendChild(item);
-        });
     }
 
-    buildPie('chart-sm-bulan', 'legend-sm-bulan', @json($smPieBulan));
-    buildPie('chart-sk-bulan', 'legend-sk-bulan', @json($skPieBulan));
-    buildPie('chart-sm-tahun', 'legend-sm-tahun', @json($smPieTahun));
-    buildPie('chart-sk-tahun', 'legend-sk-tahun', @json($skPieTahun));
+    // ── Render semua 4 diagram kolom ──────────────────────────────────
+    buildBar('chart-sm-bulan', @json($smPieBulan), '#3b82f6', COLORS_SM);
+    buildBar('chart-sk-bulan', @json($skPieBulan), '#ec4899', COLORS_SK);
+    buildBar('chart-sm-tahun', @json($smPieTahun), '#3b82f6', COLORS_SM);
+    buildBar('chart-sk-tahun', @json($skPieTahun), '#ec4899', COLORS_SK);
 })();
 </script>
 @endpush

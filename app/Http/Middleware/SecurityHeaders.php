@@ -52,8 +52,10 @@ class SecurityHeaders
         // Disesuaikan dengan kebutuhan: Google Fonts, inline style (untuk Laravel)
         $csp = implode('; ', [
             "default-src 'self'",
-            "script-src 'self' 'unsafe-inline'",                      // inline script Blade
-            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+            // Izinkan inline script Blade + CDN flatpickr (diperlukan ikon kalender)
+            "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net",
+            // Izinkan inline style Blade + Google Fonts CSS + CDN flatpickr CSS
+            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net",
             "font-src 'self' https://fonts.gstatic.com",
             "img-src 'self' data:",
             "connect-src 'self'",
