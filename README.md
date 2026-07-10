@@ -1,6 +1,6 @@
 # 📂 Sistem Pengarsipan Digital Surat — BPSDMP
 
-Aplikasi web berbasis **Laravel 13.8** untuk pengarsipan surat masuk dan surat keluar secara digital. Data arsip disimpan langsung ke **Google Spreadsheet** via Google Sheets API, file PDF disimpan di server lokal dan dapat **diakses publik** melalui URL unik tanpa perlu login.
+Aplikasi web berbasis **Laravel 13.19** untuk pengarsipan surat masuk dan surat keluar secara digital. Data arsip disimpan langsung ke **Google Spreadsheet** via Google Sheets API, file PDF disimpan di server lokal dan dapat **diakses publik** melalui URL unik tanpa perlu login.
 
 ---
 
@@ -10,10 +10,13 @@ Aplikasi web berbasis **Laravel 13.8** untuk pengarsipan surat masuk dan surat k
 - 🛡️ **Role-Based Access Control (RBAC)** — Admin punya akses penuh; Internship hanya bisa input form
 - 📥 **Arsip Surat Masuk** — Input 17 field data + upload file PDF (maks. 10MB)
 - 📤 **Arsip Surat Keluar** — Input 18 field data + upload file PDF (maks. 10MB)
+- ✏️ **Edit Data** — Admin dapat mengedit semua field surat masuk & keluar via modal popup (update langsung ke Google Sheets dbSM/dbSK)
 - 🗑️ **Hapus Data** — Hanya Admin yang dapat menghapus baris data dari Google Sheets
+- 🔍 **Filter Kode Klasifikasi** — Dropdown filter kode (PR, KP, OT, dll) di tabel admin surat masuk & keluar
 - 📊 **Google Sheets Integration** — Data tersimpan ke `dbSM`/`dbSK`; tabel tampilan membaca dari sheet `SURAT MASUK` & `SURAT KELUAR`
 - 📎 **PDF Publik** — File PDF surat dapat diakses publik via URL `/pdf/{type}/{filename}` tanpa login
 - 📈 **Dashboard Rangkuman** — Statistik bulanan & tahunan + pie chart klasifikasi; header tabel seragam navy (hanya Admin)
+- 📋 **Rekap & Laporan** — Filter tahun (5 tahun terakhir) di Rekap Bulanan, Tahunan, Per Klasifikasi + tombol Cetak per Tab
 - 🖼️ **Logo Komdigi** — Logo resmi Komdigi ditampilkan di header aplikasi (menggantikan ikon generik)
 - 📱 **Responsive** — Hamburger/drawer menu untuk tampilan mobile & tablet
 - 🌐 **Intranet Ready** — Dapat diakses oleh semua perangkat di jaringan WiFi yang sama tanpa internet
@@ -25,7 +28,7 @@ Aplikasi web berbasis **Laravel 13.8** untuk pengarsipan surat masuk dan surat k
 
 | Layer | Teknologi |
 |---|---|
-| Framework | Laravel 13.8 (PHP 8.4) |
+| Framework | Laravel 13.19 (PHP 8.4) |
 | Database | SQLite (local auth & sessions) |
 | Storage | Google Sheets API v4 |
 | Frontend | Blade + Vanilla CSS (Pure CSS, tanpa framework) |
@@ -57,8 +60,11 @@ Aplikasi web berbasis **Laravel 13.8** untuk pengarsipan surat masuk dan surat k
 | Form Input Surat Masuk | ✅ | ✅ |
 | Form Input Surat Keluar | ✅ | ✅ |
 | Lihat Tabel Daftar Surat | ✅ | ❌ |
+| Edit Data Surat (Masuk/Keluar) | ✅ | ❌ |
 | Hapus Surat (Masuk/Keluar) | ✅ | ❌ |
+| Filter Kode Klasifikasi | ✅ | ❌ |
 | Dashboard Statistik | ✅ | ❌ |
+| Rekap Laporan + Filter Tahun | ✅ | ❌ |
 | Akses PDF Publik | ✅ | ✅ (publik) |
 | Akses Mode Tamu (WiFi Tamu) | ✅ | ✅ (read-only) |
 
@@ -445,9 +451,22 @@ flowchart TD
     DB --> H
 
     I -- Hapus Data --> DEL{Konfirmasi Hapus?}
-    DEL -- Ya --> DELACT[Hapus baris dari Google Sheets]
+    DEL -- Ya --> DELACT[Hapus baris dari Google Sheets dbSM/dbSK]
     DELACT --> H
     DEL -- Tidak --> H
+
+    I -- Edit Data --> EDIT[Klik tombol Edit di tabel]
+    EDIT --> EDITFETCH[AJAX fetch data baris\n/arsip/{index}/edit → JSON]
+    EDITFETCH --> EDITMODAL[Modal Edit pre-filled\n17 field data surat]
+    EDITMODAL --> EDITSUB{Submit form PUT?}
+    EDITSUB -- Ya --> EDITUPDATE[Update baris di dbSM/dbSK\nspreadsheets.values.update]
+    EDITUPDATE --> H
+    EDITSUB -- Tidak/Batal --> H
+
+    I -- Rekap --> RPT[Dashboard Report]
+    RPT --> RPT2[Filter Tahun per Tab\nRekap Bulanan/Tahunan/Klasifikasi]
+    RPT2 --> RPT3[Cetak Tab / Cetak Semua]
+    RPT3 --> H
 
     I -- Keluar --> Z[Logout Session]
     Z --> D
@@ -485,11 +504,14 @@ graph LR
         UC8("🔗 Akses PDF via URL Publik")
         UC9("🗑️ Hapus Data Surat")
         UC10("👁️ Lihat Arsip Read-Only")
+        UC11("✏️ Edit Data Surat")
+        UC12("📋 Rekap Laporan & Filter Tahun")
 
         UC2 --> UC4
         UC3 --> UC4
         UC2 --> UC5
         UC3 --> UC5
+        UC11 --> UC5
     end
 
     subgraph Google ["☁️ Google Cloud"]
@@ -502,6 +524,8 @@ graph LR
     Admin --> UC6
     Admin --> UC7
     Admin --> UC9
+    Admin --> UC11
+    Admin --> UC12
     Internship --> UC1
     Internship --> UC2
     Internship --> UC3
@@ -522,8 +546,8 @@ project-magang/
 ├── app/
 │   └── Http/
 │       ├── Controllers/
-│       │   ├── ArsipController.php          ← Surat Masuk (form + Google Sheets + URL PDF)
-│       │   ├── SuratKeluarController.php    ← Surat Keluar (form + Google Sheets + URL PDF)
+│       │   ├── ArsipController.php          ← Surat Masuk (index, store, edit, update, destroy)
+│       │   ├── SuratKeluarController.php    ← Surat Keluar (index, store, edit, update, destroy)
 │       │   ├── DashboardController.php      ← Statistik bulanan/tahunan dari Google Sheets
 │       │   └── Auth/
 │       │       └── LoginController.php      ← Login & Logout (session auth + rate limiting)
@@ -688,6 +712,13 @@ project-magang/
 | v2.0 | **Session Security**: enkripsi session + SameSite=Strict + regenerate on login |
 | v2.0 | **🐛 FIX KRITIS**: CSP kini mengizinkan `cdn.jsdelivr.net` → ikon kalender Flatpickr berfungsi |
 | v2.0 | **🐛 FIX**: Typo atribut `style` (kutip buka hilang) di input kode_klasifikasi |
+| v2.1 | **Filter Kode Klasifikasi**: Dropdown filter kode (PR, KP, OT, dll) di tabel SM & SK admin |
+| v2.1 | **Edit Data**: Tombol Edit di kolom Aksi → Modal popup pre-filled via AJAX → PUT ke Google Sheets |
+| v2.1 | **Edit routes**: `GET /arsip/{id}/edit` (JSON) + `PUT /arsip/{id}` + equivalen SK — semua admin-only |
+| v2.1 | **Filter Tahun Rekap**: Dropdown 5 tahun terakhir di Rekap Bulanan, Tahunan, Per Klasifikasi |
+| v2.1 | **Cetak Per Tab**: Tombol "Cetak Tab Ini" di setiap tab rekap — print hanya tab yang aktif |
+| v2.1 | **Security**: Pin `google/apiclient` ke `^2.0` (dari wildcard `*`) di composer.json |
+| v2.1 | **Performance**: Route cache, Events cache, Config cache — semua `CACHED` via `php artisan optimize` |
 
 ---
 

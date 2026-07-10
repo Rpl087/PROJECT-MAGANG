@@ -20,6 +20,12 @@ class GuestNetwork
 {
     public function handle(Request $request, Closure $next): Response
     {
+        // ── [BYPASS] Sistem intranet dinonaktifkan sementara ─────────────────
+        // Set INTRANET_ENABLED=true di .env untuk mengaktifkan kembali
+        if (!env('INTRANET_ENABLED', false)) {
+            return $next($request);
+        }
+
         $clientIp        = $request->ip();
         $internalSubnet  = env('INTERNAL_NETWORK_SUBNET', '192.168.248.0/22');
         $guestSubnet     = env('GUEST_NETWORK_SUBNET',    '192.168.252.0/22');

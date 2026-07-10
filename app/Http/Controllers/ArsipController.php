@@ -297,4 +297,145 @@ class ArsipController extends Controller
                 ->withInput();
         }
     }
+
+    /**
+     * Ambil data satu baris Surat Masuk dari sheet SURAT MASUK (by rowIndex)
+     * dan kembalikan sebagai JSON untuk pre-fill modal edit.
+     *
+     * @param int $rowIndex  Row index (1-based di sheet, 0-based di array) dari SURAT MASUK
+     */
+    public function edit(int $rowIndex)
+    {
+        try {
+            [$service, $spreadsheetId] = $this->getSheetService();
+
+            // Baca dari sheet SURAT MASUK (tampilan) — struktur A–Q sesuai index()
+            $response = $service->spreadsheets_values->get($spreadsheetId, 'SURAT MASUK!A:Q');
+            $values   = $response->getValues() ?? [];
+            $row      = $values[$rowIndex] ?? null;
+
+            if ($row === null) {
+                return response()->json(['error' => 'Data tidak ditemukan.'], 404);
+            }
+
+            // Juga baca dari dbSM untuk mendapatkan field yang tidak ada di SURAT MASUK
+            // (Kode Surat ada di dbSM kolom C / index 2)
+            $dbsmResponse = $service->spreadsheets_values->get($spreadsheetId, 'dbSM!A:R');
+            $dbsmValues   = $dbsmResponse->getValues() ?? [];
+
+            // Cari baris dbSM yang cocok berdasarkan PDF filename (kolom Q index 16 di SURAT MASUK = kolom R index 17 di dbSM)
+            $pdfFilename = trim($row[16] ?? '');
+            $dbsmRow     = null;
+            $dbsmIndex   = null;
+            foreach ($dbsmValues as $i => $dbRow) {
+                if ($i === 0) continue;
+                if (trim($dbRow[17] ?? '') === $pdfFilename && $pdfFilename !== '') {
+                    $dbsmRow   = $dbRow;
+                    $dbsmIndex = $i;
+                    break;
+                }
+            }
+
+            return response()->json([
+                'rowIndex'               => $rowIndex,
+                'dbsmIndex'              => $dbsmIndex,
+                // Field dari SURAT MASUK (display sheet)
+                'kode_klasifikasi'       => $row[1]  ?? '',   // B
+                'uraian_informasi_berkas'=> $row[2]  ?? '',   // C
+                'kurun_waktu'            => $row[3]  ?? '',   // D
+                'jumlah_folder'          => $row[4]  ?? '',   // E
+                'nomor_item_arsip'       => $row[5]  ?? '',   // F
+                'uraian_informasi_arsip' => $row[6]  ?? '',   // G
+                'tanggal_surat'          => $row[7]  ?? '',   // H
+                'jumlah_lembar'          => $row[8]  ?? '',   // I
+                'tingkat_perkembangan'   => $row[9]  ?? '',   // J
+                'lokasi_simpan'          => $row[10] ?? '',   // K
+                'klasifikasi_keamanan'   => $row[11] ?? '',   // L
+                'tingkat_akses'          => $row[12] ?? '',   // M
+                'retensi_aktif'          => $row[13] ?? '',   // N
+                'retensi_inaktif'        => $row[14] ?? '',   // O
+                'retensi_keterangan'     => $row[15] ?? '',   // P
+                'pdf_filename'           => $pdfFilename,     // Q (link)
+                // Dari dbSM (jika ditemukan): Kode Surat
+                'kode_surat'             => $dbsmRow[2] ?? '',
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Gagal memuat data: ' . $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Update data surat masuk di Google Sheets (sheet: dbSM).
+     * Mencari baris di dbSM berdasarkan dbsmIndex yang dikirim dari modal edit.
+     *
+     * @param Request $request
+     * @param int     $rowIndex  Row index dari SURAT MASUK (untuk redirect)
+     */
+    public function update(Request $request, int $rowIndex)
+    {
+        $validated = $request->validate([
+            'dbsm_index'              => 'required|integer|min:1',
+            'kode_klasifikasi'        => 'required|string|max:255',
+            'kode_surat'              => 'required|string|max:255',
+            'uraian_informasi_berkas' => 'required|string|max:1000',
+            'kurun_waktu'             => 'required|numeric|min:1900|max:2100',
+            'jumlah_folder'           => 'required|string|max:255',
+            'nomor_item_arsip'        => 'required|numeric|min:1',
+            'uraian_informasi_arsip'  => 'required|string|max:1000',
+            'tanggal_surat'           => 'required|string|max:50',
+            'jumlah_lembar'           => 'required|string|max:255',
+            'tingkat_perkembangan'    => 'required|string|max:255',
+            'lokasi_simpan'           => 'required|string|max:255',
+            'klasifikasi_keamanan'    => 'required|string|max:255',
+            'tingkat_akses'           => 'required|string|max:255',
+            'retensi_aktif'           => 'required|string|max:255',
+            'retensi_inaktif'         => 'required|string|max:255',
+            'retensi_keterangan'      => 'required|string|max:1000',
+            'pdf_filename'            => 'nullable|string|max:255',
+        ]);
+
+        try {
+            [$service, $spreadsheetId] = $this->getSheetService();
+
+            $dbsmIndex = (int) $validated['dbsm_index'];
+
+            // Baris di Google Sheets dimulai dari 1 (row 1 = header, row 2 = data ke-1)
+            // dbsmIndex adalah 0-based array index, jadi row number = dbsmIndex + 1
+            $sheetRowNumber = $dbsmIndex + 1;
+            $range = "dbSM!A{$sheetRowNumber}:R{$sheetRowNumber}";
+
+            $values = [[
+                '', // A: Timestamp — tidak diubah (kosongkan agar tidak overwrite)
+                $validated['kode_klasifikasi'],            // B
+                $validated['kode_surat'],                  // C
+                $validated['uraian_informasi_berkas'],     // D
+                $validated['kurun_waktu'],                 // E
+                $validated['jumlah_folder'],               // F
+                $validated['nomor_item_arsip'],            // G
+                $validated['uraian_informasi_arsip'],      // H
+                $validated['tanggal_surat'],               // I
+                $validated['jumlah_lembar'],               // J
+                $validated['tingkat_perkembangan'],        // K
+                $validated['lokasi_simpan'],               // L
+                $validated['klasifikasi_keamanan'],        // M
+                $validated['tingkat_akses'],               // N
+                $validated['retensi_aktif'],               // O
+                $validated['retensi_inaktif'],             // P
+                $validated['retensi_keterangan'],          // Q
+                $validated['pdf_filename'] ?? '',          // R
+            ]];
+
+            $body   = new Sheets\ValueRange(['values' => $values]);
+            $params = ['valueInputOption' => 'RAW'];
+
+            $service->spreadsheets_values->update($spreadsheetId, $range, $body, $params);
+
+            return redirect()->route('arsip.index')
+                ->with('success', 'Data surat masuk berhasil diperbarui di Spreadsheet (dbSM).');
+        } catch (\Exception $e) {
+            return redirect()->route('arsip.index')
+                ->with('error', 'Gagal memperbarui data: ' . $e->getMessage())
+                ->withInput();
+        }
+    }
 }

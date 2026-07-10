@@ -320,4 +320,143 @@ class SuratKeluarController extends Controller
                 ->withInput();
         }
     }
+
+    /**
+     * Ambil data satu baris Surat Keluar dari sheet SURAT KELUAR (by rowIndex)
+     * dan kembalikan sebagai JSON untuk pre-fill modal edit.
+     *
+     * @param int $rowIndex  Row index (0-based di array) dari SURAT KELUAR
+     */
+    public function edit(int $rowIndex)
+    {
+        try {
+            [$service, $spreadsheetId] = $this->getSheetService();
+
+            // Baca dari sheet SURAT KELUAR (tampilan) — struktur A–Q
+            $response = $service->spreadsheets_values->get($spreadsheetId, 'SURAT KELUAR!A:Q');
+            $values   = $response->getValues() ?? [];
+            $row      = $values[$rowIndex] ?? null;
+
+            if ($row === null) {
+                return response()->json(['error' => 'Data tidak ditemukan.'], 404);
+            }
+
+            // Cari baris di dbSK berdasarkan PDF filename (kolom Q index 16 di SURAT KELUAR = kolom H index 7 di dbSK)
+            $pdfFilename = trim($row[16] ?? '');
+            $dbskResponse = $service->spreadsheets_values->get($spreadsheetId, 'dbSK!A:R');
+            $dbskValues   = $dbskResponse->getValues() ?? [];
+            $dbskRow      = null;
+            $dbskIndex    = null;
+            foreach ($dbskValues as $i => $dbRow) {
+                if ($i === 0) continue;
+                if (trim($dbRow[7] ?? '') === $pdfFilename && $pdfFilename !== '') {
+                    $dbskRow   = $dbRow;
+                    $dbskIndex = $i;
+                    break;
+                }
+            }
+
+            return response()->json([
+                'rowIndex'               => $rowIndex,
+                'dbskIndex'              => $dbskIndex,
+                // Field dari SURAT KELUAR (display sheet) — struktur sama dengan SM
+                'kode_klasifikasi'       => $row[1]  ?? '',   // B
+                'uraian_informasi_berkas'=> $row[2]  ?? '',   // C
+                'kurun_waktu'            => $row[3]  ?? '',   // D
+                'jumlah_folder'          => $row[4]  ?? '',   // E
+                'nomor_item_arsip'       => $row[5]  ?? '',   // F
+                'uraian_informasi_arsip' => $row[6]  ?? '',   // G
+                'tanggal_surat'          => $row[7]  ?? '',   // H
+                'jumlah_lembar'          => $row[8]  ?? '',   // I
+                'tingkat_perkembangan'   => $row[9]  ?? '',   // J
+                'lokasi_simpan'          => $row[10] ?? '',   // K
+                'klasifikasi_keamanan'   => $row[11] ?? '',   // L
+                'tingkat_akses'          => $row[12] ?? '',   // M
+                'retensi_aktif'          => $row[13] ?? '',   // N
+                'retensi_inaktif'        => $row[14] ?? '',   // O
+                'retensi_keterangan'     => $row[15] ?? '',   // P
+                'pdf_filename'           => $pdfFilename,     // Q
+                // Dari dbSK: Kode Surat (kolom C, index 2)
+                'kode_surat'             => $dbskRow[2] ?? '',
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Gagal memuat data: ' . $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Update data surat keluar di Google Sheets (sheet: dbSK).
+     *
+     * @param Request $request
+     * @param int     $rowIndex  Row index dari SURAT KELUAR (untuk redirect)
+     */
+    public function update(Request $request, int $rowIndex)
+    {
+        $validated = $request->validate([
+            'dbsk_index'              => 'required|integer|min:1',
+            'kode_klasifikasi'        => 'required|string|max:255',
+            'kode_surat'              => 'required|string|max:255',
+            'uraian_informasi_berkas' => 'required|string|max:1000',
+            'kurun_waktu'             => 'required|numeric|min:1900|max:2100',
+            'jumlah_folder'           => 'required|string|max:255',
+            'nomor_item_arsip'        => 'required|numeric|min:1',
+            'uraian_informasi_arsip'  => 'required|string|max:1000',
+            'tanggal_surat'           => 'required|string|max:50',
+            'jumlah_lembar'           => 'required|string|max:255',
+            'tingkat_perkembangan'    => 'required|string|max:255',
+            'lokasi_simpan'           => 'required|string|max:255',
+            'klasifikasi_keamanan'    => 'required|string|max:255',
+            'tingkat_akses'           => 'required|string|max:255',
+            'retensi_aktif'           => 'required|string|max:255',
+            'retensi_inaktif'         => 'required|string|max:255',
+            'retensi_keterangan'      => 'required|string|max:1000',
+            'pdf_filename'            => 'nullable|string|max:255',
+        ]);
+
+        try {
+            [$service, $spreadsheetId] = $this->getSheetService();
+
+            $dbskIndex      = (int) $validated['dbsk_index'];
+            $sheetRowNumber = $dbskIndex + 1;
+            $range = "dbSK!A{$sheetRowNumber}:R{$sheetRowNumber}";
+
+            // Struktur dbSK: A=Timestamp|B=Kode Klas|C=Kode Surat|D=Uraian Berkas|
+            //                E=Kurun Waktu|F=Jumlah Folder|G=Nomor Item|H=PDF|
+            //                I=Uraian Arsip|J=Tanggal Surat|K=Jumlah Lembar|L=Tingkat Perkembangan|
+            //                M=Lokasi Simpan|N=Klas Keamanan|O=Tingkat Akses|
+            //                P=Retensi Aktif|Q=Retensi Inaktif|R=Retensi Ket
+            $values = [[
+                '',                                        // A: Timestamp (tidak diubah)
+                $validated['kode_klasifikasi'],            // B
+                $validated['kode_surat'],                  // C
+                $validated['uraian_informasi_berkas'],     // D
+                $validated['kurun_waktu'],                 // E
+                $validated['jumlah_folder'],               // F
+                $validated['nomor_item_arsip'],            // G
+                $validated['pdf_filename'] ?? '',          // H: PDF filename (tetap)
+                $validated['uraian_informasi_arsip'],      // I
+                $validated['tanggal_surat'],               // J
+                $validated['jumlah_lembar'],               // K
+                $validated['tingkat_perkembangan'],        // L
+                $validated['lokasi_simpan'],               // M
+                $validated['klasifikasi_keamanan'],        // N
+                $validated['tingkat_akses'],               // O
+                $validated['retensi_aktif'],               // P
+                $validated['retensi_inaktif'],             // Q
+                $validated['retensi_keterangan'],          // R
+            ]];
+
+            $body   = new Sheets\ValueRange(['values' => $values]);
+            $params = ['valueInputOption' => 'RAW'];
+
+            $service->spreadsheets_values->update($spreadsheetId, $range, $body, $params);
+
+            return redirect()->route('surat-keluar.index')
+                ->with('success', 'Data surat keluar berhasil diperbarui di Spreadsheet (dbSK).');
+        } catch (\Exception $e) {
+            return redirect()->route('surat-keluar.index')
+                ->with('error', 'Gagal memperbarui data: ' . $e->getMessage())
+                ->withInput();
+        }
+    }
 }

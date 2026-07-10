@@ -100,9 +100,22 @@ Route::middleware(['auth', \App\Http\Middleware\AdminOnly::class, 'internal_only
     // Hapus Surat Masuk — hanya admin (dari sheet "SURAT MASUK")
     Route::delete('/arsip/{rowIndex}', [ArsipController::class, 'destroy'])->name('arsip.destroy');
 
+    // Edit Surat Masuk — ambil data baris sebagai JSON untuk modal
+    Route::get('/arsip/{rowIndex}/edit', [ArsipController::class, 'edit'])->name('arsip.edit');
+
+    // Update Surat Masuk — simpan perubahan ke Google Sheets dbSM
+    Route::put('/arsip/{rowIndex}', [ArsipController::class, 'update'])->name('arsip.update');
+
     // Hapus Surat Keluar — hanya admin (dari sheet "SURAT KELUAR")
     Route::delete('/surat-keluar/{rowIndex}', [SuratKeluarController::class, 'destroy'])->name('surat-keluar.destroy');
+
+    // Edit Surat Keluar — ambil data baris sebagai JSON untuk modal
+    Route::get('/surat-keluar/{rowIndex}/edit', [SuratKeluarController::class, 'edit'])->name('surat-keluar.edit');
+
+    // Update Surat Keluar — simpan perubahan ke Google Sheets dbSK
+    Route::put('/surat-keluar/{rowIndex}', [SuratKeluarController::class, 'update'])->name('surat-keluar.update');
 });
+
 
 // ── Guest Network Routes (WiFi Tamu — read-only, tanpa login) ─────────────────
 // Hanya bisa diakses dari subnet WiFi Tamu atau Internal (via middleware GuestNetwork)

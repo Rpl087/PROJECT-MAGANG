@@ -59,6 +59,33 @@
 
 {{-- ── REKAP BULANAN PER TAHUN ─────────────────────────────────────────── --}}
 <div class="report-section pre-hide" id="tab-bulanan">
+    {{-- Filter Tahun + Print Tab --}}
+    <div class="report-filter-bar no-print" style="display:flex;align-items:center;gap:.75rem;margin-bottom:1.25rem;flex-wrap:wrap;">
+        <div class="filter-group" style="display:flex;align-items:center;gap:.4rem;">
+            <label for="filter-tahun-bulanan" style="font-size:.83rem;font-weight:600;color:var(--color-text-muted);">Filter Tahun:</label>
+            <select id="filter-tahun-bulanan" class="filter-select" style="min-width:110px;">
+                <option value="">Semua Tahun</option>
+                @php
+                    $tahun5 = [];
+                    $now5 = (int) date('Y');
+                    for ($y = $now5; $y >= $now5 - 4; $y--) {
+                        if (isset($rekapPerTahun[$y])) $tahun5[] = $y;
+                    }
+                    foreach(array_keys($rekapPerTahun) as $y) {
+                        if (!in_array($y, $tahun5)) $tahun5[] = $y;
+                    }
+                    rsort($tahun5);
+                @endphp
+                @foreach($tahun5 as $ty)
+                <option value="{{ $ty }}">{{ $ty }}</option>
+                @endforeach
+            </select>
+        </div>
+        <button type="button" class="btn-report-tab-print" id="btn-print-bulanan" style="margin-left:auto;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+            Cetak Tab Ini
+        </button>
+    </div>
     @if(empty($rekapPerTahun))
         <div class="report-empty">
             <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
@@ -66,7 +93,7 @@
         </div>
     @else
         @foreach($rekapPerTahun as $year => $rekap)
-        <div class="report-card" style="margin-bottom:2rem; page-break-inside:avoid;">
+        <div class="report-card" data-year="{{ $year }}" style="margin-bottom:2rem; page-break-inside:avoid;">
             <div class="report-card-header">
                 <div class="report-card-title-wrap">
                     <div class="report-card-icon">
@@ -140,6 +167,22 @@
 
 {{-- ── REKAP TAHUNAN ─────────────────────────────────────────────────── --}}
 <div class="report-section pre-hide" id="tab-tahunan" style="display:none;">
+    {{-- Filter Tahun + Print Tab --}}
+    <div class="report-filter-bar no-print" style="display:flex;align-items:center;gap:.75rem;margin-bottom:1.25rem;flex-wrap:wrap;">
+        <div class="filter-group" style="display:flex;align-items:center;gap:.4rem;">
+            <label for="filter-tahun-tahunan" style="font-size:.83rem;font-weight:600;color:var(--color-text-muted);">Filter Tahun:</label>
+            <select id="filter-tahun-tahunan" class="filter-select" style="min-width:110px;">
+                <option value="">Semua Tahun</option>
+                @foreach($tahun5 as $ty)
+                <option value="{{ $ty }}">{{ $ty }}</option>
+                @endforeach
+            </select>
+        </div>
+        <button type="button" class="btn-report-tab-print" id="btn-print-tahunan" style="margin-left:auto;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+            Cetak Tab Ini
+        </button>
+    </div>
     <div class="report-card" style="page-break-inside:avoid;">
 
         <div class="report-card-header">
@@ -240,6 +283,22 @@
 
 {{-- ── REKAP PER KLASIFIKASI ───────────────────────────────────────────── --}}
 <div class="report-section pre-hide" id="tab-klasifikasi" style="display:none;">
+    {{-- Filter Tahun + Print Tab --}}
+    <div class="report-filter-bar no-print" style="display:flex;align-items:center;gap:.75rem;margin-bottom:1.25rem;flex-wrap:wrap;">
+        <div class="filter-group" style="display:flex;align-items:center;gap:.4rem;">
+            <label for="filter-tahun-klasifikasi" style="font-size:.83rem;font-weight:600;color:var(--color-text-muted);">Filter Tahun:</label>
+            <select id="filter-tahun-klasifikasi" class="filter-select" style="min-width:110px;">
+                <option value="">Semua Tahun</option>
+                @foreach($tahun5 as $ty)
+                <option value="{{ $ty }}">{{ $ty }}</option>
+                @endforeach
+            </select>
+        </div>
+        <button type="button" class="btn-report-tab-print" id="btn-print-klasifikasi" style="margin-left:auto;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+            Cetak Tab Ini
+        </button>
+    </div>
     <div class="report-card" style="page-break-inside:avoid;">
         <div class="report-card-header">
             <div class="report-card-title-wrap">
@@ -331,6 +390,23 @@
     box-shadow: 0 2px 8px rgba(37,99,235,.25);
 }
 .btn-report-print:hover { opacity:.9; transform:translateY(-1px); box-shadow: 0 4px 16px rgba(37,99,235,.35); }
+
+/* ── Tombol Cetak Per Tab ──────────────────────────────── */
+.btn-report-tab-print {
+    display: inline-flex; align-items: center; gap: .4rem;
+    padding: .45rem 1rem;
+    background: transparent;
+    color: var(--color-primary, #1e3a5f);
+    border: 1.5px solid var(--color-primary, #1e3a5f);
+    border-radius: .5rem;
+    font-size: .8rem; font-weight: 600; font-family: inherit;
+    cursor: pointer; transition: all .2s;
+}
+.btn-report-tab-print:hover {
+    background: var(--color-primary, #1e3a5f); color: #fff;
+    transform: translateY(-1px); box-shadow: 0 2px 8px rgba(37,99,235,.2);
+}
+
 
 /* ── Tab Navigasi ─────────────────────────────────────── */
 .report-tabs {
@@ -739,6 +815,70 @@ document.addEventListener('DOMContentLoaded', function () {
                 detail.style.display = 'table-row';
                 this.classList.add('expanded');
                 if (icon) icon.style.transform = 'rotate(90deg)';
+            }
+        });
+    });
+
+    // ── Filter Tahun: Tab Bulanan ────────────────────────────────────────
+    var selTahunBulanan = document.getElementById('filter-tahun-bulanan');
+    if (selTahunBulanan) {
+        selTahunBulanan.addEventListener('change', function() {
+            var tahun = this.value;
+            document.querySelectorAll('#tab-bulanan .report-card[data-year]').forEach(function(card) {
+                card.style.display = (!tahun || card.getAttribute('data-year') === tahun) ? '' : 'none';
+            });
+        });
+    }
+
+    // ── Filter Tahun: Tab Tahunan ────────────────────────────────────────
+    var selTahunTahunan = document.getElementById('filter-tahun-tahunan');
+    if (selTahunTahunan) {
+        selTahunTahunan.addEventListener('change', function() {
+            var tahun = this.value;
+            document.querySelectorAll('#tabel-tahunan tbody .row-tahun').forEach(function(tr) {
+                var yr = tr.getAttribute('data-year') || '';
+                var show = !tahun || yr === tahun;
+                tr.style.display = show ? '' : 'none';
+                // Sembunyikan juga baris detail jika tahun-nya tidak ditampilkan
+                var detail = document.getElementById('detail-' + yr);
+                if (detail && !show) detail.style.display = 'none';
+            });
+        });
+    }
+
+    // ── Filter Tahun: Tab Klasifikasi (jika ada data per tahun) ─────────
+    // Data per tahun disediakan inline (tidak perlu filter server-side karena data flat)
+    var selTahunKlas = document.getElementById('filter-tahun-klasifikasi');
+    if (selTahunKlas) {
+        selTahunKlas.addEventListener('change', function() {
+            var tahun = this.value;
+            // Jika "Semua Tahun", tampilkan semua baris klasifikasi
+            // Jika tahun dipilih, filter berdasarkan data-years attribute pada baris
+            document.querySelectorAll('#tab-klasifikasi table tbody tr[data-years]').forEach(function(tr) {
+                if (!tahun) { tr.style.display = ''; return; }
+                var years = (tr.getAttribute('data-years') || '').split(',');
+                tr.style.display = years.indexOf(tahun) > -1 ? '' : 'none';
+            });
+            // Fallback: jika baris tidak punya data-years, tampilkan semua
+            document.querySelectorAll('#tab-klasifikasi table tbody tr:not([data-years])').forEach(function(tr) {
+                tr.style.display = '';
+            });
+        });
+    }
+
+    // ── Tombol Cetak Per Tab ─────────────────────────────────────────────
+    ['bulanan','tahunan','klasifikasi'].forEach(function(tab) {
+        var btn = document.getElementById('btn-print-' + tab);
+        if (!btn) return;
+        btn.addEventListener('click', function() {
+            // Aktifkan tab yang sesuai sebelum print
+            var tabBtn = document.querySelector('.report-tab[data-tab="' + tab + '"]');
+            if (tabBtn && !tabBtn.classList.contains('active')) {
+                tabBtn.click();
+                setTimeout(function() { preparePrint(); window.print(); }, 50);
+            } else {
+                preparePrint();
+                window.print();
             }
         });
     });

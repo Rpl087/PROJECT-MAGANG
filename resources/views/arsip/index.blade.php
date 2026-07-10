@@ -42,7 +42,7 @@
             </div>
         @endif
 
-        {{-- ── Filter Bulan & Tahun + Sort Klasifikasi ── --}}
+        {{-- ── Filter Bulan, Tahun & Kode Klasifikasi ── --}}
         <div class="table-filter-bar" id="filter-bar-sm">
             <div class="filter-group">
                 <label for="filter-bulan-sm" class="filter-label">Filter Bulan:</label>
@@ -76,6 +76,26 @@
                     @endphp
                     @foreach($tahunList as $thn => $_)
                     <option value="{{ $thn }}">{{ $thn }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="filter-kode-sm" class="filter-label">Kode Klasifikasi:</label>
+                <select id="filter-kode-sm" class="filter-select">
+                    <option value="">Semua Kode</option>
+                    @php
+                        $kodeList = [];
+                        foreach($rows as $item) {
+                            $k = trim($item['data'][1] ?? '');
+                            if ($k !== '' && !str_starts_with($k, '#')) {
+                                $kp = preg_match('/^([A-Za-z]+)/', $k, $km) ? strtoupper($km[1]) : strtoupper($k);
+                                $kodeList[$kp] = true;
+                            }
+                        }
+                        ksort($kodeList);
+                    @endphp
+                    @foreach($kodeList as $kd => $_)
+                    <option value="{{ $kd }}">{{ $kd }}</option>
                     @endforeach
                 </select>
             </div>
@@ -169,12 +189,19 @@
                                     <span class="td-muted">—</span>
                                 @endif
                             </td>
-                            <td class="td-center">
+                            <td class="td-center" style="white-space:nowrap;">
+                                <button type="button" class="btn-edit-sm"
+                                    data-index="{{ $item['index'] }}"
+                                    data-label="surat masuk baris ke-{{ $no + 1 }}"
+                                    title="Edit data ini">
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                                    Edit
+                                </button>
                                 <button type="button" class="btn-hapus"
                                     data-form="delete-sm-{{ $item['index'] }}"
                                     data-label="surat masuk baris ke-{{ $no + 1 }}"
                                     title="Hapus data ini">
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
                                     Hapus
                                 </button>
                                 <form id="delete-sm-{{ $item['index'] }}"
@@ -212,6 +239,117 @@
             <button type="button" class="btn btn-secondary" id="modal-cancel">Batal</button>
             <button type="button" class="btn btn-danger" id="modal-confirm">Ya, Hapus</button>
         </div>
+    </div>
+</div>
+
+{{-- Modal Edit Surat Masuk --}}
+<div id="modal-edit-sm" class="modal-overlay" style="display:none;">
+    <div class="modal-box" style="max-width:640px;width:95%;max-height:90vh;overflow-y:auto;">
+        <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1.25rem;">
+            <div class="modal-icon" style="background:rgba(59,130,246,.12);color:#3b82f6;flex-shrink:0;">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            </div>
+            <div>
+                <h4 class="modal-title" style="margin:0;">Edit Surat Masuk</h4>
+                <p style="font-size:.8rem;color:var(--color-text-muted);margin:0;">Perubahan akan disimpan ke Google Sheets (dbSM)</p>
+            </div>
+            <button type="button" id="modal-edit-sm-close" style="margin-left:auto;background:none;border:none;cursor:pointer;color:var(--color-text-muted);font-size:1.3rem;line-height:1;">&times;</button>
+        </div>
+        <div id="modal-edit-sm-loading" style="text-align:center;padding:2rem;display:none;">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation:spin .8s linear infinite;"><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/></svg>
+            <p style="margin-top:.5rem;color:var(--color-text-muted);font-size:.85rem;">Memuat data...</p>
+        </div>
+        <form id="form-edit-sm" method="POST" style="display:none;">
+            @csrf
+            @method('PUT')
+            <input type="hidden" name="dbsm_index" id="edit-sm-dbsm-index">
+            <input type="hidden" name="pdf_filename" id="edit-sm-pdf-filename">
+            <div class="edit-modal-grid">
+                <div class="edit-field-group">
+                    <label class="edit-field-label">Kode Klasifikasi <span class="req">*</span></label>
+                    <input type="text" name="kode_klasifikasi" id="edit-sm-kode-klasifikasi" class="edit-field-input" maxlength="10" style="text-transform:uppercase;" required>
+                </div>
+                <div class="edit-field-group">
+                    <label class="edit-field-label">Kode Surat <span class="req">*</span></label>
+                    <input type="text" name="kode_surat" id="edit-sm-kode-surat" class="edit-field-input" required>
+                </div>
+                <div class="edit-field-group edit-field-full">
+                    <label class="edit-field-label">Uraian Informasi Berkas <span class="req">*</span></label>
+                    <textarea name="uraian_informasi_berkas" id="edit-sm-uraian-berkas" class="edit-field-input" rows="2" required></textarea>
+                </div>
+                <div class="edit-field-group">
+                    <label class="edit-field-label">Kurun Waktu <span class="req">*</span></label>
+                    <input type="number" name="kurun_waktu" id="edit-sm-kurun-waktu" class="edit-field-input" min="1900" max="2100" required>
+                </div>
+                <div class="edit-field-group">
+                    <label class="edit-field-label">Jumlah Folder <span class="req">*</span></label>
+                    <input type="text" name="jumlah_folder" id="edit-sm-jumlah-folder" class="edit-field-input" required>
+                </div>
+                <div class="edit-field-group">
+                    <label class="edit-field-label">Nomor Item Arsip <span class="req">*</span></label>
+                    <input type="number" name="nomor_item_arsip" id="edit-sm-nomor-item" class="edit-field-input" min="1" required>
+                </div>
+                <div class="edit-field-group">
+                    <label class="edit-field-label">Tanggal Surat <span class="req">*</span></label>
+                    <input type="text" name="tanggal_surat" id="edit-sm-tanggal" class="edit-field-input" required placeholder="contoh: 10 Juli 2025">
+                </div>
+                <div class="edit-field-group edit-field-full">
+                    <label class="edit-field-label">Uraian Informasi Arsip <span class="req">*</span></label>
+                    <textarea name="uraian_informasi_arsip" id="edit-sm-uraian-arsip" class="edit-field-input" rows="2" required></textarea>
+                </div>
+                <div class="edit-field-group">
+                    <label class="edit-field-label">Jumlah Lembar <span class="req">*</span></label>
+                    <input type="text" name="jumlah_lembar" id="edit-sm-jumlah-lembar" class="edit-field-input" required>
+                </div>
+                <div class="edit-field-group">
+                    <label class="edit-field-label">Tingkat Perkembangan <span class="req">*</span></label>
+                    <input type="text" name="tingkat_perkembangan" id="edit-sm-tingkat-perkembangan" class="edit-field-input" required>
+                </div>
+                <div class="edit-field-group">
+                    <label class="edit-field-label">Lokasi Simpan <span class="req">*</span></label>
+                    <input type="text" name="lokasi_simpan" id="edit-sm-lokasi-simpan" class="edit-field-input" required>
+                </div>
+                <div class="edit-field-group">
+                    <label class="edit-field-label">Klasifikasi Keamanan <span class="req">*</span></label>
+                    <select name="klasifikasi_keamanan" id="edit-sm-klas-keamanan" class="edit-field-input" required>
+                        <option value="">Pilih...</option>
+                        <option value="Biasa">Biasa</option>
+                        <option value="Terbatas">Terbatas</option>
+                        <option value="Rahasia">Rahasia</option>
+                        <option value="Sangat Rahasia">Sangat Rahasia</option>
+                    </select>
+                </div>
+                <div class="edit-field-group">
+                    <label class="edit-field-label">Tingkat Akses <span class="req">*</span></label>
+                    <select name="tingkat_akses" id="edit-sm-tingkat-akses" class="edit-field-input" required>
+                        <option value="">Pilih...</option>
+                        <option value="Terbuka">Terbuka</option>
+                        <option value="Terbatas">Terbatas</option>
+                        <option value="Tertutup">Tertutup</option>
+                    </select>
+                </div>
+                <div class="edit-field-group">
+                    <label class="edit-field-label">Retensi Aktif <span class="req">*</span></label>
+                    <input type="text" name="retensi_aktif" id="edit-sm-retensi-aktif" class="edit-field-input" required>
+                </div>
+                <div class="edit-field-group">
+                    <label class="edit-field-label">Retensi Inaktif <span class="req">*</span></label>
+                    <input type="text" name="retensi_inaktif" id="edit-sm-retensi-inaktif" class="edit-field-input" required>
+                </div>
+                <div class="edit-field-group edit-field-full">
+                    <label class="edit-field-label">Retensi Keterangan <span class="req">*</span></label>
+                    <textarea name="retensi_keterangan" id="edit-sm-retensi-keterangan" class="edit-field-input" rows="2" required></textarea>
+                </div>
+            </div>
+            <div id="modal-edit-sm-error" style="display:none;margin-top:.75rem;padding:.65rem 1rem;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:.5rem;font-size:.82rem;color:#fca5a5;"></div>
+            <div class="modal-actions" style="margin-top:1.25rem;">
+                <button type="button" class="btn btn-secondary" id="modal-edit-sm-cancel">Batal</button>
+                <button type="submit" class="btn btn-primary" id="modal-edit-sm-submit">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v14a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                    Simpan Perubahan
+                </button>
+            </div>
+        </form>
     </div>
 </div>
 
@@ -782,16 +920,20 @@ document.addEventListener('DOMContentLoaded', function () {
     const countEl   = document.getElementById('filter-count-sm');
     const tbody     = document.getElementById('tbody-sm');
 
+    const selKode  = document.getElementById('filter-kode-sm');
+
     function applyFilter() {
         if (!tbody) return;
         const bulan = selBulan ? selBulan.value : '';
         const tahun = selTahun ? selTahun.value : '';
+        const kode  = selKode  ? selKode.value  : '';
         const rows  = tbody.querySelectorAll('tr[data-bulan]');
         let visible = 0;
         rows.forEach(function (tr) {
             const rb = tr.dataset.bulan;
             const rt = tr.dataset.tahun;
-            const show = (!bulan || rb == bulan) && (!tahun || rt == tahun);
+            const rk = (tr.dataset.kode || '').toUpperCase();
+            const show = (!bulan || rb == bulan) && (!tahun || rt == tahun) && (!kode || rk === kode.toUpperCase());
             tr.style.display = show ? '' : 'none';
             if (show) visible++;
         });
@@ -805,15 +947,17 @@ document.addEventListener('DOMContentLoaded', function () {
         });
         if (countEl) {
             const total = rows.length;
-            countEl.textContent = (bulan || tahun) ? (visible + ' dari ' + total + ' data ditampilkan') : '';
+            countEl.textContent = (bulan || tahun || kode) ? (visible + ' dari ' + total + ' data ditampilkan') : '';
         }
     }
 
     if (selBulan) selBulan.addEventListener('change', applyFilter);
     if (selTahun) selTahun.addEventListener('change', applyFilter);
+    if (selKode)  selKode.addEventListener('change', applyFilter);
     if (btnReset) btnReset.addEventListener('click', function () {
         if (selBulan) selBulan.value = '';
         if (selTahun) selTahun.value = '';
+        if (selKode)  selKode.value  = '';
         applyFilter();
     });
 
@@ -892,6 +1036,80 @@ document.addEventListener('DOMContentLoaded', function () {
             applyFilter();
         });
     }
+    // ── Modal Edit Surat Masuk ────────────────────────────────────
+    const modalEditSM       = document.getElementById('modal-edit-sm');
+    const formEditSM        = document.getElementById('form-edit-sm');
+    const editSMLoading     = document.getElementById('modal-edit-sm-loading');
+    const editSMError       = document.getElementById('modal-edit-sm-error');
+    const editSMClose       = document.getElementById('modal-edit-sm-close');
+    const editSMCancel      = document.getElementById('modal-edit-sm-cancel');
+
+    if (modalEditSM) document.body.appendChild(modalEditSM);
+
+    function openEditSM(rowIndex) {
+        if (!modalEditSM) return;
+        formEditSM.style.display   = 'none';
+        editSMLoading.style.display = 'block';
+        editSMError.style.display  = 'none';
+        modalEditSM.style.display  = 'flex';
+        document.body.style.overflow = 'hidden';
+
+        fetch('/arsip/' + rowIndex + '/edit', {
+            headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data.error) { throw new Error(data.error); }
+            // Set action URL
+            formEditSM.action = '/arsip/' + rowIndex;
+            // Fill fields
+            document.getElementById('edit-sm-dbsm-index').value           = data.dbsmIndex || '';
+            document.getElementById('edit-sm-pdf-filename').value          = data.pdf_filename || '';
+            document.getElementById('edit-sm-kode-klasifikasi').value      = data.kode_klasifikasi || '';
+            document.getElementById('edit-sm-kode-surat').value            = data.kode_surat || '';
+            document.getElementById('edit-sm-uraian-berkas').value         = data.uraian_informasi_berkas || '';
+            document.getElementById('edit-sm-kurun-waktu').value           = data.kurun_waktu || '';
+            document.getElementById('edit-sm-jumlah-folder').value         = data.jumlah_folder || '';
+            document.getElementById('edit-sm-nomor-item').value            = data.nomor_item_arsip || '';
+            document.getElementById('edit-sm-tanggal').value               = data.tanggal_surat || '';
+            document.getElementById('edit-sm-uraian-arsip').value          = data.uraian_informasi_arsip || '';
+            document.getElementById('edit-sm-jumlah-lembar').value         = data.jumlah_lembar || '';
+            document.getElementById('edit-sm-tingkat-perkembangan').value  = data.tingkat_perkembangan || '';
+            document.getElementById('edit-sm-lokasi-simpan').value         = data.lokasi_simpan || '';
+            document.getElementById('edit-sm-retensi-aktif').value         = data.retensi_aktif || '';
+            document.getElementById('edit-sm-retensi-inaktif').value       = data.retensi_inaktif || '';
+            document.getElementById('edit-sm-retensi-keterangan').value    = data.retensi_keterangan || '';
+            // Select fields
+            ['edit-sm-klas-keamanan','edit-sm-tingkat-akses'].forEach(function(id) {
+                var el = document.getElementById(id);
+                if (!el) return;
+                var key = id === 'edit-sm-klas-keamanan' ? data.klasifikasi_keamanan : data.tingkat_akses;
+                Array.from(el.options).forEach(function(opt) { opt.selected = opt.value === key; });
+            });
+            editSMLoading.style.display = 'none';
+            formEditSM.style.display    = 'block';
+        })
+        .catch(function(err) {
+            editSMLoading.style.display = 'none';
+            editSMError.textContent     = 'Gagal memuat data: ' + err.message;
+            editSMError.style.display   = 'block';
+        });
+    }
+
+    function closeEditSM() {
+        if (modalEditSM) modalEditSM.style.display = 'none';
+        document.body.style.overflow = '';
+    }
+
+    document.querySelectorAll('.btn-edit-sm').forEach(function(btn) {
+        btn.addEventListener('click', function() { openEditSM(btn.dataset.index); });
+    });
+    if (editSMClose)  editSMClose.addEventListener('click', closeEditSM);
+    if (editSMCancel) editSMCancel.addEventListener('click', closeEditSM);
+    if (modalEditSM)  modalEditSM.addEventListener('click', function(e) { if (e.target === modalEditSM) closeEditSM(); });
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && modalEditSM && modalEditSM.style.display === 'flex') closeEditSM();
+    });
 });
 </script>
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
