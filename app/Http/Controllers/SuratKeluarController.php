@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\SheetsCache;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Google\Client;
@@ -65,11 +66,17 @@ class SuratKeluarController extends Controller
 
         if ($isAdmin) {
             try {
-                [$service, $spreadsheetId] = $this->getSheetService();
-                $response = $service->spreadsheets_values->get($spreadsheetId, 'SURAT KELUAR!A:Q');
-                $values   = $response->getValues() ?? [];
+                $allRows = SheetsCache::remember(
+                    SheetsCache::KEY_SURAT_KELUAR,
+                    SheetsCache::TTL_TABLE,
+                    function () {
+                        [$service, $spreadsheetId] = $this->getSheetService();
+                        $response = $service->spreadsheets_values->get($spreadsheetId, 'SURAT KELUAR!A:Q');
+                        return $response->getValues() ?? [];
+                    }
+                );
 
-                foreach ($values as $i => $row) {
+                foreach ($allRows as $i => $row) {
                     if ($i === 0) continue;
                     $tanggal = trim($row[7] ?? '');
                     if (empty($tanggal)) continue;
@@ -77,6 +84,7 @@ class SuratKeluarController extends Controller
                 }
             } catch (\Exception $e) {
                 $fetchError = 'Gagal memuat data dari Google Sheets: ' . $e->getMessage();
+                SheetsCache::forget(SheetsCache::KEY_SURAT_KELUAR);
             }
         }
 
@@ -97,11 +105,17 @@ class SuratKeluarController extends Controller
         $fetchError = null;
 
         try {
-            [$service, $spreadsheetId] = $this->getSheetService();
-            $response = $service->spreadsheets_values->get($spreadsheetId, 'SURAT KELUAR!A:Q');
-            $values   = $response->getValues() ?? [];
+            $allRows = SheetsCache::remember(
+                SheetsCache::KEY_SURAT_KELUAR,
+                SheetsCache::TTL_TABLE,
+                function () {
+                    [$service, $spreadsheetId] = $this->getSheetService();
+                    $response = $service->spreadsheets_values->get($spreadsheetId, 'SURAT KELUAR!A:Q');
+                    return $response->getValues() ?? [];
+                }
+            );
 
-            foreach ($values as $i => $row) {
+            foreach ($allRows as $i => $row) {
                 if ($i === 0) continue;
                 $tanggal = trim($row[7] ?? '');
                 if (empty($tanggal)) continue;
@@ -109,6 +123,7 @@ class SuratKeluarController extends Controller
             }
         } catch (\Exception $e) {
             $fetchError = 'Gagal memuat data dari Google Sheets: ' . $e->getMessage();
+            SheetsCache::forget(SheetsCache::KEY_SURAT_KELUAR);
         }
 
         return view('tamu.surat-keluar', compact('rows', 'fetchError'));
@@ -191,6 +206,9 @@ class SuratKeluarController extends Controller
             $body = new Sheets\BatchUpdateSpreadsheetRequest(['requests' => $requests]);
             $service->spreadsheets->batchUpdate($spreadsheetId, $body);
 
+            // Invalidasi cache agar halaman menampilkan data terbaru
+            SheetsCache::forgetSuratKeluar();
+
             return redirect()->route('surat-keluar.index')
                 ->with('success', 'Data surat keluar berhasil dihapus dari Spreadsheet (dbSK).');
         } catch (\Exception $e) {
@@ -254,10 +272,12 @@ class SuratKeluarController extends Controller
             // Simpan file PDF surat keluar dengan nama pendek berisi kode klasifikasi
             $file = $request->file("surat_keluar");
 
-            // Format: SK_{KodeKlas}_{KodeSurat}_{Ymd_His}.pdf
-            $kodeKlasSlug  = preg_replace('/[^a-zA-Z0-9]/', '', $validated["kode_klasifikasi"]);
-            $kodeSuratSlug = preg_replace('/[^a-zA-Z0-9]/', '', $validated["kode_surat"]);
-            $filename = 'SK_' . strtoupper($kodeKlasSlug) . '_' . $kodeSuratSlug . '_' . now()->format("Ymd_His") . '.pdf';
+            // Format: {KodeKlas}_{Ymd_His}_{NamaFileAsli}.pdf
+            $kodeKlasSlug  = preg_replace('/[^a-zA-Z0-9\-]/', '_', $validated["kode_klasifikasi"]);
+            $originalName  = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+            $originalSlug  = preg_replace('/[^a-zA-Z0-9\-]/', '_', $originalName);
+            $pdfTimestamp  = now()->format("Ymd_His");
+            $filename = strtoupper($kodeKlasSlug) . '_' . $pdfTimestamp . '_' . $originalSlug . '.pdf';
 
             $file->storeAs("arsip/surat-keluar", $filename, "public");
             // Simpan hanya filename — URL di-generate dinamis saat tampil
@@ -307,17 +327,14 @@ class SuratKeluarController extends Controller
                 $params,
             );
 
-            return redirect()
-                ->back()
-                ->with(
-                    "success",
-                    "Data surat keluar berhasil diarsipkan ke Spreadsheet!",
-                );
+            // Invalidasi cache agar data baru langsung terlihat
+            SheetsCache::forgetSuratKeluar();
+
+            return redirect()->route('surat-keluar.index')
+                ->with('success', 'Data surat keluar berhasil diarsipkan ke Spreadsheet!');
         } catch (\Exception $e) {
-            return redirect()
-                ->back()
-                ->with("error", "Gagal menyimpan data: " . $e->getMessage())
-                ->withInput();
+            return redirect()->route('surat-keluar.index')
+                ->with('error', 'Gagal menyimpan data: ' . $e->getMessage());
         }
     }
 
@@ -450,6 +467,9 @@ class SuratKeluarController extends Controller
             $params = ['valueInputOption' => 'RAW'];
 
             $service->spreadsheets_values->update($spreadsheetId, $range, $body, $params);
+
+            // Invalidasi cache agar perubahan langsung terlihat
+            SheetsCache::forgetSuratKeluar();
 
             return redirect()->route('surat-keluar.index')
                 ->with('success', 'Data surat keluar berhasil diperbarui di Spreadsheet (dbSK).');

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\SheetsCache;
 use Google\Client;
 use Google\Service\Sheets;
 
@@ -23,20 +24,28 @@ class DashboardController extends Controller
                 throw new \RuntimeException("File kredensial Google tidak ditemukan: {$credFullPath}");
             }
 
-            $client = new Client();
-            $client->setAuthConfig($credFullPath);
-            $client->addScope(Sheets::SPREADSHEETS_READONLY);
+            // Ambil raw rows dari cache (atau fetch dari API jika cache miss)
+            [$smRows, $skRows] = SheetsCache::remember(
+                SheetsCache::KEY_DASHBOARD,
+                SheetsCache::TTL_DASHBOARD,
+                function () use ($credFullPath) {
+                    $client = new Client();
+                    $client->setAuthConfig($credFullPath);
+                    $client->addScope(Sheets::SPREADSHEETS_READONLY);
+                    $service       = new Sheets($client);
+                    $spreadsheetId = config('google.sheet_id');
 
-            $service       = new Sheets($client);
-            $spreadsheetId = config('google.sheet_id');
+                    // Baca sheet dbSM (Surat Masuk)
+                    $smResponse = $service->spreadsheets_values->get($spreadsheetId, 'dbSM!A:R');
+                    $smRows     = $smResponse->getValues() ?? [];
 
-            // Baca sheet dbSM (Surat Masuk)
-            $smResponse = $service->spreadsheets_values->get($spreadsheetId, 'dbSM!A:R');
-            $smRows     = $smResponse->getValues() ?? [];
+                    // Baca sheet SURAT KELUAR
+                    $skResponse = $service->spreadsheets_values->get($spreadsheetId, 'SURAT KELUAR!A:Q');
+                    $skRows     = $skResponse->getValues() ?? [];
 
-            // Baca sheet SURAT KELUAR
-            $skResponse = $service->spreadsheets_values->get($spreadsheetId, 'SURAT KELUAR!A:Q');
-            $skRows     = $skResponse->getValues() ?? [];
+                    return [$smRows, $skRows];
+                }
+            );
 
             // Hapus baris header
             if (!empty($smRows)) array_shift($smRows);
@@ -102,6 +111,8 @@ class DashboardController extends Controller
                 'bulanNames',
             ));
         } catch (\Exception $e) {
+            // Hapus cache yang mungkin korup
+            SheetsCache::forget(SheetsCache::KEY_DASHBOARD);
             return view('dashboard.index', [
                 'error'        => 'Gagal memuat data: ' . $e->getMessage(),
                 'monthlyRecap' => [],
@@ -134,20 +145,28 @@ class DashboardController extends Controller
                 throw new \RuntimeException("File kredensial Google tidak ditemukan: {$credFullPath}");
             }
 
-            $client = new Client();
-            $client->setAuthConfig($credFullPath);
-            $client->addScope(Sheets::SPREADSHEETS_READONLY);
+            // Ambil raw rows dari cache (atau fetch dari API jika cache miss)
+            [$smRows, $skRows] = SheetsCache::remember(
+                SheetsCache::KEY_REPORT,
+                SheetsCache::TTL_DASHBOARD,
+                function () use ($credFullPath) {
+                    $client = new Client();
+                    $client->setAuthConfig($credFullPath);
+                    $client->addScope(Sheets::SPREADSHEETS_READONLY);
+                    $service       = new Sheets($client);
+                    $spreadsheetId = config('google.sheet_id');
 
-            $service       = new Sheets($client);
-            $spreadsheetId = config('google.sheet_id');
+                    // Baca sheet dbSM (Surat Masuk)
+                    $smResponse = $service->spreadsheets_values->get($spreadsheetId, 'dbSM!A:R');
+                    $smRows     = $smResponse->getValues() ?? [];
 
-            // Baca sheet dbSM (Surat Masuk)
-            $smResponse = $service->spreadsheets_values->get($spreadsheetId, 'dbSM!A:R');
-            $smRows     = $smResponse->getValues() ?? [];
+                    // Baca sheet SURAT KELUAR
+                    $skResponse = $service->spreadsheets_values->get($spreadsheetId, 'SURAT KELUAR!A:Q');
+                    $skRows     = $skResponse->getValues() ?? [];
 
-            // Baca sheet SURAT KELUAR
-            $skResponse = $service->spreadsheets_values->get($spreadsheetId, 'SURAT KELUAR!A:Q');
-            $skRows     = $skResponse->getValues() ?? [];
+                    return [$smRows, $skRows];
+                }
+            );
 
             // Hapus baris header
             if (!empty($smRows)) array_shift($smRows);
@@ -280,6 +299,8 @@ class DashboardController extends Controller
                 'bulanNames',
             ));
         } catch (\Exception $e) {
+            // Hapus cache yang mungkin korup
+            SheetsCache::forget(SheetsCache::KEY_REPORT);
             return view('dashboard.report', [
                 'error'            => 'Gagal memuat data: ' . $e->getMessage(),
                 'rekapPerTahun'    => [],

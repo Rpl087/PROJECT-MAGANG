@@ -458,6 +458,17 @@
             <nav class="header-nav">
                 <span class="nav-indicator"></span>
                 <span class="nav-label">Sistem Pengarsipan Digital</span>
+
+                {{-- ── Realtime Clock (Global) ── --}}
+                <div class="header-clock" id="header-clock" aria-label="Jam dan tanggal saat ini">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                    </svg>
+                    <span id="header-clock-time">--:--:--</span>
+                    <span class="header-clock-sep">|</span>
+                    <span id="header-clock-date"></span>
+                </div>
+
                 {{-- Dark / Light Toggle --}}
                 <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Toggle dark mode" title="Ganti tema">
                     <!-- Moon icon (tampil di light mode) -->
@@ -481,7 +492,47 @@
     <div class="sidebar-overlay" id="sidebar-overlay"></div>
 
     <!-- Toast Notification Container -->
-    <div id="toast-container" aria-live="polite" aria-atomic="false"></div>
+    {{-- Pre-render toast dari session flash agar tampil tanpa bergantung JS dinamis --}}
+    <div id="toast-container" aria-live="polite" aria-atomic="false">
+        @if(session('success'))
+        <div class="toast toast-success" role="alert" id="flash-toast-success">
+            <span class="toast-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+                </svg>
+            </span>
+            <div class="toast-body">
+                <div class="toast-title">Berhasil</div>
+                <div class="toast-msg">{{ session('success') }}</div>
+            </div>
+            <button class="toast-close" aria-label="Tutup notifikasi" id="flash-toast-close-ok">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+            </button>
+            <div class="toast-progress"></div>
+        </div>
+        @endif
+        @if(session('error'))
+        <div class="toast toast-error" role="alert" id="flash-toast-error">
+            <span class="toast-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
+                </svg>
+            </span>
+            <div class="toast-body">
+                <div class="toast-title">Gagal</div>
+                <div class="toast-msg">{{ session('error') }}</div>
+            </div>
+            <button class="toast-close" aria-label="Tutup notifikasi" id="flash-toast-close-err">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+            </button>
+            <div class="toast-progress"></div>
+        </div>
+        @endif
+    </div>
 
     <!-- Body: Sidebar + Content -->
     <div class="layout-body">
@@ -831,16 +882,33 @@
             })();
 
             // ── Tampilkan flash session sebagai Toast ─────────────────────
-            @if(session('success'))
-                setTimeout(function () {
-                    showToast({{ json_encode(session('success'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) }}, 'success');
-                }, 400);
-            @endif
-            @if(session('error'))
-                setTimeout(function () {
-                    showToast({{ json_encode(session('error'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) }}, 'error');
-                }, 400);
-            @endif
+            // Toast kini di-render server-side (pre-rendered HTML).
+            // JS hanya menangani auto-dismiss dan tombol close.
+            (function () {
+                function initPreRenderedToast(toastId, closeId) {
+                    var toast = document.getElementById(toastId);
+                    if (!toast) return;
+                    // Tampilkan dengan delay kecil agar CSS transition terlihat
+                    setTimeout(function () { toast.classList.add('toast-show'); }, 50);
+                    // Auto-dismiss setelah 5 detik
+                    var timer = setTimeout(function () { dismissToast(toast); }, 5000);
+                    // Tombol close manual
+                    var closeBtn = document.getElementById(closeId);
+                    if (closeBtn) {
+                        closeBtn.addEventListener('click', function () {
+                            clearTimeout(timer);
+                            dismissToast(toast);
+                        });
+                    }
+                }
+                function dismissToast(toast) {
+                    toast.classList.add('toast-hide');
+                    toast.classList.remove('toast-show');
+                    setTimeout(function () { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 350);
+                }
+                initPreRenderedToast('flash-toast-success', 'flash-toast-close-ok');
+                initPreRenderedToast('flash-toast-error',   'flash-toast-close-err');
+            })();
 
             // ── Scroll Reveal — Bidirectional (fade in/out saat scroll) ────────
             // PENTING: Elemen menggunakan class .pre-hide yang diset di HTML
@@ -911,5 +979,28 @@
     </script>
     {{-- ── Script dari child views (modal, file upload, flatpickr, dll.) ── --}}
     @stack('scripts')
+
+    {{-- ── Flash Session Toast — dieksekusi TERAKHIR agar dijamin muncul ── --}}
+    {{-- Diletakkan di sini (setelah semua script) karena showToast() sudah pasti terdefinisi --}}
+    @if(session('success') || session('error'))
+    <script>
+    (function () {
+        function fireFlashToast() {
+            @if(session('success'))
+            if (window.showToast) window.showToast({{ json_encode(session('success'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) }}, 'success');
+            @endif
+            @if(session('error'))
+            if (window.showToast) window.showToast({{ json_encode(session('error'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) }}, 'error');
+            @endif
+        }
+        // Jalankan setelah paint berikutnya agar container toast sudah di-render
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function () { setTimeout(fireFlashToast, 150); });
+        } else {
+            setTimeout(fireFlashToast, 150);
+        }
+    })();
+    </script>
+    @endif
 </body>
 </html>

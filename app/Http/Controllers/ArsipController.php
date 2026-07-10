@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\SheetsCache;
 use Illuminate\Http\Request;
 use Google\Client;
 use Google\Service\Sheets;
@@ -63,11 +64,17 @@ class ArsipController extends Controller
 
         if ($isAdmin) {
             try {
-                [$service, $spreadsheetId] = $this->getSheetService();
-                $response = $service->spreadsheets_values->get($spreadsheetId, 'SURAT MASUK!A:Q');
-                $values   = $response->getValues() ?? [];
+                $allRows = SheetsCache::remember(
+                    SheetsCache::KEY_SURAT_MASUK,
+                    SheetsCache::TTL_TABLE,
+                    function () {
+                        [$service, $spreadsheetId] = $this->getSheetService();
+                        $response = $service->spreadsheets_values->get($spreadsheetId, 'SURAT MASUK!A:Q');
+                        return $response->getValues() ?? [];
+                    }
+                );
 
-                foreach ($values as $i => $row) {
+                foreach ($allRows as $i => $row) {
                     if ($i === 0) continue;
                     $tanggal = trim($row[7] ?? '');
                     if (empty($tanggal)) continue;
@@ -75,6 +82,8 @@ class ArsipController extends Controller
                 }
             } catch (\Exception $e) {
                 $fetchError = 'Gagal memuat data dari Google Sheets: ' . $e->getMessage();
+                // Hapus cache yang mungkin korup agar request berikutnya retry ke API
+                SheetsCache::forget(SheetsCache::KEY_SURAT_MASUK);
             }
         }
 
@@ -95,11 +104,18 @@ class ArsipController extends Controller
         $fetchError = null;
 
         try {
-            [$service, $spreadsheetId] = $this->getSheetService();
-            $response = $service->spreadsheets_values->get($spreadsheetId, 'SURAT MASUK!A:Q');
-            $values   = $response->getValues() ?? [];
+            // Gunakan cache yang sama dengan admin untuk efisiensi
+            $allRows = SheetsCache::remember(
+                SheetsCache::KEY_SURAT_MASUK,
+                SheetsCache::TTL_TABLE,
+                function () {
+                    [$service, $spreadsheetId] = $this->getSheetService();
+                    $response = $service->spreadsheets_values->get($spreadsheetId, 'SURAT MASUK!A:Q');
+                    return $response->getValues() ?? [];
+                }
+            );
 
-            foreach ($values as $i => $row) {
+            foreach ($allRows as $i => $row) {
                 if ($i === 0) continue;
                 $tanggal = trim($row[7] ?? '');
                 if (empty($tanggal)) continue;
@@ -107,6 +123,7 @@ class ArsipController extends Controller
             }
         } catch (\Exception $e) {
             $fetchError = 'Gagal memuat data dari Google Sheets: ' . $e->getMessage();
+            SheetsCache::forget(SheetsCache::KEY_SURAT_MASUK);
         }
 
         return view('tamu.index', compact('rows', 'fetchError'));
@@ -171,6 +188,9 @@ class ArsipController extends Controller
 
             $body = new Sheets\BatchUpdateSpreadsheetRequest(['requests' => $requests]);
             $service->spreadsheets->batchUpdate($spreadsheetId, $body);
+
+            // Invalidasi cache agar halaman menampilkan data terbaru
+            SheetsCache::forgetSuratMasuk();
 
             return redirect()->route('arsip.index')
                 ->with('success', 'Data surat masuk berhasil dihapus dari Spreadsheet (dbSM).');
@@ -246,10 +266,12 @@ class ArsipController extends Controller
             // ── Upload file PDF dengan nama pendek berisi kode klasifikasi ────
             $file = $request->file('surat_masuk');
 
-            // Format: SM_{KodeKlas}_{KodeSurat}_{Ymd_His}.pdf
-            $kodeKlasSlug = preg_replace('/[^a-zA-Z0-9]/', '', $validated['kode_klasifikasi']);
-            $kodeSuratSlug = preg_replace('/[^a-zA-Z0-9]/', '', $validated['kode_surat']);
-            $filename = 'SM_' . strtoupper($kodeKlasSlug) . '_' . $kodeSuratSlug . '_' . now()->format('Ymd_His') . '.pdf';
+            // Format: {KodeKlas}_{Ymd_His}_{NamaFileAsli}.pdf
+            $kodeKlasSlug  = preg_replace('/[^a-zA-Z0-9\-]/', '_', $validated['kode_klasifikasi']);
+            $originalName  = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+            $originalSlug  = preg_replace('/[^a-zA-Z0-9\-]/', '_', $originalName);
+            $timestamp     = now()->format('Ymd_His');
+            $filename = strtoupper($kodeKlasSlug) . '_' . $timestamp . '_' . $originalSlug . '.pdf';
 
             $file->storeAs('arsip/surat-masuk', $filename, 'public');
             // Simpan hanya filename — URL di-generate dinamis saat tampil
@@ -290,11 +312,14 @@ class ArsipController extends Controller
 
             $service->spreadsheets_values->append($spreadsheetId, $sheetRange, $body, $params);
 
-            return redirect()->back()->with('success', 'Data Anda telah terkirim');
+            // Invalidasi cache agar data baru langsung terlihat
+            SheetsCache::forgetSuratMasuk();
+
+            return redirect()->route('arsip.index')
+                ->with('success', 'Data surat masuk berhasil diarsipkan ke Spreadsheet!');
         } catch (\Exception $e) {
-            return redirect()->back()
-                ->with('error', 'Gagal menyimpan data: ' . $e->getMessage())
-                ->withInput();
+            return redirect()->route('arsip.index')
+                ->with('error', 'Gagal menyimpan data: ' . $e->getMessage());
         }
     }
 
@@ -429,6 +454,9 @@ class ArsipController extends Controller
             $params = ['valueInputOption' => 'RAW'];
 
             $service->spreadsheets_values->update($spreadsheetId, $range, $body, $params);
+
+            // Invalidasi cache agar perubahan langsung terlihat
+            SheetsCache::forgetSuratMasuk();
 
             return redirect()->route('arsip.index')
                 ->with('success', 'Data surat masuk berhasil diperbarui di Spreadsheet (dbSM).');

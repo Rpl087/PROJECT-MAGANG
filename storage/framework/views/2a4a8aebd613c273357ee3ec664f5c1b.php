@@ -59,9 +59,9 @@
 
 <div class="report-section pre-hide" id="tab-bulanan">
     
-    <div class="report-filter-bar no-print" style="display:flex;align-items:center;gap:.75rem;margin-bottom:1.25rem;flex-wrap:wrap;">
+    <div class="report-filter-bar no-print">
         <div class="filter-group" style="display:flex;align-items:center;gap:.4rem;">
-            <label for="filter-tahun-bulanan" style="font-size:.83rem;font-weight:600;color:var(--color-text-muted);">Filter Tahun:</label>
+            <label for="filter-tahun-bulanan" style="font-size:.82rem;font-weight:600;color:var(--color-text-muted);">Filter Tahun:</label>
             <select id="filter-tahun-bulanan" class="filter-select" style="min-width:110px;">
                 <option value="">Semua Tahun</option>
                 <?php
@@ -164,9 +164,9 @@
 
 <div class="report-section pre-hide" id="tab-tahunan" style="display:none;">
     
-    <div class="report-filter-bar no-print" style="display:flex;align-items:center;gap:.75rem;margin-bottom:1.25rem;flex-wrap:wrap;">
+    <div class="report-filter-bar no-print">
         <div class="filter-group" style="display:flex;align-items:center;gap:.4rem;">
-            <label for="filter-tahun-tahunan" style="font-size:.83rem;font-weight:600;color:var(--color-text-muted);">Filter Tahun:</label>
+            <label for="filter-tahun-tahunan" style="font-size:.82rem;font-weight:600;color:var(--color-text-muted);">Filter Tahun:</label>
             <select id="filter-tahun-tahunan" class="filter-select" style="min-width:110px;">
                 <option value="">Semua Tahun</option>
                 <?php $__currentLoopData = $tahun5; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $ty): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
@@ -276,9 +276,9 @@
 
 <div class="report-section pre-hide" id="tab-klasifikasi" style="display:none;">
     
-    <div class="report-filter-bar no-print" style="display:flex;align-items:center;gap:.75rem;margin-bottom:1.25rem;flex-wrap:wrap;">
+    <div class="report-filter-bar no-print">
         <div class="filter-group" style="display:flex;align-items:center;gap:.4rem;">
-            <label for="filter-tahun-klasifikasi" style="font-size:.83rem;font-weight:600;color:var(--color-text-muted);">Filter Tahun:</label>
+            <label for="filter-tahun-klasifikasi" style="font-size:.82rem;font-weight:600;color:var(--color-text-muted);">Filter Tahun:</label>
             <select id="filter-tahun-klasifikasi" class="filter-select" style="min-width:110px;">
                 <option value="">Semua Tahun</option>
                 <?php $__currentLoopData = $tahun5; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $ty): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
@@ -361,22 +361,22 @@
 
 <div id="modal-cetak" class="modal-overlay" style="display:none;">
     <div class="modal-box" style="max-width:420px;">
-        <div class="modal-icon" style="background:rgba(37,99,235,.1);color:#2563eb;">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <div class="modal-icon-print">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="6 9 6 2 18 2 18 9"/>
                 <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
                 <rect x="6" y="14" width="12" height="8"/>
             </svg>
         </div>
-        <h4 class="modal-title">Konfirmasi Cetak</h4>
-        <p class="modal-desc">
+        <h4 class="modal-title-print">Konfirmasi Cetak</h4>
+        <p class="modal-desc-print">
             Anda akan mencetak <strong id="modal-cetak-tab-name">laporan ini</strong>.<br>
             Pastikan printer sudah terhubung dan siap digunakan.
         </p>
-        <div class="modal-actions">
-            <button type="button" class="btn btn-secondary" id="modal-cetak-cancel">Batal</button>
-            <button type="button" class="btn btn-primary" id="modal-cetak-confirm" style="background:linear-gradient(135deg,#1e3a5f,#2563eb);color:#fff;border:none;box-shadow:0 2px 8px rgba(37,99,235,.25);">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <div class="modal-actions-print">
+            <button type="button" id="modal-cetak-cancel">Batal</button>
+            <button type="button" id="modal-cetak-confirm">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                     <polyline points="6 9 6 2 18 2 18 9"/>
                     <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
                     <rect x="6" y="14" width="12" height="8"/>
@@ -391,182 +391,485 @@
 
 <?php $__env->startPush('styles'); ?>
 <style>
-/* ═══════════════════════════════════════════════════════
-   REPORT PAGE STYLES
-   ═══════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════
+   MODAL KONFIRMASI CETAK — Theme-Aware (Light + Dark)
+   ═══════════════════════════════════════════════════ */
 
-/* ── Tombol Cetak ──────────────────────────────────────── */
+/* ── Overlay backdrop ──────────────────────────────────── */
+/* Light mode: lapisan gelap semi-transparan */
+#modal-cetak.modal-overlay {
+    background: rgba(15, 23, 42, 0.50);
+    backdrop-filter: blur(10px) saturate(130%);
+    -webkit-backdrop-filter: blur(10px) saturate(130%);
+}
+/* Dark mode: lebih pekat */
+[data-theme="dark"] #modal-cetak.modal-overlay {
+    background: rgba(5, 8, 18, 0.72);
+    backdrop-filter: blur(12px) saturate(120%);
+    -webkit-backdrop-filter: blur(12px) saturate(120%);
+}
+
+/* ── Modal Box ─────────────────────────────────────────── */
+#modal-cetak .modal-box {
+    background: var(--color-surface, #ffffff);
+    border: 1px solid var(--color-border, #e2e5ea);
+    border-radius: 1.125rem;
+    padding: 2.25rem 2rem 1.75rem;
+    max-width: 420px;
+    width: 90%;
+    text-align: center;
+    box-shadow:
+        0 0 0 1px rgba(37,99,235,.07),
+        0 24px 64px rgba(0,0,0,.18),
+        0 8px 20px rgba(0,0,0,.10);
+    animation: modalCetakIn .25s cubic-bezier(.16,1,.3,1) both;
+    position: relative;
+    overflow: hidden;
+}
+/* Dark mode: surface lebih gelap */
+[data-theme="dark"] #modal-cetak .modal-box {
+    background: var(--color-surface, #1a1d27);
+    border-color: var(--color-border, #2d3148);
+    box-shadow:
+        0 0 0 1px rgba(99,102,241,.12),
+        0 24px 64px rgba(0,0,0,.55),
+        0 8px 24px rgba(0,0,0,.35);
+}
+
+/* Garis gradient di atas modal */
+#modal-cetak .modal-box::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #1e3a5f 0%, #2563eb 50%, #6366f1 100%);
+    border-radius: 1.125rem 1.125rem 0 0;
+}
+
+@keyframes modalCetakIn {
+    from { opacity: 0; transform: translateY(18px) scale(.96); }
+    to   { opacity: 1; transform: translateY(0)    scale(1);   }
+}
+
+/* ── Icon Print ───────────────────────────────────────── */
+#modal-cetak .modal-icon-print {
+    width: 62px;
+    height: 62px;
+    border-radius: 50%;
+    background: rgba(37, 99, 235, .1);
+    border: 1.5px solid rgba(37, 99, 235, .2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.25rem;
+    color: #2563eb;
+    transition: transform .3s cubic-bezier(.34,1.56,.64,1), background .2s;
+}
+#modal-cetak .modal-box:hover .modal-icon-print {
+    transform: scale(1.1);
+    background: rgba(37,99,235,.15);
+}
+[data-theme="dark"] #modal-cetak .modal-icon-print {
+    background: rgba(99, 102, 241, .12);
+    border-color: rgba(99, 102, 241, .25);
+    color: #818cf8;
+}
+[data-theme="dark"] #modal-cetak .modal-box:hover .modal-icon-print {
+    background: rgba(99,102,241,.18);
+}
+
+/* ── Title ──────────────────────────────────────────────── */
+#modal-cetak .modal-title-print {
+    font-size: 1.0625rem;
+    font-weight: 700;
+    color: var(--color-text, #1e293b);
+    margin: 0 0 .5rem;
+    letter-spacing: -.01em;
+}
+
+/* ── Description ────────────────────────────────────────── */
+#modal-cetak .modal-desc-print {
+    font-size: .875rem;
+    color: var(--color-text-secondary, #64748b);
+    margin: 0 0 1.75rem;
+    line-height: 1.65;
+}
+#modal-cetak .modal-desc-print strong {
+    color: var(--color-text, #1e293b);
+    font-weight: 600;
+}
+
+/* ── Actions Row ────────────────────────────────────────── */
+#modal-cetak .modal-actions-print {
+    display: flex;
+    gap: .75rem;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+/* Batal button */
+#modal-cetak-cancel {
+    padding: .58rem 1.4rem;
+    border-radius: .5rem;
+    font-size: .875rem;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all .18s ease;
+    background: transparent;
+    color: var(--color-text-muted, #94a3b8);
+    border: 1.5px solid var(--color-border, #e2e5ea);
+}
+#modal-cetak-cancel:hover {
+    background: var(--color-primary-light, #e8edf4);
+    color: var(--color-text, #1e293b);
+    border-color: var(--color-border-focus, #94a3b8);
+}
+[data-theme="dark"] #modal-cetak-cancel:hover {
+    color: var(--color-text, #e2e8f0);
+}
+
+/* Ya, Cetak button */
+#modal-cetak-confirm {
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+    padding: .58rem 1.4rem;
+    border-radius: .5rem;
+    font-size: .875rem;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all .18s cubic-bezier(.4,0,.2,1);
+    background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%);
+    color: #fff;
+    border: none;
+    box-shadow: 0 3px 12px rgba(37,99,235,.3);
+}
+#modal-cetak-confirm:hover {
+    opacity: .92;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(37,99,235,.45);
+}
+#modal-cetak-confirm:active { transform: translateY(0); }
+
+/* ═══════════════════════════════════════════════════
+   REPORT PAGE STYLES — Full Overhaul
+   ═══════════════════════════════════════════════════ */
+
+/* ── Tombol Cetak (Header) ────────────────────────── */
 .report-actions { display:flex; gap:.75rem; align-items:center; }
 .btn-report-print {
     display: inline-flex; align-items: center; gap: .5rem;
-    padding: .6rem 1.25rem;
-    background: linear-gradient(135deg, var(--color-primary, #1e3a5f), #2563eb);
+    padding: .55rem 1.2rem;
+    background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%);
     color: #fff; border: none; border-radius: .5rem;
-    font-size: .875rem; font-weight: 600; font-family: inherit;
-    cursor: pointer; transition: all .2s;
-    box-shadow: 0 2px 8px rgba(37,99,235,.25);
+    font-size: .84rem; font-weight: 600; font-family: inherit;
+    cursor: pointer; transition: all .22s cubic-bezier(.4,0,.2,1);
+    box-shadow: 0 2px 10px rgba(37,99,235,.3);
+    letter-spacing: .01em;
 }
-.btn-report-print:hover { opacity:.9; transform:translateY(-1px); box-shadow: 0 4px 16px rgba(37,99,235,.35); }
-
-/* ── Tombol Cetak Per Tab ──────────────────────────────── */
-.btn-report-tab-print {
-    display: inline-flex; align-items: center; gap: .4rem;
-    padding: .45rem 1rem;
-    background: transparent;
-    color: var(--color-primary, #1e3a5f);
-    border: 1.5px solid var(--color-primary, #1e3a5f);
-    border-radius: .5rem;
-    font-size: .8rem; font-weight: 600; font-family: inherit;
-    cursor: pointer; transition: all .2s;
+.btn-report-print:hover {
+    opacity: .92;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(37,99,235,.4);
 }
-.btn-report-tab-print:hover {
-    background: var(--color-primary, #1e3a5f); color: #fff;
-    transform: translateY(-1px); box-shadow: 0 2px 8px rgba(37,99,235,.2);
-}
+.btn-report-print:active { transform: translateY(0); }
 
-
-/* ── Tab Navigasi ─────────────────────────────────────── */
+/* ── Tab Navigasi ───────────────────────────────── */
 .report-tabs {
-    display: flex; gap: .375rem; margin-bottom: 1.5rem;
-    border-bottom: 2px solid var(--color-border, #2a3347);
-    padding-bottom: 0;
+    display: flex;
+    gap: .25rem;
+    margin-bottom: 1.75rem;
+    background: var(--color-surface, #1a2236);
+    border: 1px solid var(--color-border, #2a3347);
+    border-radius: .625rem;
+    padding: .3rem;
+    width: fit-content;
 }
 .report-tab {
-    padding: .55rem 1.1rem; border: none; background: transparent;
-    color: var(--color-text-muted, #8892a4); font-size: .875rem;
-    font-weight: 600; font-family: inherit; cursor: pointer;
-    border-bottom: 2px solid transparent; margin-bottom: -2px;
-    border-radius: .375rem .375rem 0 0; transition: all .2s;
+    padding: .5rem 1.25rem;
+    border: none;
+    background: transparent;
+    color: var(--color-text-muted, #8892a4);
+    font-size: .84rem;
+    font-weight: 500;
+    font-family: inherit;
+    cursor: pointer;
+    border-radius: .4rem;
+    transition: all .2s cubic-bezier(.4,0,.2,1);
+    white-space: nowrap;
+    position: relative;
 }
-.report-tab:hover { color: var(--color-text, #e2e8f0); background: var(--color-primary-light); }
+.report-tab:hover {
+    color: var(--color-text, #e2e8f0);
+    background: rgba(99,102,241,.1);
+}
 .report-tab.active {
-    color: var(--color-primary, #4f8ef7); border-bottom-color: var(--color-primary, #4f8ef7);
-    background: var(--color-primary-light);
+    color: #fff;
+    background: linear-gradient(135deg, #4f46e5, #6366f1);
+    font-weight: 600;
+    box-shadow: 0 2px 10px rgba(99,102,241,.35);
 }
 
-/* ── Report Card ─────────────────────────────────────── */
+/* ── Report Card ─────────────────────────────── */
 .report-card {
     background: var(--color-surface, #1a2236);
     border: 1px solid var(--color-border, #2a3347);
-    border-radius: .75rem; overflow: hidden;
+    border-radius: .875rem;
+    overflow: hidden;
+    box-shadow: 0 4px 24px rgba(0,0,0,.25);
+    transition: box-shadow .2s;
 }
+.report-card:hover { box-shadow: 0 6px 32px rgba(0,0,0,.35); }
 .report-card-header {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 1rem 1.25rem; border-bottom: 1px solid var(--color-border, #2a3347);
-    flex-wrap: wrap; gap: .5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.375rem;
+    background: linear-gradient(90deg,
+        rgba(99,102,241,.08) 0%,
+        rgba(99,102,241,.03) 100%);
+    border-bottom: 1px solid var(--color-border, #2a3347);
+    flex-wrap: wrap;
+    gap: .5rem;
 }
-.report-card-title-wrap { display: flex; align-items: center; gap: .6rem; }
+.report-card-title-wrap {
+    display: flex;
+    align-items: center;
+    gap: .65rem;
+}
 .report-card-icon {
-    width: 30px; height: 30px; border-radius: .5rem;
-    background: var(--color-primary-light); color: var(--color-primary);
-    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    width: 32px; height: 32px;
+    border-radius: .5rem;
+    background: rgba(99,102,241,.15);
+    color: #818cf8;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    border: 1px solid rgba(99,102,241,.2);
 }
-.report-card-title { font-size: .9375rem; font-weight: 700; color: var(--color-text); margin: 0; }
+.report-card-title {
+    font-size: .9375rem;
+    font-weight: 700;
+    color: var(--color-text, #e2e8f0);
+    margin: 0;
+    letter-spacing: -.01em;
+}
 .report-badge {
-    display: inline-flex; align-items: center; padding: .2rem .7rem;
-    background: var(--color-primary-light); color: var(--color-primary);
-    border: 1px solid var(--color-border); border-radius: 999px;
-    font-size: .72rem; font-weight: 600; white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    padding: .22rem .75rem;
+    background: rgba(99,102,241,.12);
+    color: #818cf8;
+    border: 1px solid rgba(99,102,241,.25);
+    border-radius: 999px;
+    font-size: .72rem;
+    font-weight: 700;
+    white-space: nowrap;
+    letter-spacing: .02em;
 }
 
-/* ── Report Table ────────────────────────────────────── */
-.report-table { width: 100%; border-collapse: collapse; font-size: .875rem; }
+/* ── Filter Bar ────────────────────────────────── */
+.report-filter-bar {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    margin-bottom: 1.25rem;
+    flex-wrap: wrap;
+    padding: .75rem 1rem;
+    background: var(--color-surface, #1a2236);
+    border: 1px solid var(--color-border, #2a3347);
+    border-radius: .625rem;
+}
+.filter-select {
+    background: var(--color-bg, #0f172a);
+    border: 1px solid var(--color-border, #2a3347);
+    border-radius: .4rem;
+    color: var(--color-text, #e2e8f0);
+    font-family: inherit;
+    font-size: .82rem;
+    font-weight: 500;
+    padding: .38rem .65rem;
+    cursor: pointer;
+    transition: border-color .2s;
+    outline: none;
+}
+.filter-select:focus { border-color: #6366f1; box-shadow: 0 0 0 2px rgba(99,102,241,.2); }
+.filter-select option { background: var(--color-surface, #1a2236); }
+
+/* ── Report Table ────────────────────────────── */
+.report-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: .875rem;
+}
 .report-table th {
-    background: var(--color-primary, #1e3a5f); color: #fff;
-    font-size: .72rem; font-weight: 600; text-transform: uppercase;
-    letter-spacing: .06em; padding: .7rem 1rem; text-align: left;
+    background: rgba(99,102,241,.12);
+    color: #818cf8;
+    font-size: .7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    padding: .75rem 1rem;
+    text-align: left;
     white-space: nowrap;
+    border-bottom: 1px solid rgba(99,102,241,.2);
 }
 .report-table td {
-    padding: .65rem 1rem; border-bottom: 1px solid var(--color-border, #2a3347);
-    color: var(--color-text); vertical-align: middle;
+    padding: .7rem 1rem;
+    border-bottom: 1px solid var(--color-border, #2a3347);
+    color: var(--color-text, #e2e8f0);
+    vertical-align: middle;
+    transition: background .15s;
 }
 .report-table tbody tr:last-child td { border-bottom: none; }
 .report-table tbody tr:hover td { background: rgba(99,102,241,.05); }
-.report-table tfoot tr td { border-top: 2px solid var(--color-border); border-bottom: none; }
-.th-no { width: 48px; }
+.report-table tfoot tr td {
+    border-top: 2px solid rgba(99,102,241,.3);
+    border-bottom: none;
+    background: rgba(99,102,241,.06);
+}
+.th-no  { width: 48px; }
 .th-num { width: 120px; text-align: right !important; }
-.td-no { text-align: center; font-weight: 600; color: var(--color-text-muted); width: 48px; }
+.th-expand { width: 100px; text-align: center !important; }
+.td-no {
+    text-align: center;
+    font-weight: 700;
+    color: #818cf8;
+    width: 48px;
+    font-size: .78rem;
+}
 .td-bulan { font-weight: 500; }
-.td-num { text-align: right; }
-.td-empty-row { text-align: center; padding: 2rem 1rem !important; color: var(--color-text-muted); }
-.tfoot-total { background: var(--color-primary-light); }
-.tfoot-label { font-weight: 700; font-size: .8rem; text-transform: uppercase; letter-spacing: .04em; color: var(--color-primary); }
+.td-num   { text-align: right; }
+.td-center { text-align: center; }
+.td-empty-row {
+    text-align: center;
+    padding: 2.5rem 1rem !important;
+    color: var(--color-text-muted);
+    font-size: .85rem;
+}
+.tfoot-total { }
+.tfoot-label {
+    font-weight: 700;
+    font-size: .78rem;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    color: #818cf8;
+}
 
+/* ── Count Badges ────────────────────────────── */
 .count-sm {
     display: inline-flex; align-items: center; justify-content: center;
-    min-width: 28px; padding: .15rem .45rem; border-radius: .3rem;
-    background: rgba(99,102,241,.1); color: #818cf8;
-    font-weight: 600; font-size: .8rem;
+    min-width: 30px; padding: .18rem .5rem; border-radius: .35rem;
+    background: rgba(99,102,241,.12);
+    color: #818cf8;
+    font-weight: 700; font-size: .8rem;
+    border: 1px solid rgba(99,102,241,.2);
 }
 .count-sk {
     display: inline-flex; align-items: center; justify-content: center;
-    min-width: 28px; padding: .15rem .45rem; border-radius: .3rem;
-    background: rgba(16,185,129,.1); color: #34d399;
-    font-weight: 600; font-size: .8rem;
+    min-width: 30px; padding: .18rem .5rem; border-radius: .35rem;
+    background: rgba(16,185,129,.1);
+    color: #34d399;
+    font-weight: 700; font-size: .8rem;
+    border: 1px solid rgba(16,185,129,.2);
 }
-.count-zero { color: var(--color-text-muted); opacity: .4; }
-.row-active td { background: rgba(99,102,241,.06) !important; }
-.row-empty td { opacity: .45; }
+.count-zero { color: var(--color-text-muted); opacity: .35; font-size: .85rem; }
+
+/* ── Row States ───────────────────────────────── */
+.row-active td { background: rgba(99,102,241,.07) !important; }
+.row-empty td  { opacity: .4; }
+
+/* ── Badges ─────────────────────────────────────── */
 .badge-month {
-    display: inline-block; padding: .1rem .45rem; border-radius: .25rem;
-    background: rgba(245,158,11,.15); color: #f59e0b;
-    font-size: .68rem; font-weight: 700; margin-left: .4rem; vertical-align: middle;
+    display: inline-block;
+    padding: .1rem .45rem;
+    border-radius: .3rem;
+    background: rgba(245,158,11,.15);
+    color: #fbbf24;
+    font-size: .67rem;
+    font-weight: 700;
+    margin-left: .4rem;
+    vertical-align: middle;
+    border: 1px solid rgba(245,158,11,.25);
 }
 .badge-kode-report {
-    display: inline-block; padding: .2rem .6rem; border-radius: .375rem;
-    background: var(--color-primary-light); color: var(--color-primary);
-    font-size: .78rem; font-weight: 700; border: 1px solid var(--color-border);
+    display: inline-block;
+    padding: .2rem .65rem;
+    border-radius: .375rem;
+    background: rgba(99,102,241,.1);
+    color: #818cf8;
+    font-size: .78rem;
+    font-weight: 700;
+    border: 1px solid rgba(99,102,241,.2);
+    letter-spacing: .02em;
 }
 
-/* ── Empty State ───────────────────────────────────────── */
+/* ── Empty State ──────────────────────────────── */
 .report-empty {
     display: flex; flex-direction: column; align-items: center; gap: .75rem;
-    padding: 3rem 1rem; color: var(--color-text-muted); text-align: center;
+    padding: 3.5rem 1rem; color: var(--color-text-muted); text-align: center;
 }
-.report-empty svg { opacity: .3; }
+.report-empty svg { opacity: .25; }
+.report-empty span { font-size: .9rem; font-weight: 500; }
 
-/* ── Alert ─────────────────────────────────────────────── */
-.alert { display:flex; align-items:center; gap:.5rem; padding:.75rem 1rem; border-radius:.5rem; font-size:.875rem; }
-.alert-error { background:rgba(239,68,68,.1); color:#f87171; border:1px solid rgba(239,68,68,.2); }
+/* ── Alert ───────────────────────────────────────── */
+.alert { display:flex; align-items:center; gap:.5rem; padding:.8rem 1rem; border-radius:.5rem; font-size:.84rem; }
+.alert-error { background:rgba(239,68,68,.08); color:#f87171; border:1px solid rgba(239,68,68,.2); }
 
-/* ── Accordion Kode Detail ──────────────────────────────── */
+/* ── Accordion Rekap Tahunan ─────────────────────── */
+.row-tahun { cursor: pointer; transition: background .15s; }
 .row-tahun:hover td { background: rgba(99,102,241,.08) !important; }
 .row-tahun.expanded td { background: rgba(99,102,241,.07) !important; }
-.tahun-toggle-icon { font-size: .75rem; color: var(--color-primary); }
-.th-expand { width: 90px; text-align: center !important; }
-.td-center  { text-align: center; }
+.tahun-toggle-icon {
+    display: inline-block;
+    font-size: .7rem;
+    color: #818cf8;
+    margin-right: .4rem;
+    transition: transform .25s cubic-bezier(.4,0,.2,1);
+}
 
 .kode-detail-wrap {
-    background: var(--color-bg, #0f172a);
-    border-top: 1px dashed var(--color-border);
-    padding: .75rem 1.5rem 1rem;
+    background: rgba(15,23,42,.6);
+    border-top: 1px dashed rgba(99,102,241,.2);
+    padding: .85rem 1.75rem 1.1rem;
 }
 .kode-detail-table {
-    width: 100%; border-collapse: collapse;
+    width: 100%;
+    border-collapse: collapse;
     font-size: .82rem;
 }
 .kode-detail-table th {
-    background: rgba(99,102,241,.12);
-    color: var(--color-primary);
-    font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em;
-    padding: .45rem .75rem; text-align: left; white-space: nowrap;
-    border-bottom: 1px solid var(--color-border);
+    background: rgba(99,102,241,.1);
+    color: #818cf8;
+    font-size: .69rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
+    padding: .45rem .85rem; text-align: left; white-space: nowrap;
+    border-bottom: 1px solid rgba(99,102,241,.15);
+    border-radius: 0;
 }
 .kode-detail-table td {
-    padding: .45rem .75rem;
+    padding: .48rem .85rem;
     border-bottom: 1px solid rgba(255,255,255,.04);
     color: var(--color-text); vertical-align: middle;
 }
 .kode-detail-table tbody tr:last-child td { border-bottom: none; }
-.kode-detail-table tbody tr:hover td { background: rgba(99,102,241,.05); }
+.kode-detail-table tbody tr:hover td { background: rgba(99,102,241,.04); }
 
+/* ── Report Clock ───────────────────────────────── */
+.report-clock {
+    display: flex; align-items: center; gap: .4rem;
+    font-size: .8rem; font-weight: 600;
+    color: var(--color-text-muted);
+    padding: .35rem .75rem;
+    background: var(--color-surface, #1a2236);
+    border: 1px solid var(--color-border, #2a3347);
+    border-radius: .5rem;
+}
+.report-clock svg { color: #818cf8; }
 
-/* ══════════════════════════════════════════════════════════
-   PRINT STYLES
-   ══════════════════════════════════════════════════════════ */
-.print-header   { display: none; }   /* Tersembunyi di layar, tampil di print via JS beforeprint */
-.print-signature{ display: none; }   /* Sama */
+/* ── Print Header ─────────────────────────────── */
+.print-header   { display: none; }
+.print-signature{ display: none; }
 
 @page {
     size: A4 portrait;
@@ -574,7 +877,6 @@
 }
 
 @media print {
-    /* ── Sembunyikan elemen UI ── */
     .no-print,
     .sidebar,
     .header,
@@ -587,22 +889,14 @@
     .page-header,
     #report-page-header { display: none !important; }
 
-    /* ── Show print-only elements (toggled via JS beforeprint/afterprint) ── */
-    /* Handled by JS; CSS ensures correct print styles */
-
-    /* ── Semua section tampil saat print ── */
-    /* JS beforeprint sets display:block on all sections */
     .report-section { margin-bottom: 1.5rem; }
 
-    /* ── Layout print ── */
     * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
     html, body { background: #fff !important; color: #000 !important; font-size: 10pt; }
     .main-content { margin-left: 0 !important; padding: 0 !important; }
     .main-content-wrap { max-width: 100% !important; padding: 0 !important; }
     .layout-body { display: block !important; }
-    .main-content-wrap > *:first-child { margin-top: 0 !important; padding-top: 0 !important; }
 
-    /* ── Print header ── */
     .print-header {
         display: block !important;
         margin-bottom: 1rem;
@@ -614,8 +908,7 @@
     .print-logo-text {
         font-size: 16pt; font-weight: 900; color: #1e3a5f;
         letter-spacing: .05em; border: 3px solid #1e3a5f;
-        padding: .25rem .6rem; border-radius: 4px;
-        flex-shrink: 0;
+        padding: .25rem .6rem; border-radius: 4px; flex-shrink: 0;
     }
     .print-header-text { flex: 1; }
     .print-title { font-size: 12pt; font-weight: 700; color: #1e3a5f; margin: 0 0 .15rem; text-transform: uppercase; letter-spacing: .04em; }
@@ -623,7 +916,6 @@
     .print-meta { font-size: 8pt; color: #666; margin: 0; }
     .print-divider { border: none; border-top: 2px solid #1e3a5f; margin: .6rem 0 1rem; }
 
-    /* ── Report card ── */
     .report-card {
         border: 1px solid #bbb !important;
         background: #fff !important;
@@ -639,11 +931,12 @@
         padding: .5rem .75rem !important;
     }
     .report-card-title-wrap { display: flex !important; align-items: center; gap: .5rem; }
-    .report-card-icon { display: none !important; } /* simplify for print */
+    .report-card-icon { display: none !important; }
     .report-card-title { color: #1e3a5f !important; font-size: 10pt !important; font-weight: 700 !important; }
     .report-badge { background: #e0e8f2 !important; color: #1e3a5f !important; border: 1px solid #bbb !important; font-size: 7.5pt !important; }
 
-    /* ── Table ── */
+    .report-filter-bar { display: none !important; }
+
     .report-table { width: 100% !important; border-collapse: collapse !important; font-size: 9pt !important; }
     .report-table th {
         background: #1e3a5f !important; color: #fff !important;
@@ -657,16 +950,15 @@
         font-size: 9pt !important;
     }
     .report-table tbody tr:hover td { background: transparent !important; }
-    .report-table tfoot tr td { border-top: 2px solid #999 !important; }
-    .tfoot-total { background: #eef2f7 !important; }
+    .report-table tfoot tr td { border-top: 2px solid #999 !important; background: #eef2f7 !important; }
     .tfoot-label { color: #1e3a5f !important; font-weight: 700 !important; }
     .row-active td { background: #ebf3ff !important; }
-    .row-empty td { opacity: .5 !important; }
+    .row-empty td  { opacity: .5 !important; }
 
-    .count-sm { background: #dde8ff !important; color: #1e3a5f !important; padding: .1rem .35rem !important; border-radius: 3px !important; font-size: 8pt !important; }
-    .count-sk { background: #d1fae5 !important; color: #065f46 !important; padding: .1rem .35rem !important; border-radius: 3px !important; font-size: 8pt !important; }
+    .count-sm { background: #dde8ff !important; color: #1e3a5f !important; padding: .1rem .35rem !important; border-radius: 3px !important; font-size: 8pt !important; border: none !important; }
+    .count-sk { background: #d1fae5 !important; color: #065f46 !important; padding: .1rem .35rem !important; border-radius: 3px !important; font-size: 8pt !important; border: none !important; }
     .count-zero { color: #aaa !important; opacity: 1 !important; }
-    .badge-month { background: #fef3c7 !important; color: #92400e !important; font-size: 7pt !important; }
+    .badge-month { background: #fef3c7 !important; color: #92400e !important; font-size: 7pt !important; border: none !important; }
     .badge-kode-report { background: #e0e8f2 !important; color: #1e3a5f !important; border: 1px solid #bbb !important; }
     .td-num { text-align: right !important; }
     .th-num { text-align: right !important; }

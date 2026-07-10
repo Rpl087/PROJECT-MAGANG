@@ -822,7 +822,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     })();
 
-    // ── Modal Hapus ──────────────────────────────────────────────
+    // ── Modal Hapus ──────────────────────────────
     const modal        = document.getElementById('modal-hapus-sk');
     const modalLabel   = document.getElementById('modal-label-sk');
     const modalCancel  = document.getElementById('modal-cancel-sk');
@@ -831,16 +831,18 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Pindahkan modal ke document.body agar position:fixed
     // tidak terpengaruh stacking context dari ancestor (transform/animation)
-    document.body.appendChild(modal);
+    if (modal) document.body.appendChild(modal);
 
     function openModal(label, form) {
+        if (!modal) return;
         pendingForm = form;
-        modalLabel.textContent = label;
+        if (modalLabel) modalLabel.textContent = label;
         modal.style.display    = 'flex';
         document.body.style.overflow = 'hidden'; // lock scroll
     }
 
     function closeModal() {
+        if (!modal) return;
         modal.style.display = 'none';
         pendingForm = null;
         document.body.style.overflow = ''; // unlock scroll
@@ -852,17 +854,17 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-    modalCancel.addEventListener('click', closeModal);
-    modalConfirm.addEventListener('click', function () {
+    if (modalCancel) modalCancel.addEventListener('click', closeModal);
+    if (modalConfirm) modalConfirm.addEventListener('click', function () {
         if (pendingForm) pendingForm.submit();
     });
-    modal.addEventListener('click', function (e) {
+    if (modal) modal.addEventListener('click', function (e) {
         if (e.target === modal) closeModal();
     });
 
     // Escape key menutup modal
     document.addEventListener('keydown', function (e) {
-        if (e.key === 'Escape' && modal.style.display === 'flex') closeModal();
+        if (e.key === 'Escape' && modal && modal.style.display === 'flex') closeModal();
     });
 
     // ── File Upload ──────────────────────────────────────────────
