@@ -654,21 +654,6 @@
     letter-spacing: .01em;
 }
 
-/* ── Live Date Badge ──────────────────────────────────── */
-.live-date-badge {
-    display: inline-flex; align-items: center; gap: .4rem;
-    padding: .4rem .85rem;
-    background: var(--color-primary-light);
-    border: 1px solid var(--color-border);
-    border-radius: 999px;
-    font-size: .8rem; font-weight: 600;
-    color: var(--color-text-muted);
-    flex-shrink: 0; white-space: nowrap;
-    transition: color .2s;
-}
-.live-date-badge svg { flex-shrink: 0; color: var(--color-primary); }
-.live-date-divider { opacity: .4; }
-
 /* ── Filter Bar ─────────────────────────────────────── */
 .table-filter-bar {
     display: flex; flex-wrap: wrap; align-items: center;
@@ -1090,20 +1075,6 @@ document.addEventListener('DOMContentLoaded', function () {
 <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/id.js"></script>
 <script>
 (function() {
-    // ── Live Clock ──────────────────────────────────────────────────────────
-    var BIDS = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
-    var HIDS = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
-    function pad(n) { return String(n).padStart(2,'0'); }
-    var clockEl = document.getElementById('live-clock-sk');
-    var dateEl  = document.getElementById('live-date-text-sk');
-    function tickSK() {
-        var d = new Date();
-        if (clockEl) clockEl.textContent = pad(d.getHours())+':'+pad(d.getMinutes())+':'+pad(d.getSeconds());
-        if (dateEl)  dateEl.textContent  = HIDS[d.getDay()]+', '+d.getDate()+' '+BIDS[d.getMonth()]+' '+d.getFullYear();
-    }
-    tickSK();
-    setInterval(tickSK, 1000);
-
     // ── Flatpickr: mode direct (lebih reliabel dari wrap mode) ───────────────
     var BULAN_ID       = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
     var BULAN_ID_SHORT = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];

@@ -311,6 +311,11 @@
         from { opacity: 0; }
         to   { opacity: 1; }
     }
+    /* Toast container tidak ikut fade — harus selalu opacity 1 agar toast tampil */
+    #toast-container {
+        animation: none !important;
+        opacity: 1 !important;
+    }
     </style>
     <script>
     // Intercept semua klik link internal — tambah class page-leaving sebelum navigasi
@@ -887,6 +892,39 @@
             });
         };
 
+        // ── Tampilkan flash session sebagai Toast ─────────────────────
+        // Dipanggil SEGERA (tidak menunggu DOMContentLoaded) dengan requestAnimationFrame
+        // untuk memastikan toast muncul meski body masih dalam pageFadeIn animation.
+        (function () {
+            function dismissToast(toast) {
+                toast.classList.add('toast-hide');
+                toast.classList.remove('toast-show');
+                setTimeout(function () { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 350);
+            }
+            function initPreRenderedToast(toastId, closeId) {
+                var toast = document.getElementById(toastId);
+                if (!toast) return;
+                // Double rAF: tunggu 2 frame render agar CSS transition berjalan
+                requestAnimationFrame(function () {
+                    requestAnimationFrame(function () {
+                        toast.classList.add('toast-show');
+                    });
+                });
+                // Auto-dismiss setelah 5 detik
+                var timer = setTimeout(function () { dismissToast(toast); }, 5500);
+                // Tombol close manual
+                var closeBtn = document.getElementById(closeId);
+                if (closeBtn) {
+                    closeBtn.addEventListener('click', function () {
+                        clearTimeout(timer);
+                        dismissToast(toast);
+                    });
+                }
+            }
+            initPreRenderedToast('flash-toast-success', 'flash-toast-close-ok');
+            initPreRenderedToast('flash-toast-error',   'flash-toast-close-err');
+        })();
+
         document.addEventListener('DOMContentLoaded', function () {
 
             // ── Sembunyikan Page Loading Bar ──────────────────────────────
@@ -898,35 +936,6 @@
                 setTimeout(function () {
                     if (bar.parentNode) bar.parentNode.removeChild(bar);
                 }, 400);
-            })();
-
-            // ── Tampilkan flash session sebagai Toast ─────────────────────
-            // Toast kini di-render server-side (pre-rendered HTML).
-            // JS hanya menangani auto-dismiss dan tombol close.
-            (function () {
-                function initPreRenderedToast(toastId, closeId) {
-                    var toast = document.getElementById(toastId);
-                    if (!toast) return;
-                    // Tampilkan dengan delay kecil agar CSS transition terlihat
-                    setTimeout(function () { toast.classList.add('toast-show'); }, 50);
-                    // Auto-dismiss setelah 5 detik
-                    var timer = setTimeout(function () { dismissToast(toast); }, 5000);
-                    // Tombol close manual
-                    var closeBtn = document.getElementById(closeId);
-                    if (closeBtn) {
-                        closeBtn.addEventListener('click', function () {
-                            clearTimeout(timer);
-                            dismissToast(toast);
-                        });
-                    }
-                }
-                function dismissToast(toast) {
-                    toast.classList.add('toast-hide');
-                    toast.classList.remove('toast-show');
-                    setTimeout(function () { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 350);
-                }
-                initPreRenderedToast('flash-toast-success', 'flash-toast-close-ok');
-                initPreRenderedToast('flash-toast-error',   'flash-toast-close-err');
             })();
 
             // ── Scroll Reveal — Bidirectional (fade in/out saat scroll) ────────

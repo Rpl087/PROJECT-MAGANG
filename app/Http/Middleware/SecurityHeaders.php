@@ -50,7 +50,7 @@ class SecurityHeaders
         // ── [6] Content Security Policy ───────────────────────────────────────
         // Batasi asal resource yang boleh dimuat browser
         // Disesuaikan dengan kebutuhan: Google Fonts, inline style (untuk Laravel)
-        $csp = implode('; ', [
+        $csp = implode('; ', array_filter([
             "default-src 'self'",
             // Izinkan inline script Blade + CDN flatpickr (diperlukan ikon kalender)
             "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net",
@@ -62,8 +62,9 @@ class SecurityHeaders
             "frame-ancestors 'self'",                                  // gantikan X-Frame-Options di browser modern
             "base-uri 'self'",
             "form-action 'self'",
-            "upgrade-insecure-requests",                               // Auto-upgrade HTTP ke HTTPS jika tersedia
-        ]);
+            // upgrade-insecure-requests HANYA jika HTTPS — di HTTP/intranet ini menyebabkan resource gagal dimuat
+            $request->isSecure() ? "upgrade-insecure-requests" : null,
+        ]));
         $response->headers->set('Content-Security-Policy', $csp);
 
         // ── [7] HSTS — hanya aktif jika request lewat HTTPS ───────────────────

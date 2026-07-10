@@ -289,10 +289,58 @@ class DashboardController extends Controller
                 ];
             }
 
+            // ── Rekap Per Klasifikasi PER TAHUN (untuk filter tahun) ───────────────
+            // Struktur: [year => [['kode'=>'KP','sm_count'=>5,'sk_count'=>2,'total'=>7], ...]]
+            $rekapKlasifikasiPerTahun = [];
+            foreach ($allYears as $year) {
+                $smKodeY = $smData['klasifikasiYearly'][$year] ?? [];
+                $skKodeY = $skData['klasifikasiYearly'][$year] ?? [];
+                $allKY   = array_unique(array_merge(array_keys($smKodeY), array_keys($skKodeY)));
+                usort($allKY, function ($a, $b) use ($kodePriority) {
+                    $ia = array_search($a, $kodePriority);
+                    $ib = array_search($b, $kodePriority);
+                    return ($ia === false ? 999 : $ia) <=> ($ib === false ? 999 : $ib);
+                });
+                $rowsY = [];
+                foreach ($allKY as $kode) {
+                    $sm = $smKodeY[$kode] ?? 0;
+                    $sk = $skKodeY[$kode] ?? 0;
+                    $rowsY[] = ['kode' => $kode, 'sm_count' => $sm, 'sk_count' => $sk, 'total' => $sm + $sk];
+                }
+                $rekapKlasifikasiPerTahun[$year] = $rowsY;
+            }
+
+            // ── Klasifikasi Per Bulan (untuk fitur klik baris bulan di Rekap Bulanan) ──
+            // Struktur JSON: {'YYYY-MM': {'KP': [sm, sk], 'PR': [sm, sk], ...}, ...}
+            $klasifikasiPerBulan = [];
+            foreach ($allYears as $year) {
+                for ($m = 1; $m <= 12; $m++) {
+                    $key = $year . '-' . str_pad($m, 2, '0', STR_PAD_LEFT);
+                    $smK = $smData['klasifikasiMonthly'][$key] ?? [];
+                    $skK = $skData['klasifikasiMonthly'][$key] ?? [];
+                    if (empty($smK) && empty($skK)) continue;
+                    $allKM = array_unique(array_merge(array_keys($smK), array_keys($skK)));
+                    usort($allKM, function ($a, $b) use ($kodePriority) {
+                        $ia = array_search($a, $kodePriority);
+                        $ib = array_search($b, $kodePriority);
+                        return ($ia === false ? 999 : $ia) <=> ($ib === false ? 999 : $ib);
+                    });
+                    $detail = [];
+                    foreach ($allKM as $kode) {
+                        $sm = $smK[$kode] ?? 0;
+                        $sk = $skK[$kode] ?? 0;
+                        $detail[$kode] = [$sm, $sk, $sm + $sk];
+                    }
+                    $klasifikasiPerBulan[$key] = $detail;
+                }
+            }
+
             return view('dashboard.report', compact(
                 'rekapPerTahun',
                 'rekapTahunan',
                 'rekapKlasifikasi',
+                'rekapKlasifikasiPerTahun',
+                'klasifikasiPerBulan',
                 'allYears',
                 'currentYear',
                 'currentMonth',
@@ -302,14 +350,16 @@ class DashboardController extends Controller
             // Hapus cache yang mungkin korup
             SheetsCache::forget(SheetsCache::KEY_REPORT);
             return view('dashboard.report', [
-                'error'            => 'Gagal memuat data: ' . $e->getMessage(),
-                'rekapPerTahun'    => [],
-                'rekapTahunan'     => [],
-                'rekapKlasifikasi' => [],
-                'allYears'         => [],
-                'currentYear'      => (int) date('Y'),
-                'currentMonth'     => (int) date('m'),
-                'bulanNames'       => [],
+                'error'                     => 'Gagal memuat data: ' . $e->getMessage(),
+                'rekapPerTahun'             => [],
+                'rekapTahunan'              => [],
+                'rekapKlasifikasi'          => [],
+                'rekapKlasifikasiPerTahun'  => [],
+                'klasifikasiPerBulan'       => [],
+                'allYears'                  => [],
+                'currentYear'               => (int) date('Y'),
+                'currentMonth'              => (int) date('m'),
+                'bulanNames'                => [],
             ]);
         }
     }
