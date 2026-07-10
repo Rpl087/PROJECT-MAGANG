@@ -12,13 +12,6 @@
             <p class="page-description">Gunakan formulir di bawah untuk mengarsipkan surat keluar ke dalam sistem.</p>
         @endif
     </div>
-    {{-- Live date/time --}}
-    <div class="live-date-badge" id="live-date-sk">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-        <span id="live-clock-sk">--:--:--</span>
-        <span class="live-date-divider">|</span>
-        <span id="live-date-text-sk"></span>
-    </div>
 </div>
 
 {{-- ── TABEL DAFTAR SURAT KELUAR (hanya tampil untuk admin) ────────────────────── --}}

@@ -820,6 +820,25 @@
     </script>
 
     <script>
+        // ── Global Realtime Clock (Header) ──────────────────────
+        (function () {
+            var BULAN = ['Januari','Februari','Maret','April','Mei','Juni',
+                         'Juli','Agustus','September','Oktober','November','Desember'];
+            var HARI  = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+            function pad(n) { return String(n).padStart(2, '0'); }
+            var elTime = document.getElementById('header-clock-time');
+            var elDate = document.getElementById('header-clock-date');
+            function tick() {
+                var now = new Date();
+                if (elTime) elTime.textContent = pad(now.getHours()) + ':' + pad(now.getMinutes()) + ':' + pad(now.getSeconds());
+                if (elDate) elDate.textContent = HARI[now.getDay()] + ', ' + now.getDate() + ' ' + BULAN[now.getMonth()] + ' ' + now.getFullYear();
+            }
+            tick();
+            setInterval(tick, 1000);
+        })();
+    </script>
+
+    <script>
         // ── Toast Notification API (global) ──────────────────────────
         window.showToast = function (message, type, title) {
             type  = type  || 'success';
@@ -979,28 +998,5 @@
     </script>
     {{-- ── Script dari child views (modal, file upload, flatpickr, dll.) ── --}}
     @stack('scripts')
-
-    {{-- ── Flash Session Toast — dieksekusi TERAKHIR agar dijamin muncul ── --}}
-    {{-- Diletakkan di sini (setelah semua script) karena showToast() sudah pasti terdefinisi --}}
-    @if(session('success') || session('error'))
-    <script>
-    (function () {
-        function fireFlashToast() {
-            @if(session('success'))
-            if (window.showToast) window.showToast({{ json_encode(session('success'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) }}, 'success');
-            @endif
-            @if(session('error'))
-            if (window.showToast) window.showToast({{ json_encode(session('error'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) }}, 'error');
-            @endif
-        }
-        // Jalankan setelah paint berikutnya agar container toast sudah di-render
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', function () { setTimeout(fireFlashToast, 150); });
-        } else {
-            setTimeout(fireFlashToast, 150);
-        }
-    })();
-    </script>
-    @endif
 </body>
 </html>
