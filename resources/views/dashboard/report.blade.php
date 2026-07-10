@@ -59,7 +59,7 @@
 
 {{-- ── REKAP BULANAN PER TAHUN ─────────────────────────────────────────── --}}
 <div class="report-section pre-hide" id="tab-bulanan">
-    {{-- Filter Tahun + Print Tab --}}
+    {{-- Filter Tahun --}}
     <div class="report-filter-bar no-print" style="display:flex;align-items:center;gap:.75rem;margin-bottom:1.25rem;flex-wrap:wrap;">
         <div class="filter-group" style="display:flex;align-items:center;gap:.4rem;">
             <label for="filter-tahun-bulanan" style="font-size:.83rem;font-weight:600;color:var(--color-text-muted);">Filter Tahun:</label>
@@ -81,10 +81,6 @@
                 @endforeach
             </select>
         </div>
-        <button type="button" class="btn-report-tab-print" id="btn-print-bulanan" style="margin-left:auto;">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-            Cetak Tab Ini
-        </button>
     </div>
     @if(empty($rekapPerTahun))
         <div class="report-empty">
@@ -167,7 +163,7 @@
 
 {{-- ── REKAP TAHUNAN ─────────────────────────────────────────────────── --}}
 <div class="report-section pre-hide" id="tab-tahunan" style="display:none;">
-    {{-- Filter Tahun + Print Tab --}}
+    {{-- Filter Tahun --}}
     <div class="report-filter-bar no-print" style="display:flex;align-items:center;gap:.75rem;margin-bottom:1.25rem;flex-wrap:wrap;">
         <div class="filter-group" style="display:flex;align-items:center;gap:.4rem;">
             <label for="filter-tahun-tahunan" style="font-size:.83rem;font-weight:600;color:var(--color-text-muted);">Filter Tahun:</label>
@@ -178,10 +174,6 @@
                 @endforeach
             </select>
         </div>
-        <button type="button" class="btn-report-tab-print" id="btn-print-tahunan" style="margin-left:auto;">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-            Cetak Tab Ini
-        </button>
     </div>
     <div class="report-card" style="page-break-inside:avoid;">
 
@@ -283,7 +275,7 @@
 
 {{-- ── REKAP PER KLASIFIKASI ───────────────────────────────────────────── --}}
 <div class="report-section pre-hide" id="tab-klasifikasi" style="display:none;">
-    {{-- Filter Tahun + Print Tab --}}
+    {{-- Filter Tahun --}}
     <div class="report-filter-bar no-print" style="display:flex;align-items:center;gap:.75rem;margin-bottom:1.25rem;flex-wrap:wrap;">
         <div class="filter-group" style="display:flex;align-items:center;gap:.4rem;">
             <label for="filter-tahun-klasifikasi" style="font-size:.83rem;font-weight:600;color:var(--color-text-muted);">Filter Tahun:</label>
@@ -294,10 +286,6 @@
                 @endforeach
             </select>
         </div>
-        <button type="button" class="btn-report-tab-print" id="btn-print-klasifikasi" style="margin-left:auto;">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-            Cetak Tab Ini
-        </button>
     </div>
     <div class="report-card" style="page-break-inside:avoid;">
         <div class="report-card-header">
@@ -366,6 +354,35 @@
             <div class="sig-space"></div>
             <p><strong>Pengelola Arsip</strong></p>
             <p>____________________</p>
+        </div>
+    </div>
+</div>
+
+{{-- ── Modal Konfirmasi Cetak ─────────────────────────────────────────────── --}}
+<div id="modal-cetak" class="modal-overlay" style="display:none;">
+    <div class="modal-box" style="max-width:420px;">
+        <div class="modal-icon" style="background:rgba(37,99,235,.1);color:#2563eb;">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="6 9 6 2 18 2 18 9"/>
+                <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
+                <rect x="6" y="14" width="12" height="8"/>
+            </svg>
+        </div>
+        <h4 class="modal-title">Konfirmasi Cetak</h4>
+        <p class="modal-desc">
+            Anda akan mencetak <strong id="modal-cetak-tab-name">laporan ini</strong>.<br>
+            Pastikan printer sudah terhubung dan siap digunakan.
+        </p>
+        <div class="modal-actions">
+            <button type="button" class="btn btn-secondary" id="modal-cetak-cancel">Batal</button>
+            <button type="button" class="btn btn-primary" id="modal-cetak-confirm" style="background:linear-gradient(135deg,#1e3a5f,#2563eb);color:#fff;border:none;box-shadow:0 2px 8px rgba(37,99,235,.25);">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="6 9 6 2 18 2 18 9"/>
+                    <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
+                    <rect x="6" y="14" width="12" height="8"/>
+                </svg>
+                Ya, Cetak
+            </button>
         </div>
     </div>
 </div>
@@ -788,24 +805,70 @@ document.addEventListener('DOMContentLoaded', function () {
     window.addEventListener('beforeprint', preparePrint);
     window.addEventListener('afterprint',  restoreAfterPrint);
 
-    // Tombol Cetak
+    // ── Modal Konfirmasi Cetak ───────────────────────────────────────────
+    var TAB_LABELS = {
+        bulanan:      'Rekap Bulanan',
+        tahunan:      'Rekap Tahunan',
+        klasifikasi:  'Rekap Per Klasifikasi'
+    };
+
+    var modalCetak       = document.getElementById('modal-cetak');
+    var modalCetakName   = document.getElementById('modal-cetak-tab-name');
+    var modalCetakCancel = document.getElementById('modal-cetak-cancel');
+    var modalCetakOk     = document.getElementById('modal-cetak-confirm');
+
+    if (modalCetak) document.body.appendChild(modalCetak);
+
+    function openModalCetak() {
+        var activeTab = document.querySelector('.report-tab.active');
+        var activeId  = activeTab ? activeTab.dataset.tab : 'bulanan';
+        var label     = TAB_LABELS[activeId] || 'laporan ini';
+        if (modalCetakName) modalCetakName.textContent = '"' + label + '"';
+        if (modalCetak) {
+            modalCetak.style.display     = 'flex';
+            document.body.style.overflow = 'hidden';
+        }
+    }
+
+    function closeModalCetak() {
+        if (modalCetak) modalCetak.style.display = 'none';
+        document.body.style.overflow = '';
+    }
+
+    // Tombol Cetak Laporan (satu-satunya tombol cetak)
     var btnPrint = document.getElementById('btn-print');
     if (btnPrint) {
         btnPrint.addEventListener('click', function() {
-            preparePrint();
-            window.print();
+            openModalCetak();
         });
     }
 
-    // ── Accordion Rekap Tahunan ────────────────────────────────────────
+    if (modalCetakCancel) modalCetakCancel.addEventListener('click', closeModalCetak);
+    if (modalCetak) modalCetak.addEventListener('click', function(e) {
+        if (e.target === modalCetak) closeModalCetak();
+    });
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && modalCetak && modalCetak.style.display === 'flex') closeModalCetak();
+    });
 
+    if (modalCetakOk) {
+        modalCetakOk.addEventListener('click', function() {
+            closeModalCetak();
+            // Sedikit delay agar modal benar-benar hilang dulu sebelum print dialog muncul
+            setTimeout(function() {
+                preparePrint();
+                window.print();
+            }, 80);
+        });
+    }
+
+    // ── Accordion Rekap Tahunan ──────────────────────────────────────────
     document.querySelectorAll('.row-tahun').forEach(function(row) {
         row.addEventListener('click', function() {
             var year   = this.getAttribute('data-year');
             var detail = document.getElementById('detail-' + year);
             var icon   = this.querySelector('.tahun-toggle-icon');
             if (!detail) return;
-
             var isOpen = (detail.style.display !== 'none' && detail.style.display !== '');
             if (isOpen) {
                 detail.style.display = 'none';
@@ -836,52 +899,30 @@ document.addEventListener('DOMContentLoaded', function () {
         selTahunTahunan.addEventListener('change', function() {
             var tahun = this.value;
             document.querySelectorAll('#tabel-tahunan tbody .row-tahun').forEach(function(tr) {
-                var yr = tr.getAttribute('data-year') || '';
+                var yr   = tr.getAttribute('data-year') || '';
                 var show = !tahun || yr === tahun;
                 tr.style.display = show ? '' : 'none';
-                // Sembunyikan juga baris detail jika tahun-nya tidak ditampilkan
                 var detail = document.getElementById('detail-' + yr);
                 if (detail && !show) detail.style.display = 'none';
             });
         });
     }
 
-    // ── Filter Tahun: Tab Klasifikasi (jika ada data per tahun) ─────────
-    // Data per tahun disediakan inline (tidak perlu filter server-side karena data flat)
+    // ── Filter Tahun: Tab Klasifikasi ────────────────────────────────────
     var selTahunKlas = document.getElementById('filter-tahun-klasifikasi');
     if (selTahunKlas) {
         selTahunKlas.addEventListener('change', function() {
             var tahun = this.value;
-            // Jika "Semua Tahun", tampilkan semua baris klasifikasi
-            // Jika tahun dipilih, filter berdasarkan data-years attribute pada baris
             document.querySelectorAll('#tab-klasifikasi table tbody tr[data-years]').forEach(function(tr) {
                 if (!tahun) { tr.style.display = ''; return; }
                 var years = (tr.getAttribute('data-years') || '').split(',');
                 tr.style.display = years.indexOf(tahun) > -1 ? '' : 'none';
             });
-            // Fallback: jika baris tidak punya data-years, tampilkan semua
             document.querySelectorAll('#tab-klasifikasi table tbody tr:not([data-years])').forEach(function(tr) {
                 tr.style.display = '';
             });
         });
     }
-
-    // ── Tombol Cetak Per Tab ─────────────────────────────────────────────
-    ['bulanan','tahunan','klasifikasi'].forEach(function(tab) {
-        var btn = document.getElementById('btn-print-' + tab);
-        if (!btn) return;
-        btn.addEventListener('click', function() {
-            // Aktifkan tab yang sesuai sebelum print
-            var tabBtn = document.querySelector('.report-tab[data-tab="' + tab + '"]');
-            if (tabBtn && !tabBtn.classList.contains('active')) {
-                tabBtn.click();
-                setTimeout(function() { preparePrint(); window.print(); }, 50);
-            } else {
-                preparePrint();
-                window.print();
-            }
-        });
-    });
 
     // ── Live Clock ────────────────────────────────────────────────────
     var clockText = document.getElementById('clock-text');

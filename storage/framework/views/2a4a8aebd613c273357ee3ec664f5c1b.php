@@ -58,6 +58,29 @@
 
 
 <div class="report-section pre-hide" id="tab-bulanan">
+    
+    <div class="report-filter-bar no-print" style="display:flex;align-items:center;gap:.75rem;margin-bottom:1.25rem;flex-wrap:wrap;">
+        <div class="filter-group" style="display:flex;align-items:center;gap:.4rem;">
+            <label for="filter-tahun-bulanan" style="font-size:.83rem;font-weight:600;color:var(--color-text-muted);">Filter Tahun:</label>
+            <select id="filter-tahun-bulanan" class="filter-select" style="min-width:110px;">
+                <option value="">Semua Tahun</option>
+                <?php
+                    $tahun5 = [];
+                    $now5 = (int) date('Y');
+                    for ($y = $now5; $y >= $now5 - 4; $y--) {
+                        if (isset($rekapPerTahun[$y])) $tahun5[] = $y;
+                    }
+                    foreach(array_keys($rekapPerTahun) as $y) {
+                        if (!in_array($y, $tahun5)) $tahun5[] = $y;
+                    }
+                    rsort($tahun5);
+                ?>
+                <?php $__currentLoopData = $tahun5; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $ty): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                <option value="<?php echo e($ty); ?>"><?php echo e($ty); ?></option>
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+            </select>
+        </div>
+    </div>
     <?php if(empty($rekapPerTahun)): ?>
         <div class="report-empty">
             <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
@@ -65,7 +88,7 @@
         </div>
     <?php else: ?>
         <?php $__currentLoopData = $rekapPerTahun; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $year => $rekap): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-        <div class="report-card" style="margin-bottom:2rem; page-break-inside:avoid;">
+        <div class="report-card" data-year="<?php echo e($year); ?>" style="margin-bottom:2rem; page-break-inside:avoid;">
             <div class="report-card-header">
                 <div class="report-card-title-wrap">
                     <div class="report-card-icon">
@@ -140,6 +163,18 @@
 
 
 <div class="report-section pre-hide" id="tab-tahunan" style="display:none;">
+    
+    <div class="report-filter-bar no-print" style="display:flex;align-items:center;gap:.75rem;margin-bottom:1.25rem;flex-wrap:wrap;">
+        <div class="filter-group" style="display:flex;align-items:center;gap:.4rem;">
+            <label for="filter-tahun-tahunan" style="font-size:.83rem;font-weight:600;color:var(--color-text-muted);">Filter Tahun:</label>
+            <select id="filter-tahun-tahunan" class="filter-select" style="min-width:110px;">
+                <option value="">Semua Tahun</option>
+                <?php $__currentLoopData = $tahun5; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $ty): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                <option value="<?php echo e($ty); ?>"><?php echo e($ty); ?></option>
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+            </select>
+        </div>
+    </div>
     <div class="report-card" style="page-break-inside:avoid;">
 
         <div class="report-card-header">
@@ -240,6 +275,18 @@
 
 
 <div class="report-section pre-hide" id="tab-klasifikasi" style="display:none;">
+    
+    <div class="report-filter-bar no-print" style="display:flex;align-items:center;gap:.75rem;margin-bottom:1.25rem;flex-wrap:wrap;">
+        <div class="filter-group" style="display:flex;align-items:center;gap:.4rem;">
+            <label for="filter-tahun-klasifikasi" style="font-size:.83rem;font-weight:600;color:var(--color-text-muted);">Filter Tahun:</label>
+            <select id="filter-tahun-klasifikasi" class="filter-select" style="min-width:110px;">
+                <option value="">Semua Tahun</option>
+                <?php $__currentLoopData = $tahun5; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $ty): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                <option value="<?php echo e($ty); ?>"><?php echo e($ty); ?></option>
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+            </select>
+        </div>
+    </div>
     <div class="report-card" style="page-break-inside:avoid;">
         <div class="report-card-header">
             <div class="report-card-title-wrap">
@@ -311,6 +358,35 @@
     </div>
 </div>
 
+
+<div id="modal-cetak" class="modal-overlay" style="display:none;">
+    <div class="modal-box" style="max-width:420px;">
+        <div class="modal-icon" style="background:rgba(37,99,235,.1);color:#2563eb;">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="6 9 6 2 18 2 18 9"/>
+                <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
+                <rect x="6" y="14" width="12" height="8"/>
+            </svg>
+        </div>
+        <h4 class="modal-title">Konfirmasi Cetak</h4>
+        <p class="modal-desc">
+            Anda akan mencetak <strong id="modal-cetak-tab-name">laporan ini</strong>.<br>
+            Pastikan printer sudah terhubung dan siap digunakan.
+        </p>
+        <div class="modal-actions">
+            <button type="button" class="btn btn-secondary" id="modal-cetak-cancel">Batal</button>
+            <button type="button" class="btn btn-primary" id="modal-cetak-confirm" style="background:linear-gradient(135deg,#1e3a5f,#2563eb);color:#fff;border:none;box-shadow:0 2px 8px rgba(37,99,235,.25);">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="6 9 6 2 18 2 18 9"/>
+                    <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
+                    <rect x="6" y="14" width="12" height="8"/>
+                </svg>
+                Ya, Cetak
+            </button>
+        </div>
+    </div>
+</div>
+
 <?php $__env->stopSection(); ?>
 
 <?php $__env->startPush('styles'); ?>
@@ -331,6 +407,23 @@
     box-shadow: 0 2px 8px rgba(37,99,235,.25);
 }
 .btn-report-print:hover { opacity:.9; transform:translateY(-1px); box-shadow: 0 4px 16px rgba(37,99,235,.35); }
+
+/* ── Tombol Cetak Per Tab ──────────────────────────────── */
+.btn-report-tab-print {
+    display: inline-flex; align-items: center; gap: .4rem;
+    padding: .45rem 1rem;
+    background: transparent;
+    color: var(--color-primary, #1e3a5f);
+    border: 1.5px solid var(--color-primary, #1e3a5f);
+    border-radius: .5rem;
+    font-size: .8rem; font-weight: 600; font-family: inherit;
+    cursor: pointer; transition: all .2s;
+}
+.btn-report-tab-print:hover {
+    background: var(--color-primary, #1e3a5f); color: #fff;
+    transform: translateY(-1px); box-shadow: 0 2px 8px rgba(37,99,235,.2);
+}
+
 
 /* ── Tab Navigasi ─────────────────────────────────────── */
 .report-tabs {
@@ -712,24 +805,70 @@ document.addEventListener('DOMContentLoaded', function () {
     window.addEventListener('beforeprint', preparePrint);
     window.addEventListener('afterprint',  restoreAfterPrint);
 
-    // Tombol Cetak
+    // ── Modal Konfirmasi Cetak ───────────────────────────────────────────
+    var TAB_LABELS = {
+        bulanan:      'Rekap Bulanan',
+        tahunan:      'Rekap Tahunan',
+        klasifikasi:  'Rekap Per Klasifikasi'
+    };
+
+    var modalCetak       = document.getElementById('modal-cetak');
+    var modalCetakName   = document.getElementById('modal-cetak-tab-name');
+    var modalCetakCancel = document.getElementById('modal-cetak-cancel');
+    var modalCetakOk     = document.getElementById('modal-cetak-confirm');
+
+    if (modalCetak) document.body.appendChild(modalCetak);
+
+    function openModalCetak() {
+        var activeTab = document.querySelector('.report-tab.active');
+        var activeId  = activeTab ? activeTab.dataset.tab : 'bulanan';
+        var label     = TAB_LABELS[activeId] || 'laporan ini';
+        if (modalCetakName) modalCetakName.textContent = '"' + label + '"';
+        if (modalCetak) {
+            modalCetak.style.display     = 'flex';
+            document.body.style.overflow = 'hidden';
+        }
+    }
+
+    function closeModalCetak() {
+        if (modalCetak) modalCetak.style.display = 'none';
+        document.body.style.overflow = '';
+    }
+
+    // Tombol Cetak Laporan (satu-satunya tombol cetak)
     var btnPrint = document.getElementById('btn-print');
     if (btnPrint) {
         btnPrint.addEventListener('click', function() {
-            preparePrint();
-            window.print();
+            openModalCetak();
         });
     }
 
-    // ── Accordion Rekap Tahunan ────────────────────────────────────────
+    if (modalCetakCancel) modalCetakCancel.addEventListener('click', closeModalCetak);
+    if (modalCetak) modalCetak.addEventListener('click', function(e) {
+        if (e.target === modalCetak) closeModalCetak();
+    });
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && modalCetak && modalCetak.style.display === 'flex') closeModalCetak();
+    });
 
+    if (modalCetakOk) {
+        modalCetakOk.addEventListener('click', function() {
+            closeModalCetak();
+            // Sedikit delay agar modal benar-benar hilang dulu sebelum print dialog muncul
+            setTimeout(function() {
+                preparePrint();
+                window.print();
+            }, 80);
+        });
+    }
+
+    // ── Accordion Rekap Tahunan ──────────────────────────────────────────
     document.querySelectorAll('.row-tahun').forEach(function(row) {
         row.addEventListener('click', function() {
             var year   = this.getAttribute('data-year');
             var detail = document.getElementById('detail-' + year);
             var icon   = this.querySelector('.tahun-toggle-icon');
             if (!detail) return;
-
             var isOpen = (detail.style.display !== 'none' && detail.style.display !== '');
             if (isOpen) {
                 detail.style.display = 'none';
@@ -742,6 +881,48 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
     });
+
+    // ── Filter Tahun: Tab Bulanan ────────────────────────────────────────
+    var selTahunBulanan = document.getElementById('filter-tahun-bulanan');
+    if (selTahunBulanan) {
+        selTahunBulanan.addEventListener('change', function() {
+            var tahun = this.value;
+            document.querySelectorAll('#tab-bulanan .report-card[data-year]').forEach(function(card) {
+                card.style.display = (!tahun || card.getAttribute('data-year') === tahun) ? '' : 'none';
+            });
+        });
+    }
+
+    // ── Filter Tahun: Tab Tahunan ────────────────────────────────────────
+    var selTahunTahunan = document.getElementById('filter-tahun-tahunan');
+    if (selTahunTahunan) {
+        selTahunTahunan.addEventListener('change', function() {
+            var tahun = this.value;
+            document.querySelectorAll('#tabel-tahunan tbody .row-tahun').forEach(function(tr) {
+                var yr   = tr.getAttribute('data-year') || '';
+                var show = !tahun || yr === tahun;
+                tr.style.display = show ? '' : 'none';
+                var detail = document.getElementById('detail-' + yr);
+                if (detail && !show) detail.style.display = 'none';
+            });
+        });
+    }
+
+    // ── Filter Tahun: Tab Klasifikasi ────────────────────────────────────
+    var selTahunKlas = document.getElementById('filter-tahun-klasifikasi');
+    if (selTahunKlas) {
+        selTahunKlas.addEventListener('change', function() {
+            var tahun = this.value;
+            document.querySelectorAll('#tab-klasifikasi table tbody tr[data-years]').forEach(function(tr) {
+                if (!tahun) { tr.style.display = ''; return; }
+                var years = (tr.getAttribute('data-years') || '').split(',');
+                tr.style.display = years.indexOf(tahun) > -1 ? '' : 'none';
+            });
+            document.querySelectorAll('#tab-klasifikasi table tbody tr:not([data-years])').forEach(function(tr) {
+                tr.style.display = '';
+            });
+        });
+    }
 
     // ── Live Clock ────────────────────────────────────────────────────
     var clockText = document.getElementById('clock-text');
