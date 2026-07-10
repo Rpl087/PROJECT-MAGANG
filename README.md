@@ -83,25 +83,105 @@ Aplikasi web berbasis **Laravel 13.8** untuk pengarsipan surat masuk dan surat k
 2. Opsi terbaik: gunakan **PC/server dedicated** yang tidak pernah dimatikan
 3. Opsi kedua: aktifkan **Windows Hibernate** agar laptop bisa "sleep" tanpa shutdown total
 
+### Apa yang Dilakukan `start-intranet.bat`?
+
+Script ini menjalankan **3 langkah otomatis** setiap kali dieksekusi:
+
+| Langkah | Apa yang Terjadi |
+|---|---|
+| 1. Deteksi IP | Mendeteksi IP WiFi aktif laptop server via PowerShell (mengabaikan hotspot `192.168.137.x`) |
+| 2. Update `.env` | Mengubah `APP_URL` dan `INTERNAL_NETWORK_SUBNET` di `.env` sesuai IP yang terdeteksi |
+| 3. Jalankan Server | Pilihan: Laragon (Apache) **atau** `php artisan serve --host=0.0.0.0 --port=8000` |
+
+IP yang terdeteksi digunakan oleh **2 middleware keamanan**:
+- **`InternalNetworkOnly`** — Melindungi route write/delete (input surat, hapus data, dashboard). Hanya IP dari `INTERNAL_NETWORK_SUBNET` yang diizinkan.
+- **`GuestNetwork`** — Mengizinkan akses read-only di `/tamu` dari subnet internal dan subnet tamu.
+
 ### Setup Akses Intranet
 
 1. **Double-click** `start-intranet.bat` — script otomatis mendeteksi IP WiFi dan mengupdate `.env`
 2. Pilih mode server:
-   - **Mode 1 (Laragon/Apache)**: Akses via `http://{IP_LAPTOP}/` — **direkomendasikan**
-   - **Mode 2 (Artisan Serve)**: Akses via `http://{IP_LAPTOP}:8000/` — hanya untuk development
-3. Semua perangkat di jaringan WiFi yang sama bisa mengakses via IP laptop
+   - **Mode 1 (Laragon/Apache)**: Akses via `http://{IP_SERVER}/` — **direkomendasikan untuk kantor**
+   - **Mode 2 (Artisan Serve)**: Akses via `http://{IP_SERVER}:8000/` — untuk development/testing
+3. Semua perangkat di jaringan WiFi/LAN yang sama bisa mengakses via IP server
+
+### Perbandingan Mode Server
+
+| Aspek | Mode 1 — Laragon (Apache) | Mode 2 — Artisan Serve |
+|---|---|---|
+| URL Akses | `http://IP` (port 80, tanpa port) | `http://IP:8000` |
+| Auto-start | ✅ Bisa via Laragon Preferences | ❌ Harus run manual / bat Startup |
+| Stabilitas | ✅ Production-grade, background | ⚠️ CMD harus tetap terbuka |
+| Performa | ✅ Lebih baik untuk banyak user | ⚠️ Single-threaded |
+| Rekomendasi | ✅ **Untuk deployment kantor** | Untuk development saja |
+
+### 🏢 Panduan Deployment di Kantor BPSDMP
+
+#### Apakah `start-intranet.bat` Harus Dijalankan Setiap Hari?
+
+**Tergantung skenario:**
+
+**Skenario A — IP Statis (⭐ PALING DISARANKAN)**
+> Minta IT kantor set **IP statis** untuk PC/laptop server (contoh: `192.168.252.100`).
+> Dengan IP yang tidak berubah:
+> 1. Jalankan `start-intranet.bat` **SEKALI** saat pertama kali setup
+> 2. Set Laragon **auto-start** saat Windows boot (Preferences → "Run Laragon when Windows starts")
+> 3. **Selesai** — tidak perlu menjalankan bat lagi setiap hari
+> 4. Laragon otomatis menyala setiap PC dinyalakan
+
+**Skenario B — IP Dinamis (DHCP)**
+> Jika IP berubah setiap kali connect WiFi/LAN:
+> 1. `start-intranet.bat` **harus dijalankan setiap kali PC dinyalakan** agar IP di `.env` terupdate
+> 2. Untuk otomatisasi, buat shortcut `start-intranet.bat` di folder Windows Startup:
+>    ```
+>    C:\Users\<NamaUser>\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup
+>    ```
+> 3. ⚠️ Jika memilih Mode 2 (Artisan), jendela CMD **harus tetap terbuka** selama jam kerja
+
+#### Checklist Deployment Kantor
+
+```
+✅ Persiapan (sekali saja):
+   □ Install Laragon di PC server
+   □ Clone/copy project ke C:\laragon\www\project-magang\
+   □ Jalankan: composer install
+   □ Jalankan: php artisan migrate --seed
+   □ Jalankan: php artisan storage:link
+   □ Taruh file google-credentials.json di storage/app/
+   □ Minta IT set IP statis untuk PC server (DISARANKAN)
+   □ Pastikan Windows Firewall mengizinkan port 80 (Apache) atau 8000 (Artisan)
+
+✅ Konfigurasi Auto-Start (sekali saja):
+   □ Jalankan start-intranet.bat (pilih Mode 1 - Laragon)
+   □ Buka Laragon → Preferences → centang "Run Laragon when Windows starts"
+   □ (Opsional, jika DHCP) Taruh shortcut start-intranet.bat di Startup folder
+
+✅ Operasional Harian:
+   □ Nyalakan PC server → Laragon otomatis start (jika sudah di-set)
+   □ Jika IP statis: tidak perlu lakukan apa-apa lagi
+   □ Jika IP DHCP: pastikan start-intranet.bat sudah jalan (cek dari Startup)
+   □ Jangan matikan PC server selama jam kerja
+```
+
+#### ⚠️ Hal Penting yang Harus Diperhatikan
+
+1. **Windows Firewall** — Port 80 (Laragon) atau 8000 (Artisan) harus diizinkan di Firewall. Jika belum, PC lain di LAN tidak bisa mengakses meski server sudah jalan.
+2. **Satu Jaringan WiFi/LAN** — Semua perangkat (server + client) harus terhubung ke jaringan yang sama. Subnet `/22` mencakup IP range `192.168.252.0` – `192.168.255.255`.
+3. **PC Server Jangan Dimatikan** — Selama jam kerja, PC server harus tetap menyala. Jika mati, semua akses terputus.
+4. **IP Berubah?** — Jika IP server berubah (DHCP), cukup jalankan ulang `start-intranet.bat` dan IP otomatis terupdate.
+5. **Localhost Selalu Diizinkan** — Akses dari PC server sendiri (`127.0.0.1`) selalu diizinkan oleh kedua middleware.
 
 ### URL Intranet
 
 | Pengguna | URL | Catatan |
 |---|---|---|
-| Staff/Admin | `http://{IP_LAPTOP}/` | Butuh login |
-| Staff Surat Keluar | `http://{IP_LAPTOP}/surat-keluar` | Butuh login |
-| Tamu (Read-only) | `http://{IP_LAPTOP}/tamu` | Tanpa login |
-| Tamu Surat Keluar | `http://{IP_LAPTOP}/tamu/surat-keluar` | Tanpa login |
-| Dashboard Admin | `http://{IP_LAPTOP}/dashboard` | Butuh login admin |
+| Staff/Admin | `http://{IP_SERVER}/` | Butuh login |
+| Staff Surat Keluar | `http://{IP_SERVER}/surat-keluar` | Butuh login |
+| Tamu (Read-only) | `http://{IP_SERVER}/tamu` | Tanpa login, read-only |
+| Tamu Surat Keluar | `http://{IP_SERVER}/tamu/surat-keluar` | Tanpa login, read-only |
+| Dashboard Admin | `http://{IP_SERVER}/dashboard` | Butuh login admin |
 
-> Ganti `{IP_LAPTOP}` dengan IP aktual laptop server (contoh: `192.168.252.85`)
+> Ganti `{IP_SERVER}` dengan IP aktual PC/laptop server (contoh: `192.168.252.85`). Jika menggunakan Mode 2 (Artisan), tambahkan `:8000` di belakang IP.
 
 ---
 
