@@ -278,11 +278,11 @@
         </div>
 
         <div class="table-card">
-            @if(count($rows) === 0 && !$fetchError)
+            @if(count($rows) === 0)
                 <div class="empty-state">
                     <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
-                    <h3>Belum ada data arsip</h3>
-                    <p>Data surat keluar akan muncul di sini setelah diinput oleh staff.</p>
+                    <h3>{{ $fetchError ? 'Gagal memuat data' : 'Belum ada data arsip' }}</h3>
+                    <p>{{ $fetchError ? 'Periksa koneksi server Google Sheets.' : 'Data surat keluar akan muncul di sini setelah diinput oleh staff.' }}</p>
                 </div>
             @else
                 <div class="table-wrapper">

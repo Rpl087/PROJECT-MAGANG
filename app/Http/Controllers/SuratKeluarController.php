@@ -248,21 +248,7 @@ class SuratKeluarController extends Controller
         ]);
 
         try {
-            // Setup Google Client
-            $credPath = config('google.service_account_json');
-            if (empty($credPath)) {
-                throw new \RuntimeException('GOOGLE_SERVICE_ACCOUNT_JSON belum dikonfigurasi di .env');
-            }
-            $credFullPath = base_path($credPath);
-            if (!file_exists($credFullPath) || !is_file($credFullPath)) {
-                throw new \RuntimeException("File kredensial Google tidak ditemukan: {$credFullPath}");
-            }
-            $client = new Client();
-            $client->setAuthConfig($credFullPath);
-            $client->addScope(Sheets::SPREADSHEETS);
-
-            $service = new Sheets($client);
-            $spreadsheetId = config('google.sheet_id');
+            [$service, $spreadsheetId] = $this->getSheetService();
             $range = "dbSK!A:R";
 
             // Simpan file PDF surat keluar dengan nama pendek berisi kode klasifikasi
