@@ -1,13 +1,13 @@
-<?php $__env->startSection('title', 'Surat Masuk'); ?>
+<?php $__env->startSection('title', 'Surat Keluar'); ?>
 
 <?php $__env->startSection('content'); ?>
 <div class="page-header pre-hide" style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:.75rem;">
     <div>
-        <h2 class="page-title">Surat Masuk</h2>
+        <h2 class="page-title">Surat Keluar</h2>
         <?php if($isAdmin ?? false): ?>
-            <p class="page-description">Lihat daftar arsip tersimpan dan tambah surat masuk baru ke dalam sistem.</p>
+            <p class="page-description">Lihat daftar arsip tersimpan dan tambah surat keluar baru ke dalam sistem.</p>
         <?php else: ?>
-            <p class="page-description">Gunakan formulir di bawah untuk mengarsipkan surat masuk ke dalam sistem.</p>
+            <p class="page-description">Gunakan formulir di bawah untuk mengarsipkan surat keluar ke dalam sistem.</p>
         <?php endif; ?>
     </div>
 </div>
@@ -21,8 +21,8 @@
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
             </div>
             <div>
-                <h3 class="section-title">Daftar Surat Masuk Tersimpan</h3>
-                <p class="section-desc">Data diambil langsung dari Google Spreadsheet (sheet: SURAT MASUK)</p>
+                <h3 class="section-title">Daftar Surat Keluar Tersimpan</h3>
+                <p class="section-desc">Data diambil langsung dari Google Spreadsheet (sheet: SURAT KELUAR)</p>
             </div>
         </div>
 
@@ -35,10 +35,10 @@
         <?php endif; ?>
 
         
-        <div class="table-filter-bar" id="filter-bar-sm">
+        <div class="table-filter-bar" id="filter-bar-sk">
             <div class="filter-group">
-                <label for="filter-bulan-sm" class="filter-label">Filter Bulan:</label>
-                <select id="filter-bulan-sm" class="filter-select">
+                <label for="filter-bulan-sk" class="filter-label">Filter Bulan:</label>
+                <select id="filter-bulan-sk" class="filter-select">
                     <option value="">Semua Bulan</option>
                     <option value="1">Januari</option>
                     <option value="2">Februari</option>
@@ -55,48 +55,48 @@
                 </select>
             </div>
             <div class="filter-group">
-                <label for="filter-tahun-sm" class="filter-label">Tahun:</label>
-                <select id="filter-tahun-sm" class="filter-select">
+                <label for="filter-tahun-sk" class="filter-label">Tahun:</label>
+                <select id="filter-tahun-sk" class="filter-select">
                     <option value="">Semua Tahun</option>
                     <?php
-                        $tahunList = [];
+                        $tahunListSK = [];
                         foreach($rows as $item) {
                             $t = trim($item['data'][7] ?? '');
-                            if(preg_match('/(\d{4})/', $t, $m)) $tahunList[$m[1]] = true;
+                            if(preg_match('/(\d{4})/', $t, $m)) $tahunListSK[$m[1]] = true;
                         }
-                        krsort($tahunList);
+                        krsort($tahunListSK);
                     ?>
-                    <?php $__currentLoopData = $tahunList; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $thn => $_): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                    <?php $__currentLoopData = $tahunListSK; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $thn => $_): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                     <option value="<?php echo e($thn); ?>"><?php echo e($thn); ?></option>
                     <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                 </select>
             </div>
             <div class="filter-group">
-                <label for="filter-kode-sm" class="filter-label">Kode Klasifikasi:</label>
-                <select id="filter-kode-sm" class="filter-select">
+                <label for="filter-kode-sk" class="filter-label">Kode Klasifikasi:</label>
+                <select id="filter-kode-sk" class="filter-select">
                     <option value="">Semua Kode</option>
                     <?php
-                        $kodeList = [];
+                        $kodeListSK = [];
                         foreach($rows as $item) {
                             $k = trim($item['data'][1] ?? '');
                             if ($k !== '' && !str_starts_with($k, '#')) {
                                 $kp = preg_match('/^([A-Za-z]+)/', $k, $km) ? strtoupper($km[1]) : strtoupper($k);
-                                $kodeList[$kp] = true;
+                                $kodeListSK[$kp] = true;
                             }
                         }
-                        ksort($kodeList);
+                        ksort($kodeListSK);
                     ?>
-                    <?php $__currentLoopData = $kodeList; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $kd => $_): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                    <?php $__currentLoopData = $kodeListSK; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $kd => $_): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                     <option value="<?php echo e($kd); ?>"><?php echo e($kd); ?></option>
                     <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                 </select>
             </div>
-            <button type="button" class="filter-reset" id="filter-reset-sm">Reset Filter</button>
-            <div class="filter-count" id="filter-count-sm"></div>
+            <button type="button" class="filter-reset" id="filter-reset-sk">Reset Filter</button>
+            <div class="filter-count" id="filter-count-sk"></div>
         </div>
 
         
-        <div id="table-skeleton-sm" class="skeleton-table-wrapper" aria-hidden="true">
+        <div id="table-skeleton-sk" class="skeleton-table-wrapper" aria-hidden="true">
             <div class="skeleton-header">
                 <div class="skeleton-header-cell"></div>
                 <div class="skeleton-header-cell"></div>
@@ -118,38 +118,34 @@
         </div>
 
         
-        <div id="table-content-sm" style="overflow-x:auto; margin-top:.5rem; display:none;">
-            <table class="arsip-table" id="arsip-table-sm">
+        <div id="table-content-sk" style="overflow-x:auto; margin-top:.5rem; display:none;">
+            <table class="arsip-table" id="arsip-table-sk">
                 <thead>
                     <tr>
                         <th class="th-sortable" data-col="no" style="cursor:default;">No</th>
                         <th class="th-sortable" data-col="tanggal">Tanggal Surat <span class="sort-icon">↕</span></th>
-                        <th class="th-sortable" data-col="kode" id="th-kode-sm">Kode Klasifikasi <span class="sort-icon">↕</span></th>
+                        <th class="th-sortable" data-col="kode" id="th-kode-sk">Kode Klasifikasi <span class="sort-icon">↕</span></th>
                         <th>Uraian Berkas</th>
                         <th>Link Folder</th>
                         <th>Aksi</th>
                     </tr>
                 </thead>
-                <tbody id="tbody-sm">
+                <tbody id="tbody-sk">
                     <?php $__empty_1 = true; $__currentLoopData = $rows; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $no => $item): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
                         <?php
-                            $d           = $item['data'];
-                            // Indeks kolom sesuai struktur SURAT MASUK (A–Q):
-                            // A(0)=NO | B(1)=Kode Klas | C(2)=Uraian Berkas | D(3)=Kurun Waktu
-                            // E(4)=Jumlah Folder | F(5)=Nomor Item | G(6)=Uraian Arsip
-                            // H(7)=Tanggal Surat | I(8)=Jumlah Lembar | ... | Q(16)=Link Folder
-                            $tanggal      = $d[7]  ?? '-';  // H: Tanggal Surat
-                            $kodeKlasRaw  = $d[1]  ?? '';   // B: Kode Klasifikasi
-                            $kodeKlas     = (str_starts_with($kodeKlasRaw, '#') || $kodeKlasRaw === '') ? '—' : $kodeKlasRaw;
-                            $kodePrefix   = preg_match('/^([A-Za-z]+)/', $kodeKlasRaw, $km) ? strtoupper($km[1]) : '';
-                            $uraian       = $d[2]  ?? '-';  // C: Uraian Berkas
-                            $rawLink      = trim($d[16] ?? '');  // Q: Link Folder (filename atau URL lama)
-                            // Generate URL dinamis jika berupa filename; gunakan apa adanya jika sudah URL
+                            $d = $item['data'];
+                            $tanggal     = $d[7]  ?? '-';
+                            $kodeKlasRaw = trim($d[1] ?? '');
+                            $kodeKlas    = $kodeKlasRaw !== '' ? $kodeKlasRaw : '—';
+                            $kodePrefix  = preg_match('/^([A-Za-z]+)/', $kodeKlasRaw, $km) ? strtoupper($km[1]) : '';
+                            $uraian      = $d[2]  ?? '-';
+
+                            $rawFile     = trim($d[16] ?? '');
                             $pdfUrl = '';
-                            if ($rawLink !== '') {
-                                $pdfUrl = str_starts_with($rawLink, 'http')
-                                    ? $rawLink  // URL lama (legacy) — tetap dipakai
-                                    : route('pdf.view', ['type' => 'surat-masuk', 'filename' => $rawLink]);
+                            if ($rawFile !== '') {
+                                $pdfUrl = str_starts_with($rawFile, 'http')
+                                    ? $rawFile
+                                    : route('pdf.view', ['type' => 'surat-keluar', 'filename' => $rawFile]);
                             }
                             // Parse bulan & tahun untuk filter
                             $bulanNum = '';
@@ -182,22 +178,22 @@
                                 <?php endif; ?>
                             </td>
                             <td class="td-center" style="white-space:nowrap;">
-                                <button type="button" class="btn-edit-sm"
+                                <button type="button" class="btn-edit-sk"
                                     data-index="<?php echo e($item['index']); ?>"
-                                    data-label="surat masuk baris ke-<?php echo e($no + 1); ?>"
+                                    data-label="surat keluar baris ke-<?php echo e($no + 1); ?>"
                                     title="Edit data ini">
                                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                                     Edit
                                 </button>
                                 <button type="button" class="btn-hapus"
-                                    data-form="delete-sm-<?php echo e($item['index']); ?>"
-                                    data-label="surat masuk baris ke-<?php echo e($no + 1); ?>"
+                                    data-form="delete-sk-<?php echo e($item['index']); ?>"
+                                    data-label="surat keluar baris ke-<?php echo e($no + 1); ?>"
                                     title="Hapus data ini">
                                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
                                     Hapus
                                 </button>
-                                <form id="delete-sm-<?php echo e($item['index']); ?>"
-                                      action="<?php echo e(route('arsip.destroy', $item['index'])); ?>"
+                                <form id="delete-sk-<?php echo e($item['index']); ?>"
+                                      action="<?php echo e(route('surat-keluar.destroy', $item['index'])); ?>"
                                       method="POST" style="display:none;">
                                     <?php echo csrf_field(); ?>
                                     <?php echo method_field('DELETE'); ?>
@@ -208,7 +204,7 @@
                         <tr>
                             <td colspan="6" class="td-empty">
                                 <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                                <span>Belum ada data surat masuk tersimpan.</span>
+                                <span>Belum ada data surat keluar tersimpan.</span>
                             </td>
                         </tr>
                     <?php endif; ?>
@@ -220,90 +216,90 @@
 <?php endif; ?>
 
 
-<div id="modal-hapus" class="modal-overlay" style="display:none;">
+<div id="modal-hapus-sk" class="modal-overlay" style="display:none;">
     <div class="modal-box">
         <div class="modal-icon">
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
         </div>
         <h4 class="modal-title">Konfirmasi Hapus</h4>
-        <p class="modal-desc">Apakah Anda yakin ingin menghapus <strong id="modal-label"></strong>? Tindakan ini tidak dapat dibatalkan dan akan menghapus data dari Google Sheets.</p>
+        <p class="modal-desc">Apakah Anda yakin ingin menghapus <strong id="modal-label-sk"></strong>? Tindakan ini tidak dapat dibatalkan dan akan menghapus data dari Google Sheets.</p>
         <div class="modal-actions">
-            <button type="button" class="btn btn-secondary" id="modal-cancel">Batal</button>
-            <button type="button" class="btn btn-danger" id="modal-confirm">Ya, Hapus</button>
+            <button type="button" class="btn btn-secondary" id="modal-cancel-sk">Batal</button>
+            <button type="button" class="btn btn-danger" id="modal-confirm-sk">Ya, Hapus</button>
         </div>
     </div>
 </div>
 
 
-<div id="modal-edit-sm" class="modal-overlay" style="display:none;">
+<div id="modal-edit-sk" class="modal-overlay" style="display:none;">
     <div class="modal-box" style="max-width:640px;width:95%;max-height:90vh;overflow-y:auto;">
         <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1.25rem;">
             <div class="modal-icon" style="background:rgba(59,130,246,.12);color:#3b82f6;flex-shrink:0;">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
             </div>
             <div>
-                <h4 class="modal-title" style="margin:0;">Edit Surat Masuk</h4>
-                <p style="font-size:.8rem;color:var(--color-text-muted);margin:0;">Perubahan akan disimpan ke Google Sheets (dbSM)</p>
+                <h4 class="modal-title" style="margin:0;">Edit Surat Keluar</h4>
+                <p style="font-size:.8rem;color:var(--color-text-muted);margin:0;">Perubahan akan disimpan ke Google Sheets (dbSK)</p>
             </div>
-            <button type="button" id="modal-edit-sm-close" style="margin-left:auto;background:none;border:none;cursor:pointer;color:var(--color-text-muted);font-size:1.3rem;line-height:1;">&times;</button>
+            <button type="button" id="modal-edit-sk-close" style="margin-left:auto;background:none;border:none;cursor:pointer;color:var(--color-text-muted);font-size:1.3rem;line-height:1;">&times;</button>
         </div>
-        <div id="modal-edit-sm-loading" style="text-align:center;padding:2rem;display:none;">
+        <div id="modal-edit-sk-loading" style="text-align:center;padding:2rem;display:none;">
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation:spin .8s linear infinite;"><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/></svg>
             <p style="margin-top:.5rem;color:var(--color-text-muted);font-size:.85rem;">Memuat data...</p>
         </div>
-        <form id="form-edit-sm" method="POST" style="display:none;">
+        <form id="form-edit-sk" method="POST" style="display:none;">
             <?php echo csrf_field(); ?>
             <?php echo method_field('PUT'); ?>
-            <input type="hidden" name="dbsm_index" id="edit-sm-dbsm-index">
-            <input type="hidden" name="pdf_filename" id="edit-sm-pdf-filename">
+            <input type="hidden" name="dbsk_index" id="edit-sk-dbsk-index">
+            <input type="hidden" name="pdf_filename" id="edit-sk-pdf-filename">
             <div class="edit-modal-grid">
                 <div class="edit-field-group">
                     <label class="edit-field-label">Kode Klasifikasi <span class="req">*</span></label>
-                    <input type="text" name="kode_klasifikasi" id="edit-sm-kode-klasifikasi" class="edit-field-input" maxlength="10" style="text-transform:uppercase;" required>
+                    <input type="text" name="kode_klasifikasi" id="edit-sk-kode-klasifikasi" class="edit-field-input" maxlength="10" style="text-transform:uppercase;" required>
                 </div>
                 <div class="edit-field-group">
                     <label class="edit-field-label">Kode Surat <span class="req">*</span></label>
-                    <input type="text" name="kode_surat" id="edit-sm-kode-surat" class="edit-field-input" required>
+                    <input type="text" name="kode_surat" id="edit-sk-kode-surat" class="edit-field-input" required>
                 </div>
                 <div class="edit-field-group edit-field-full">
                     <label class="edit-field-label">Uraian Informasi Berkas <span class="req">*</span></label>
-                    <textarea name="uraian_informasi_berkas" id="edit-sm-uraian-berkas" class="edit-field-input" rows="2" required></textarea>
+                    <textarea name="uraian_informasi_berkas" id="edit-sk-uraian-berkas" class="edit-field-input" rows="2" required></textarea>
                 </div>
                 <div class="edit-field-group">
                     <label class="edit-field-label">Kurun Waktu <span class="req">*</span></label>
-                    <input type="number" name="kurun_waktu" id="edit-sm-kurun-waktu" class="edit-field-input" min="1900" max="2100" required>
+                    <input type="number" name="kurun_waktu" id="edit-sk-kurun-waktu" class="edit-field-input" min="1900" max="2100" required>
                 </div>
                 <div class="edit-field-group">
                     <label class="edit-field-label">Jumlah Folder <span class="req">*</span></label>
-                    <input type="text" name="jumlah_folder" id="edit-sm-jumlah-folder" class="edit-field-input" required>
+                    <input type="text" name="jumlah_folder" id="edit-sk-jumlah-folder" class="edit-field-input" required>
                 </div>
                 <div class="edit-field-group">
                     <label class="edit-field-label">Nomor Item Arsip <span class="req">*</span></label>
-                    <input type="number" name="nomor_item_arsip" id="edit-sm-nomor-item" class="edit-field-input" min="1" required>
+                    <input type="number" name="nomor_item_arsip" id="edit-sk-nomor-item" class="edit-field-input" min="1" required>
                 </div>
                 <div class="edit-field-group">
                     <label class="edit-field-label">Tanggal Surat <span class="req">*</span></label>
-                    <input type="text" name="tanggal_surat" id="edit-sm-tanggal" class="edit-field-input" required placeholder="contoh: 10 Juli 2025">
+                    <input type="text" name="tanggal_surat" id="edit-sk-tanggal" class="edit-field-input" required placeholder="contoh: 10 Juli 2025">
                 </div>
                 <div class="edit-field-group edit-field-full">
                     <label class="edit-field-label">Uraian Informasi Arsip <span class="req">*</span></label>
-                    <textarea name="uraian_informasi_arsip" id="edit-sm-uraian-arsip" class="edit-field-input" rows="2" required></textarea>
+                    <textarea name="uraian_informasi_arsip" id="edit-sk-uraian-arsip" class="edit-field-input" rows="2" required></textarea>
                 </div>
                 <div class="edit-field-group">
                     <label class="edit-field-label">Jumlah Lembar <span class="req">*</span></label>
-                    <input type="text" name="jumlah_lembar" id="edit-sm-jumlah-lembar" class="edit-field-input" required>
+                    <input type="text" name="jumlah_lembar" id="edit-sk-jumlah-lembar" class="edit-field-input" required>
                 </div>
                 <div class="edit-field-group">
                     <label class="edit-field-label">Tingkat Perkembangan <span class="req">*</span></label>
-                    <input type="text" name="tingkat_perkembangan" id="edit-sm-tingkat-perkembangan" class="edit-field-input" required>
+                    <input type="text" name="tingkat_perkembangan" id="edit-sk-tingkat-perkembangan" class="edit-field-input" required>
                 </div>
                 <div class="edit-field-group">
                     <label class="edit-field-label">Lokasi Simpan <span class="req">*</span></label>
-                    <input type="text" name="lokasi_simpan" id="edit-sm-lokasi-simpan" class="edit-field-input" required>
+                    <input type="text" name="lokasi_simpan" id="edit-sk-lokasi-simpan" class="edit-field-input" required>
                 </div>
                 <div class="edit-field-group">
                     <label class="edit-field-label">Klasifikasi Keamanan <span class="req">*</span></label>
-                    <select name="klasifikasi_keamanan" id="edit-sm-klas-keamanan" class="edit-field-input" required>
+                    <select name="klasifikasi_keamanan" id="edit-sk-klas-keamanan" class="edit-field-input" required>
                         <option value="">Pilih...</option>
                         <option value="Biasa">Biasa</option>
                         <option value="Terbatas">Terbatas</option>
@@ -313,7 +309,7 @@
                 </div>
                 <div class="edit-field-group">
                     <label class="edit-field-label">Tingkat Akses <span class="req">*</span></label>
-                    <select name="tingkat_akses" id="edit-sm-tingkat-akses" class="edit-field-input" required>
+                    <select name="tingkat_akses" id="edit-sk-tingkat-akses" class="edit-field-input" required>
                         <option value="">Pilih...</option>
                         <option value="Terbuka">Terbuka</option>
                         <option value="Terbatas">Terbatas</option>
@@ -322,21 +318,21 @@
                 </div>
                 <div class="edit-field-group">
                     <label class="edit-field-label">Retensi Aktif <span class="req">*</span></label>
-                    <input type="text" name="retensi_aktif" id="edit-sm-retensi-aktif" class="edit-field-input" required>
+                    <input type="text" name="retensi_aktif" id="edit-sk-retensi-aktif" class="edit-field-input" required>
                 </div>
                 <div class="edit-field-group">
                     <label class="edit-field-label">Retensi Inaktif <span class="req">*</span></label>
-                    <input type="text" name="retensi_inaktif" id="edit-sm-retensi-inaktif" class="edit-field-input" required>
+                    <input type="text" name="retensi_inaktif" id="edit-sk-retensi-inaktif" class="edit-field-input" required>
                 </div>
                 <div class="edit-field-group edit-field-full">
                     <label class="edit-field-label">Retensi Keterangan <span class="req">*</span></label>
-                    <textarea name="retensi_keterangan" id="edit-sm-retensi-keterangan" class="edit-field-input" rows="2" required></textarea>
+                    <textarea name="retensi_keterangan" id="edit-sk-retensi-keterangan" class="edit-field-input" rows="2" required></textarea>
                 </div>
             </div>
-            <div id="modal-edit-sm-error" style="display:none;margin-top:.75rem;padding:.65rem 1rem;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:.5rem;font-size:.82rem;color:#fca5a5;"></div>
+            <div id="modal-edit-sk-error" style="display:none;margin-top:.75rem;padding:.65rem 1rem;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:.5rem;font-size:.82rem;color:#fca5a5;"></div>
             <div class="modal-actions" style="margin-top:1.25rem;">
-                <button type="button" class="btn btn-secondary" id="modal-edit-sm-cancel">Batal</button>
-                <button type="submit" class="btn btn-primary" id="modal-edit-sm-submit">
+                <button type="button" class="btn btn-secondary" id="modal-edit-sk-cancel">Batal</button>
+                <button type="submit" class="btn btn-primary" id="modal-edit-sk-submit">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v14a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
                     Simpan Perubahan
                 </button>
@@ -351,14 +347,13 @@
     <div class="sm-form-divider-line"></div>
     <span class="sm-form-divider-label">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M19 12l-7 7-7-7"/></svg>
-        Tambah Surat Masuk Baru
+        Tambah Surat Keluar Baru
     </span>
     <div class="sm-form-divider-line"></div>
 </div>
 <?php endif; ?>
 
-
-<form action="<?php echo e(route('arsip.store')); ?>" method="POST" enctype="multipart/form-data" class="form-container" id="arsip-form">
+<form action="<?php echo e(route('surat-keluar.store')); ?>" method="POST" enctype="multipart/form-data" class="form-container" id="surat-keluar-form">
     <?php echo csrf_field(); ?>
 
     
@@ -367,7 +362,7 @@
             <div class="section-number">01</div>
             <div>
                 <h3 class="section-title">Informasi Utama</h3>
-                <p class="section-desc">Data pokok surat yang akan diarsipkan</p>
+                <p class="section-desc">Data pokok surat keluar yang akan diarsipkan</p>
             </div>
         </div>
 
@@ -385,7 +380,7 @@ endif;
 unset($__errorArgs, $__bag); ?>"
                        value="<?php echo e(old('kode_klasifikasi')); ?>"
                        placeholder="Contoh: PR" maxlength="2"
-                       style="letter-spacing:.1em;"
+                       style="text-transform:uppercase;letter-spacing:.1em;"
                        autocomplete="off" required>
                 <?php $__errorArgs = ['kode_klasifikasi'];
 $__bag = $errors->getBag($__errorArgs[1] ?? 'default');
@@ -401,14 +396,16 @@ unset($__errorArgs, $__bag); ?>
 
             <div class="form-group">
                 <label for="kode_surat" class="form-label">Kode Surat <span class="required">*</span></label>
-                <input type="text" name="kode_surat" id="kode_surat" class="form-input <?php $__errorArgs = ['kode_surat'];
+                <input type="text" name="kode_surat" id="kode_surat"
+                       class="form-input <?php $__errorArgs = ['kode_surat'];
 $__bag = $errors->getBag($__errorArgs[1] ?? 'default');
 if ($__bag->has($__errorArgs[0])) :
 if (isset($message)) { $__messageOriginal = $message; }
 $message = $__bag->first($__errorArgs[0]); ?> input-error <?php unset($message);
 if (isset($__messageOriginal)) { $message = $__messageOriginal; }
 endif;
-unset($__errorArgs, $__bag); ?>" value="<?php echo e(old('kode_surat')); ?>" placeholder="Contoh: 02.02" required>
+unset($__errorArgs, $__bag); ?>"
+                       value="<?php echo e(old('kode_surat')); ?>" placeholder='Contoh: 02.02' required>
                 <?php $__errorArgs = ['kode_surat'];
 $__bag = $errors->getBag($__errorArgs[1] ?? 'default');
 if ($__bag->has($__errorArgs[0])) :
@@ -424,12 +421,11 @@ unset($__errorArgs, $__bag); ?>
             <div class="form-group">
                 <label for="tanggal_surat" class="form-label">Tanggal Surat <span class="required">*</span></label>
                 <?php
-                    // Tanggal hari ini dalam format Indonesia (misal: 7 Juli 2026)
-                    $_bulanID = ['','Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
-                    $_todaySM = now()->day . ' ' . $_bulanID[now()->month] . ' ' . now()->year;
+                    $_bulanIDsk = ['','Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+                    $_todaySK = now()->day . ' ' . $_bulanIDsk[now()->month] . ' ' . now()->year;
                 ?>
                 
-                <div class="date-input-wrap" id="tanggal-wrap-sm">
+                <div class="date-input-wrap" id="tanggal-wrap-sk">
                     <input type="text" name="tanggal_surat" id="tanggal_surat"
                            class="form-input <?php $__errorArgs = ['tanggal_surat'];
 $__bag = $errors->getBag($__errorArgs[1] ?? 'default');
@@ -439,7 +435,7 @@ $message = $__bag->first($__errorArgs[0]); ?> input-error <?php unset($message);
 if (isset($__messageOriginal)) { $message = $__messageOriginal; }
 endif;
 unset($__errorArgs, $__bag); ?>"
-                           value="<?php echo e(old('tanggal_surat') ?: $_todaySM); ?>"
+                           value="<?php echo e(old('tanggal_surat') ?: $_todaySK); ?>"
                            placeholder="Contoh: 11 Mei 2026"
                            autocomplete="off" required
                            data-input>
@@ -462,17 +458,19 @@ unset($__errorArgs, $__bag); ?>
             </div>
         </div>
 
-        <div class="form-grid form-grid-2">
+        <div class="form-grid">
             <div class="form-group">
                 <label for="uraian_informasi_berkas" class="form-label">Uraian Informasi Berkas <span class="required">*</span></label>
-                <textarea name="uraian_informasi_berkas" id="uraian_informasi_berkas" class="form-input form-textarea <?php $__errorArgs = ['uraian_informasi_berkas'];
+                <textarea name="uraian_informasi_berkas" id="uraian_informasi_berkas"
+                          class="form-input form-textarea <?php $__errorArgs = ['uraian_informasi_berkas'];
 $__bag = $errors->getBag($__errorArgs[1] ?? 'default');
 if ($__bag->has($__errorArgs[0])) :
 if (isset($message)) { $__messageOriginal = $message; }
 $message = $__bag->first($__errorArgs[0]); ?> input-error <?php unset($message);
 if (isset($__messageOriginal)) { $message = $__messageOriginal; }
 endif;
-unset($__errorArgs, $__bag); ?>" placeholder="Contoh: Surat perihal pengajuan anggaran kegiatan pelatihan SDM triwulan I" rows="3" required><?php echo e(old('uraian_informasi_berkas')); ?></textarea>
+unset($__errorArgs, $__bag); ?>"
+                          placeholder="Contoh: Surat perihal pengiriman laporan kegiatan pelatihan pegawai triwulan II" rows="3" required><?php echo e(old('uraian_informasi_berkas')); ?></textarea>
                 <?php $__errorArgs = ['uraian_informasi_berkas'];
 $__bag = $errors->getBag($__errorArgs[1] ?? 'default');
 if ($__bag->has($__errorArgs[0])) :
@@ -484,18 +482,53 @@ if (isset($__messageOriginal)) { $message = $__messageOriginal; }
 endif;
 unset($__errorArgs, $__bag); ?>
             </div>
+        </div>
 
-            <div class="form-group">
-                <label for="uraian_informasi_arsip" class="form-label">Uraian Informasi Arsip <span class="required">*</span></label>
-                <textarea name="uraian_informasi_arsip" id="uraian_informasi_arsip" class="form-input form-textarea <?php $__errorArgs = ['uraian_informasi_arsip'];
+        <div class="form-grid">
+            <div class="form-group form-group-upload">
+                <label for="surat_keluar" class="form-label">File Surat Keluar (PDF) <span class="required">*</span></label>
+                <label for="surat_keluar" class="file-upload <?php $__errorArgs = ['surat_keluar'];
 $__bag = $errors->getBag($__errorArgs[1] ?? 'default');
 if ($__bag->has($__errorArgs[0])) :
 if (isset($message)) { $__messageOriginal = $message; }
-$message = $__bag->first($__errorArgs[0]); ?> input-error <?php unset($message);
+$message = $__bag->first($__errorArgs[0]); ?> file-upload-error <?php unset($message);
 if (isset($__messageOriginal)) { $message = $__messageOriginal; }
 endif;
-unset($__errorArgs, $__bag); ?>" placeholder="Contoh: Surat masuk dari Kementerian KOMINFO tentang pelaksanaan ujian sertifikasi" rows="3" required><?php echo e(old('uraian_informasi_arsip')); ?></textarea>
-                <?php $__errorArgs = ['uraian_informasi_arsip'];
+unset($__errorArgs, $__bag); ?>" id="upload-zone">
+                    <input type="file" name="surat_keluar" id="surat_keluar"
+                           class="file-upload-input" accept="application/pdf" required>
+                    <div class="file-upload-placeholder" id="upload-placeholder">
+                        <div class="file-upload-icon">
+                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                <polyline points="14 2 14 8 20 8"/>
+                                <path d="M12 18v-6"/>
+                                <path d="M9 15l3-3 3 3"/>
+                            </svg>
+                        </div>
+                        <p class="file-upload-text">Klik atau seret file ke sini</p>
+                        <p class="file-upload-hint">Hanya file <strong>PDF</strong> &middot; Maks. 10 MB</p>
+                    </div>
+                    <div class="file-upload-preview" id="upload-preview" style="display:none">
+                        <div class="file-preview-icon">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                <polyline points="14 2 14 8 20 8"/>
+                            </svg>
+                        </div>
+                        <div class="file-preview-info">
+                            <span class="file-preview-name" id="file-name"></span>
+                            <span class="file-preview-size" id="file-size"></span>
+                        </div>
+                        <button type="button" class="file-preview-remove" id="file-remove" title="Hapus file">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="18" y1="6" x2="6" y2="18"/>
+                                <line x1="6" y1="6" x2="18" y2="18"/>
+                            </svg>
+                        </button>
+                    </div>
+                </label>
+                <?php $__errorArgs = ['surat_keluar'];
 $__bag = $errors->getBag($__errorArgs[1] ?? 'default');
 if ($__bag->has($__errorArgs[0])) :
 if (isset($message)) { $__messageOriginal = $message; }
@@ -546,7 +579,8 @@ unset($__errorArgs, $__bag); ?>
 
             <div class="form-group">
                 <label for="jumlah_folder" class="form-label">Jumlah Folder <span class="required">*</span></label>
-                <input type="text" name="jumlah_folder" id="jumlah_folder" class="form-input <?php $__errorArgs = ['jumlah_folder'];
+                <input type="text" name="jumlah_folder" id="jumlah_folder"
+                       class="form-input <?php $__errorArgs = ['jumlah_folder'];
 $__bag = $errors->getBag($__errorArgs[1] ?? 'default');
 if ($__bag->has($__errorArgs[0])) :
 if (isset($message)) { $__messageOriginal = $message; }
@@ -566,7 +600,8 @@ unset($__errorArgs, $__bag); ?>
 
             <div class="form-group">
                 <label for="nomor_item_arsip" class="form-label">Nomor: Item Arsip <span class="required">*</span></label>
-                <input type="number" name="nomor_item_arsip" id="nomor_item_arsip" class="form-input <?php $__errorArgs = ['nomor_item_arsip'];
+                <input type="number" name="nomor_item_arsip" id="nomor_item_arsip"
+                       class="form-input <?php $__errorArgs = ['nomor_item_arsip'];
 $__bag = $errors->getBag($__errorArgs[1] ?? 'default');
 if ($__bag->has($__errorArgs[0])) :
 if (isset($message)) { $__messageOriginal = $message; }
@@ -585,10 +620,11 @@ unset($__errorArgs, $__bag); ?>
             </div>
         </div>
 
-        <div class="form-grid form-grid-3">
+        <div class="form-grid form-grid-2">
             <div class="form-group">
                 <label for="jumlah_lembar" class="form-label">Jumlah Lembar <span class="required">*</span></label>
-                <input type="text" name="jumlah_lembar" id="jumlah_lembar" class="form-input <?php $__errorArgs = ['jumlah_lembar'];
+                <input type="text" name="jumlah_lembar" id="jumlah_lembar"
+                       class="form-input <?php $__errorArgs = ['jumlah_lembar'];
 $__bag = $errors->getBag($__errorArgs[1] ?? 'default');
 if ($__bag->has($__errorArgs[0])) :
 if (isset($message)) { $__messageOriginal = $message; }
@@ -608,7 +644,8 @@ unset($__errorArgs, $__bag); ?>
 
             <div class="form-group">
                 <label for="tingkat_perkembangan" class="form-label">Tingkat Perkembangan <span class="required">*</span></label>
-                <input type="text" name="tingkat_perkembangan" id="tingkat_perkembangan" class="form-input <?php $__errorArgs = ['tingkat_perkembangan'];
+                <input type="text" name="tingkat_perkembangan" id="tingkat_perkembangan"
+                       class="form-input <?php $__errorArgs = ['tingkat_perkembangan'];
 $__bag = $errors->getBag($__errorArgs[1] ?? 'default');
 if ($__bag->has($__errorArgs[0])) :
 if (isset($message)) { $__messageOriginal = $message; }
@@ -625,56 +662,27 @@ if (isset($__messageOriginal)) { $message = $__messageOriginal; }
 endif;
 unset($__errorArgs, $__bag); ?>
             </div>
+        </div>
 
+        <div class="form-grid">
             <div class="form-group form-group-upload">
-                <label for="surat_masuk" class="form-label">Surat Masuk (PDF) <span class="required">*</span></label>
-                <label for="surat_masuk" class="file-upload <?php $__errorArgs = ['surat_masuk'];
+                <label for="uraian_informasi_arsip" class="form-label">Uraian Informasi Arsip <span class="required">*</span></label>
+                <textarea name="uraian_informasi_arsip" id="uraian_informasi_arsip"
+                          class="form-input form-textarea <?php $__errorArgs = ['uraian_informasi_arsip'];
 $__bag = $errors->getBag($__errorArgs[1] ?? 'default');
 if ($__bag->has($__errorArgs[0])) :
 if (isset($message)) { $__messageOriginal = $message; }
-$message = $__bag->first($__errorArgs[0]); ?> file-upload-error <?php unset($message);
+$message = $__bag->first($__errorArgs[0]); ?> input-error <?php unset($message);
 if (isset($__messageOriginal)) { $message = $__messageOriginal; }
 endif;
-unset($__errorArgs, $__bag); ?>" id="upload-zone">
-                    <input type="file" name="surat_masuk" id="surat_masuk" class="file-upload-input" accept="application/pdf" required>
-                    <div class="file-upload-placeholder" id="upload-placeholder">
-                        <div class="file-upload-icon">
-                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                                <polyline points="14 2 14 8 20 8"/>
-                                <path d="M12 18v-6"/>
-                                <path d="M9 15l3-3 3 3"/>
-                            </svg>
-                        </div>
-                        <p class="file-upload-text">Klik atau seret file ke sini</p>
-                        <p class="file-upload-hint">Hanya file <strong>PDF</strong> &middot; Maks. 10 MB</p>
-                    </div>
-                    <div class="file-upload-preview" id="upload-preview" style="display:none">
-                        <div class="file-preview-icon">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                                <polyline points="14 2 14 8 20 8"/>
-                            </svg>
-                        </div>
-                        <div class="file-preview-info">
-                            <span class="file-preview-name" id="file-name"></span>
-                            <span class="file-preview-size" id="file-size"></span>
-                        </div>
-                        <button type="button" class="file-preview-remove" id="file-remove" title="Hapus file">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                                <line x1="18" y1="6" x2="6" y2="18"/>
-                                <line x1="6" y1="6" x2="18" y2="18"/>
-                            </svg>
-                        </button>
-                    </div>
-                </label>
-                <?php $__errorArgs = ['surat_masuk'];
+unset($__errorArgs, $__bag); ?>"
+                          placeholder="Contoh: Surat keluar kepada Dinas Kominfo tentang permohonan data penggunaan spektrum frekuensi" rows="3" required><?php echo e(old('uraian_informasi_arsip')); ?></textarea>
+                <?php $__errorArgs = ['uraian_informasi_arsip'];
 $__bag = $errors->getBag($__errorArgs[1] ?? 'default');
 if ($__bag->has($__errorArgs[0])) :
 if (isset($message)) { $__messageOriginal = $message; }
 $message = $__bag->first($__errorArgs[0]); ?>
-                    <span class="error-text"><?php echo e($message); ?></span>
-                <?php unset($message);
+                    <span class="error-text"><?php echo e($message); ?></span><?php unset($message);
 if (isset($__messageOriginal)) { $message = $__messageOriginal; }
 endif;
 unset($__errorArgs, $__bag); ?>
@@ -695,7 +703,8 @@ unset($__errorArgs, $__bag); ?>
         <div class="form-grid form-grid-3">
             <div class="form-group">
                 <label for="lokasi_simpan" class="form-label">Lokasi Simpan <span class="required">*</span></label>
-                <input type="text" name="lokasi_simpan" id="lokasi_simpan" class="form-input <?php $__errorArgs = ['lokasi_simpan'];
+                <input type="text" name="lokasi_simpan" id="lokasi_simpan"
+                       class="form-input <?php $__errorArgs = ['lokasi_simpan'];
 $__bag = $errors->getBag($__errorArgs[1] ?? 'default');
 if ($__bag->has($__errorArgs[0])) :
 if (isset($message)) { $__messageOriginal = $message; }
@@ -724,10 +733,10 @@ if (isset($__messageOriginal)) { $message = $__messageOriginal; }
 endif;
 unset($__errorArgs, $__bag); ?>" required>
                     <option value="" disabled <?php echo e(old('klasifikasi_keamanan') ? '' : 'selected'); ?>>— Pilih —</option>
-                    <option value="Biasa" <?php echo e(old('klasifikasi_keamanan') == 'Biasa' ? 'selected' : ''); ?>>Biasa</option>
-                    <option value="Terbatas" <?php echo e(old('klasifikasi_keamanan') == 'Terbatas' ? 'selected' : ''); ?>>Terbatas</option>
-                    <option value="Rahasia" <?php echo e(old('klasifikasi_keamanan') == 'Rahasia' ? 'selected' : ''); ?>>Rahasia</option>
-                    <option value="Sangat Rahasia" <?php echo e(old('klasifikasi_keamanan') == 'Sangat Rahasia' ? 'selected' : ''); ?>>Sangat Rahasia</option>
+                    <option value="Biasa"         <?php echo e(old('klasifikasi_keamanan') == 'Biasa'         ? 'selected' : ''); ?>>Biasa</option>
+                    <option value="Terbatas"      <?php echo e(old('klasifikasi_keamanan') == 'Terbatas'      ? 'selected' : ''); ?>>Terbatas</option>
+                    <option value="Rahasia"       <?php echo e(old('klasifikasi_keamanan') == 'Rahasia'       ? 'selected' : ''); ?>>Rahasia</option>
+                    <option value="Sangat Rahasia"<?php echo e(old('klasifikasi_keamanan') == 'Sangat Rahasia'? 'selected' : ''); ?>>Sangat Rahasia</option>
                 </select>
                 <?php $__errorArgs = ['klasifikasi_keamanan'];
 $__bag = $errors->getBag($__errorArgs[1] ?? 'default');
@@ -750,7 +759,7 @@ if (isset($__messageOriginal)) { $message = $__messageOriginal; }
 endif;
 unset($__errorArgs, $__bag); ?>" required>
                     <option value="" disabled <?php echo e(old('tingkat_akses') ? '' : 'selected'); ?>>— Pilih —</option>
-                    <option value="Terbuka" <?php echo e(old('tingkat_akses') == 'Terbuka' ? 'selected' : ''); ?>>Terbuka</option>
+                    <option value="Terbuka"  <?php echo e(old('tingkat_akses') == 'Terbuka'  ? 'selected' : ''); ?>>Terbuka</option>
                     <option value="Tertutup" <?php echo e(old('tingkat_akses') == 'Tertutup' ? 'selected' : ''); ?>>Tertutup</option>
                     <option value="Terbatas" <?php echo e(old('tingkat_akses') == 'Terbatas' ? 'selected' : ''); ?>>Terbatas</option>
                 </select>
@@ -768,7 +777,8 @@ unset($__errorArgs, $__bag); ?>
         <div class="form-grid form-grid-3">
             <div class="form-group">
                 <label for="retensi_aktif" class="form-label">Retensi — Aktif <span class="required">*</span></label>
-                <input type="text" name="retensi_aktif" id="retensi_aktif" class="form-input <?php $__errorArgs = ['retensi_aktif'];
+                <input type="text" name="retensi_aktif" id="retensi_aktif"
+                       class="form-input <?php $__errorArgs = ['retensi_aktif'];
 $__bag = $errors->getBag($__errorArgs[1] ?? 'default');
 if ($__bag->has($__errorArgs[0])) :
 if (isset($message)) { $__messageOriginal = $message; }
@@ -788,7 +798,8 @@ unset($__errorArgs, $__bag); ?>
 
             <div class="form-group">
                 <label for="retensi_inaktif" class="form-label">Retensi — Inaktif <span class="required">*</span></label>
-                <input type="text" name="retensi_inaktif" id="retensi_inaktif" class="form-input <?php $__errorArgs = ['retensi_inaktif'];
+                <input type="text" name="retensi_inaktif" id="retensi_inaktif"
+                       class="form-input <?php $__errorArgs = ['retensi_inaktif'];
 $__bag = $errors->getBag($__errorArgs[1] ?? 'default');
 if ($__bag->has($__errorArgs[0])) :
 if (isset($message)) { $__messageOriginal = $message; }
@@ -808,7 +819,8 @@ unset($__errorArgs, $__bag); ?>
 
             <div class="form-group">
                 <label for="retensi_keterangan" class="form-label">Retensi — Keterangan <span class="required">*</span></label>
-                <input type="text" name="retensi_keterangan" id="retensi_keterangan" class="form-input <?php $__errorArgs = ['retensi_keterangan'];
+                <input type="text" name="retensi_keterangan" id="retensi_keterangan"
+                       class="form-input <?php $__errorArgs = ['retensi_keterangan'];
 $__bag = $errors->getBag($__errorArgs[1] ?? 'default');
 if ($__bag->has($__errorArgs[0])) :
 if (isset($message)) { $__messageOriginal = $message; }
@@ -839,23 +851,18 @@ unset($__errorArgs, $__bag); ?>
         </button>
         <button type="submit" class="btn btn-primary" id="btn-submit">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
-                <polyline points="17 21 17 13 7 13 7 21"/>
-                <polyline points="7 3 7 8 15 8"/>
+                <line x1="22" y1="2" x2="11" y2="13"/>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"/>
             </svg>
             Simpan ke Arsip
         </button>
     </div>
 </form>
-<?php $__env->startPush('styles'); ?>
-<link rel="preload" as="style"
-      href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css"
-      onload="this.rel='stylesheet'">
-<noscript>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-</noscript>
-<style>
 
+<?php $__env->startPush('styles'); ?>
+<link rel="preload" as="style" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" onload="this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css"></noscript>
+<style>
 /* ── Form Divider (pemisah tabel & form) ─── */
 .sm-form-divider {
     display: flex;
@@ -910,7 +917,7 @@ unset($__errorArgs, $__bag); ?>
 .filter-reset:hover { border-color: var(--color-primary); color: var(--color-primary); }
 .filter-count { font-size: .78rem; color: var(--color-text-muted); margin-left: auto; }
 
-/* ── Tabel Arsip ───────────────────────────────────────── */
+/* ── Tabel Arsip ────────────────────────────────────────── */
 .arsip-table { width:100%; border-collapse:collapse; font-size:.875rem; }
 .arsip-table th {
     background: var(--color-primary);
@@ -929,18 +936,17 @@ unset($__errorArgs, $__bag); ?>
 .th-sortable.sort-desc .sort-icon::after { content: ' ↓'; }
 .sort-icon { opacity: .6; font-size: .8em; }
 .arsip-table td {
-    padding:.7rem 1rem; border-bottom:1px solid var(--color-border, #2a3347);
-    color: var(--color-text, #e2e8f0); vertical-align:middle;
+    padding:.7rem 1rem; border-bottom:1px solid var(--color-border);
+    color: var(--color-text); vertical-align:middle;
 }
 .arsip-table tbody tr:last-child td { border-bottom:none; }
-.arsip-table tbody tr:hover td { background: rgba(99,102,241,.06); }
-.arsip-table tbody tr[style*="display:none"] { display:none !important; }
+.arsip-table tbody tr:hover td { background: var(--color-primary-light); }
 .td-center { text-align:center; }
 .td-nowrap { white-space:nowrap; }
-.td-no { width:48px; font-weight:600; color:var(--color-text-muted,#8892a4); }
+.td-no { width:48px; font-weight:600; color:var(--color-text-muted); }
 .td-uraian { max-width:240px; word-break:break-word; overflow-wrap:break-word; white-space:normal; }
-.td-muted { color:var(--color-text-muted,#8892a4); }
-.td-empty { text-align:center; padding:2.5rem 1rem !important; color:var(--color-text-muted,#8892a4); }
+.td-muted { color:var(--color-text-muted); }
+.td-empty { text-align:center; padding:2.5rem 1rem !important; color:var(--color-text-muted); }
 .td-empty svg { display:block; margin:0 auto .75rem; opacity:.35; }
 .td-empty span { display:block; }
 .badge-kode {
@@ -948,14 +954,11 @@ unset($__errorArgs, $__bag); ?>
     background: var(--color-primary-light); color: var(--color-primary); font-weight:600; white-space:nowrap;
     border: 1px solid var(--color-border);
 }
-/* Badge kosong / tidak ada data */
 .badge-kode-empty {
-    background: transparent;
-    color: var(--color-text-muted);
-    border-color: var(--color-border);
-    font-weight: 400;
-    opacity: 0.6;
+    background: transparent; color: var(--color-text-muted);
+    border-color: var(--color-border); font-weight:400; opacity:0.6;
 }
+
 .btn-pdf {
     display:inline-flex; align-items:center; gap:.3rem; padding:.3rem .65rem;
     border-radius:.375rem; font-size:.75rem; font-weight:600; text-decoration:none;
@@ -970,7 +973,6 @@ unset($__errorArgs, $__bag); ?>
     transition:all .2s;
 }
 .btn-hapus:hover { background:rgba(239,68,68,.2); }
-
 /* ── Modal ────────────────────────────────────────────── */
 /* .modal-overlay: didefinisikan di app.css secara global */
 @keyframes fadeIn { from{opacity:0} to{opacity:1} }
@@ -996,17 +998,14 @@ unset($__errorArgs, $__bag); ?>
 .btn-danger:hover { opacity:.88; transform:translateY(-1px); }
 .alert { display:flex; align-items:center; gap:.5rem; padding:.75rem 1rem; border-radius:.5rem; font-size:.875rem; }
 .alert-error { background:rgba(239,68,68,.1); color:#f87171; border:1px solid rgba(239,68,68,.2); }
-
-/* ── Flatpickr — wrap mode ───────────────────────────── */
+/* ── Flatpickr — wrap mode ────────────────────────────── */
 .date-input-wrap { position: relative; }
 .date-input-wrap .form-input { padding-right: 2.5rem; cursor: pointer; }
 .date-icon {
     position: absolute; right: .75rem; top: 50%; transform: translateY(-50%);
     color: var(--color-text-muted);
     pointer-events: auto;   /* icon bisa diklik! */
-    display: flex;
-    cursor: pointer;
-    z-index: 1;
+    display: flex; cursor: pointer; z-index: 1;
 }
 .date-icon:hover { color: var(--color-primary); }
 .flatpickr-calendar { font-family: var(--font-family) !important; border-radius: var(--radius-lg) !important; box-shadow: var(--shadow-lg) !important; border: 1px solid var(--color-border) !important; }
@@ -1019,10 +1018,10 @@ unset($__errorArgs, $__bag); ?>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
 
-    // ── Skeleton → Tabel ───────────────────────────────────────────────
+    // ── Skeleton → Tabel ──────────────────────────────────────────────
     (function () {
-        var skeleton = document.getElementById('table-skeleton-sm');
-        var content  = document.getElementById('table-content-sm');
+        var skeleton = document.getElementById('table-skeleton-sk');
+        var content  = document.getElementById('table-content-sk');
         if (!skeleton || !content) return;
         requestAnimationFrame(function () {
             requestAnimationFrame(function () {
@@ -1032,19 +1031,21 @@ document.addEventListener('DOMContentLoaded', function () {
                 content.classList.add('table-content-ready');
                 setTimeout(function () {
                     if (skeleton.parentNode) skeleton.parentNode.removeChild(skeleton);
-                    applyFilter(); // init filter setelah tabel muncul
+                    applyFilter();
                 }, 220);
             });
         });
     })();
 
     // ── Modal Hapus ──────────────────────────────
-    const modal       = document.getElementById('modal-hapus');
-    const modalLabel  = document.getElementById('modal-label');
-    const modalCancel = document.getElementById('modal-cancel');
-    const modalConfirm= document.getElementById('modal-confirm');
-    let   pendingForm = null;
+    const modal        = document.getElementById('modal-hapus-sk');
+    const modalLabel   = document.getElementById('modal-label-sk');
+    const modalCancel  = document.getElementById('modal-cancel-sk');
+    const modalConfirm = document.getElementById('modal-confirm-sk');
+    let   pendingForm  = null;
 
+    // Pindahkan modal ke document.body agar position:fixed
+    // tidak terpengaruh stacking context dari ancestor (transform/animation)
     if (modal) document.body.appendChild(modal);
 
     function openModal(label, form) {
@@ -1052,14 +1053,14 @@ document.addEventListener('DOMContentLoaded', function () {
         pendingForm = form;
         if (modalLabel) modalLabel.textContent = label;
         modal.style.display    = 'flex';
-        document.body.style.overflow = 'hidden';
+        document.body.style.overflow = 'hidden'; // lock scroll
     }
 
     function closeModal() {
         if (!modal) return;
         modal.style.display = 'none';
         pendingForm = null;
-        document.body.style.overflow = '';
+        document.body.style.overflow = ''; // unlock scroll
     }
 
     document.querySelectorAll('.btn-hapus').forEach(function (btn) {
@@ -1072,14 +1073,18 @@ document.addEventListener('DOMContentLoaded', function () {
     if (modalConfirm) modalConfirm.addEventListener('click', function () {
         if (pendingForm) pendingForm.submit();
     });
-    if (modal) modal.addEventListener('click', function (e) { if (e.target === modal) closeModal(); });
+    if (modal) modal.addEventListener('click', function (e) {
+        if (e.target === modal) closeModal();
+    });
+
+    // Escape key menutup modal
     document.addEventListener('keydown', function (e) {
         if (e.key === 'Escape' && modal && modal.style.display === 'flex') closeModal();
     });
 
     // ── File Upload ──────────────────────────────────────────────
     const zone        = document.getElementById('upload-zone');
-    const input       = document.getElementById('surat_masuk');
+    const input       = document.getElementById('surat_keluar');
     const placeholder = document.getElementById('upload-placeholder');
     const preview     = document.getElementById('upload-preview');
     const fileName    = document.getElementById('file-name');
@@ -1091,53 +1096,70 @@ document.addEventListener('DOMContentLoaded', function () {
         if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
         return (bytes / 1048576).toFixed(2) + ' MB';
     }
+
     function showPreview(file) {
-        fileName.textContent = file.name;
-        fileSize.textContent = formatBytes(file.size);
+        fileName.textContent      = file.name;
+        fileSize.textContent      = formatBytes(file.size);
         placeholder.style.display = 'none';
         preview.style.display     = 'flex';
         zone.classList.add('file-upload-has-file');
         zone.classList.remove('file-upload-error');
     }
+
     function clearFile() {
-        input.value           = '';
-        preview.style.display = 'none';
+        input.value               = '';
+        preview.style.display     = 'none';
         placeholder.style.display = '';
         zone.classList.remove('file-upload-has-file');
     }
+
     removeBtn.addEventListener('click', function (e) { e.preventDefault(); clearFile(); });
+
     input.addEventListener('change', function () {
         if (this.files.length > 0) showPreview(this.files[0]);
     });
+
     ['dragenter', 'dragover'].forEach(function (evt) {
-        zone.addEventListener(evt, function (e) { e.preventDefault(); zone.classList.add('file-upload-drag'); });
+        zone.addEventListener(evt, function (e) {
+            e.preventDefault();
+            zone.classList.add('file-upload-drag');
+        });
     });
+
     ['dragleave', 'drop'].forEach(function (evt) {
-        zone.addEventListener(evt, function (e) { e.preventDefault(); zone.classList.remove('file-upload-drag'); });
+        zone.addEventListener(evt, function (e) {
+            e.preventDefault();
+            zone.classList.remove('file-upload-drag');
+        });
     });
+
     zone.addEventListener('drop', function (e) {
         const file = e.dataTransfer.files[0];
         if (!file) return;
-        if (file.type !== 'application/pdf') { zone.classList.add('file-upload-error'); return; }
+        if (file.type !== 'application/pdf') {
+            zone.classList.add('file-upload-error');
+            return;
+        }
         const dt = new DataTransfer();
         dt.items.add(file);
         input.files = dt.files;
         showPreview(file);
     });
+
     document.getElementById('btn-reset').addEventListener('click', function () {
-        document.getElementById('arsip-form').reset();
+        document.getElementById('surat-keluar-form').reset();
         clearFile();
-        if (window._fpSM) window._fpSM.clear();
+        if (window._fpSK) window._fpSK.clear();
     });
 
     // ── Filter Bulan & Tahun ─────────────────────────────────────
-    const selBulan  = document.getElementById('filter-bulan-sm');
-    const selTahun  = document.getElementById('filter-tahun-sm');
-    const btnReset  = document.getElementById('filter-reset-sm');
-    const countEl   = document.getElementById('filter-count-sm');
-    const tbody     = document.getElementById('tbody-sm');
+    const selBulan = document.getElementById('filter-bulan-sk');
+    const selTahun = document.getElementById('filter-tahun-sk');
+    const btnReset = document.getElementById('filter-reset-sk');
+    const countEl  = document.getElementById('filter-count-sk');
+    const tbody    = document.getElementById('tbody-sk');
 
-    const selKode  = document.getElementById('filter-kode-sm');
+    const selKode  = document.getElementById('filter-kode-sk');
 
     function applyFilter() {
         if (!tbody) return;
@@ -1154,7 +1176,6 @@ document.addEventListener('DOMContentLoaded', function () {
             tr.style.display = show ? '' : 'none';
             if (show) visible++;
         });
-        // Renumber visible rows
         let no = 1;
         rows.forEach(function (tr) {
             if (tr.style.display !== 'none') {
@@ -1163,8 +1184,7 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
         if (countEl) {
-            const total = rows.length;
-            countEl.textContent = (bulan || tahun || kode) ? (visible + ' dari ' + total + ' data ditampilkan') : '';
+            countEl.textContent = (bulan || tahun || kode) ? (visible + ' dari ' + rows.length + ' data ditampilkan') : '';
         }
     }
 
@@ -1179,36 +1199,28 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     // ── Sort per Klasifikasi ─────────────────────────────────────
-    // Urutan prioritas kode klasifikasi
     const KODE_ORDER = ['PR','KP','OT','KU','HK','UM','PL','UP','HM','PW','LT','DL','DT','KI'];
-    let sortDir = ''; // '' = no sort, 'asc' = ascending, 'desc' = descending
+    let sortDir = '';
 
     function kodeRank(kode) {
         const idx = KODE_ORDER.indexOf(kode.toUpperCase());
         return idx === -1 ? 999 : idx;
     }
 
-    const thKode = document.getElementById('th-kode-sm');
+    const thKode = document.getElementById('th-kode-sk');
     if (thKode && tbody) {
         thKode.addEventListener('click', function () {
-            // Cycle: none → asc → desc → none
             if (sortDir === '') sortDir = 'asc';
             else if (sortDir === 'asc') sortDir = 'desc';
             else sortDir = '';
 
-            // Update visual indicator
-            document.querySelectorAll('.th-sortable').forEach(th => {
-                th.classList.remove('sort-asc', 'sort-desc');
-            });
+            document.querySelectorAll('.th-sortable').forEach(th => th.classList.remove('sort-asc','sort-desc'));
             if (sortDir === 'asc') thKode.classList.add('sort-asc');
             else if (sortDir === 'desc') thKode.classList.add('sort-desc');
 
             const rows = Array.from(tbody.querySelectorAll('tr[data-kode]'));
             if (sortDir === '') {
-                // Kembalikan ke urutan semula (berdasarkan data-original-order)
-                rows.sort(function (a, b) {
-                    return parseInt(a.dataset.originalOrder || 0) - parseInt(b.dataset.originalOrder || 0);
-                });
+                rows.sort((a, b) => parseInt(a.dataset.originalOrder || 0) - parseInt(b.dataset.originalOrder || 0));
             } else {
                 rows.sort(function (a, b) {
                     const ra = kodeRank(a.dataset.kode);
@@ -1216,116 +1228,83 @@ document.addEventListener('DOMContentLoaded', function () {
                     return sortDir === 'asc' ? ra - rb : rb - ra;
                 });
             }
-            rows.forEach(function (row) { tbody.appendChild(row); });
-            applyFilter(); // reapply filter after sort
-        });
-
-        // Simpan urutan asli
-        const rows = tbody.querySelectorAll('tr[data-kode]');
-        rows.forEach(function (row, i) {
-            row.dataset.originalOrder = i;
-        });
-    }
-
-    // Sortable Tanggal
-    const thTanggal = document.querySelector('#arsip-table-sm th[data-col="tanggal"]');
-    let sortTanggalDir = '';
-    if (thTanggal && tbody) {
-        thTanggal.addEventListener('click', function () {
-            if (sortTanggalDir === '') sortTanggalDir = 'asc';
-            else if (sortTanggalDir === 'asc') sortTanggalDir = 'desc';
-            else sortTanggalDir = '';
-            document.querySelectorAll('.th-sortable').forEach(th => th.classList.remove('sort-asc','sort-desc'));
-            if (sortTanggalDir === 'asc') thTanggal.classList.add('sort-asc');
-            else if (sortTanggalDir === 'desc') thTanggal.classList.add('sort-desc');
-
-            const rows = Array.from(tbody.querySelectorAll('tr[data-kode]'));
-            if (sortTanggalDir === '') {
-                rows.sort((a,b) => parseInt(a.dataset.originalOrder||0) - parseInt(b.dataset.originalOrder||0));
-            } else {
-                rows.sort(function(a,b) {
-                    const ta = a.dataset.tahun ? (a.dataset.tahun * 100 + parseInt(a.dataset.bulan||0)) : 0;
-                    const tb = b.dataset.tahun ? (b.dataset.tahun * 100 + parseInt(b.dataset.bulan||0)) : 0;
-                    return sortTanggalDir === 'asc' ? ta - tb : tb - ta;
-                });
-            }
             rows.forEach(row => tbody.appendChild(row));
             applyFilter();
         });
+        const rows = tbody.querySelectorAll('tr[data-kode]');
+        rows.forEach(function (row, i) { row.dataset.originalOrder = i; });
     }
-    // ── Modal Edit Surat Masuk ────────────────────────────────────
-    const modalEditSM       = document.getElementById('modal-edit-sm');
-    const formEditSM        = document.getElementById('form-edit-sm');
-    const editSMLoading     = document.getElementById('modal-edit-sm-loading');
-    const editSMError       = document.getElementById('modal-edit-sm-error');
-    const editSMClose       = document.getElementById('modal-edit-sm-close');
-    const editSMCancel      = document.getElementById('modal-edit-sm-cancel');
 
-    if (modalEditSM) document.body.appendChild(modalEditSM);
+    // ── Modal Edit Surat Keluar ───────────────────────────────────
+    const modalEditSK   = document.getElementById('modal-edit-sk');
+    const formEditSK    = document.getElementById('form-edit-sk');
+    const editSKLoading = document.getElementById('modal-edit-sk-loading');
+    const editSKError   = document.getElementById('modal-edit-sk-error');
+    const editSKClose   = document.getElementById('modal-edit-sk-close');
+    const editSKCancel  = document.getElementById('modal-edit-sk-cancel');
 
-    function openEditSM(rowIndex) {
-        if (!modalEditSM) return;
-        formEditSM.style.display   = 'none';
-        editSMLoading.style.display = 'block';
-        editSMError.style.display  = 'none';
-        modalEditSM.style.display  = 'flex';
+    if (modalEditSK) document.body.appendChild(modalEditSK);
+
+    function openEditSK(rowIndex) {
+        if (!modalEditSK) return;
+        formEditSK.style.display    = 'none';
+        editSKLoading.style.display = 'block';
+        editSKError.style.display   = 'none';
+        modalEditSK.style.display   = 'flex';
         document.body.style.overflow = 'hidden';
 
-        fetch('/arsip/' + rowIndex + '/edit', {
+        fetch('/surat-keluar/' + rowIndex + '/edit', {
             headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
         })
         .then(function(r) { return r.json(); })
         .then(function(data) {
             if (data.error) { throw new Error(data.error); }
-            // Set action URL
-            formEditSM.action = '/arsip/' + rowIndex;
-            // Fill fields
-            document.getElementById('edit-sm-dbsm-index').value           = data.dbsmIndex || '';
-            document.getElementById('edit-sm-pdf-filename').value          = data.pdf_filename || '';
-            document.getElementById('edit-sm-kode-klasifikasi').value      = data.kode_klasifikasi || '';
-            document.getElementById('edit-sm-kode-surat').value            = data.kode_surat || '';
-            document.getElementById('edit-sm-uraian-berkas').value         = data.uraian_informasi_berkas || '';
-            document.getElementById('edit-sm-kurun-waktu').value           = data.kurun_waktu || '';
-            document.getElementById('edit-sm-jumlah-folder').value         = data.jumlah_folder || '';
-            document.getElementById('edit-sm-nomor-item').value            = data.nomor_item_arsip || '';
-            document.getElementById('edit-sm-tanggal').value               = data.tanggal_surat || '';
-            document.getElementById('edit-sm-uraian-arsip').value          = data.uraian_informasi_arsip || '';
-            document.getElementById('edit-sm-jumlah-lembar').value         = data.jumlah_lembar || '';
-            document.getElementById('edit-sm-tingkat-perkembangan').value  = data.tingkat_perkembangan || '';
-            document.getElementById('edit-sm-lokasi-simpan').value         = data.lokasi_simpan || '';
-            document.getElementById('edit-sm-retensi-aktif').value         = data.retensi_aktif || '';
-            document.getElementById('edit-sm-retensi-inaktif').value       = data.retensi_inaktif || '';
-            document.getElementById('edit-sm-retensi-keterangan').value    = data.retensi_keterangan || '';
-            // Select fields
-            ['edit-sm-klas-keamanan','edit-sm-tingkat-akses'].forEach(function(id) {
+            formEditSK.action = '/surat-keluar/' + rowIndex;
+            document.getElementById('edit-sk-dbsk-index').value           = data.dbskIndex || '';
+            document.getElementById('edit-sk-pdf-filename').value          = data.pdf_filename || '';
+            document.getElementById('edit-sk-kode-klasifikasi').value      = data.kode_klasifikasi || '';
+            document.getElementById('edit-sk-kode-surat').value            = data.kode_surat || '';
+            document.getElementById('edit-sk-uraian-berkas').value         = data.uraian_informasi_berkas || '';
+            document.getElementById('edit-sk-kurun-waktu').value           = data.kurun_waktu || '';
+            document.getElementById('edit-sk-jumlah-folder').value         = data.jumlah_folder || '';
+            document.getElementById('edit-sk-nomor-item').value            = data.nomor_item_arsip || '';
+            document.getElementById('edit-sk-tanggal').value               = data.tanggal_surat || '';
+            document.getElementById('edit-sk-uraian-arsip').value          = data.uraian_informasi_arsip || '';
+            document.getElementById('edit-sk-jumlah-lembar').value         = data.jumlah_lembar || '';
+            document.getElementById('edit-sk-tingkat-perkembangan').value  = data.tingkat_perkembangan || '';
+            document.getElementById('edit-sk-lokasi-simpan').value         = data.lokasi_simpan || '';
+            document.getElementById('edit-sk-retensi-aktif').value         = data.retensi_aktif || '';
+            document.getElementById('edit-sk-retensi-inaktif').value       = data.retensi_inaktif || '';
+            document.getElementById('edit-sk-retensi-keterangan').value    = data.retensi_keterangan || '';
+            ['edit-sk-klas-keamanan','edit-sk-tingkat-akses'].forEach(function(id) {
                 var el = document.getElementById(id);
                 if (!el) return;
-                var key = id === 'edit-sm-klas-keamanan' ? data.klasifikasi_keamanan : data.tingkat_akses;
+                var key = id === 'edit-sk-klas-keamanan' ? data.klasifikasi_keamanan : data.tingkat_akses;
                 Array.from(el.options).forEach(function(opt) { opt.selected = opt.value === key; });
             });
-            editSMLoading.style.display = 'none';
-            formEditSM.style.display    = 'block';
+            editSKLoading.style.display = 'none';
+            formEditSK.style.display    = 'block';
         })
         .catch(function(err) {
-            editSMLoading.style.display = 'none';
-            editSMError.textContent     = 'Gagal memuat data: ' + err.message;
-            editSMError.style.display   = 'block';
+            editSKLoading.style.display = 'none';
+            editSKError.textContent     = 'Gagal memuat data: ' + err.message;
+            editSKError.style.display   = 'block';
         });
     }
 
-    function closeEditSM() {
-        if (modalEditSM) modalEditSM.style.display = 'none';
+    function closeEditSK() {
+        if (modalEditSK) modalEditSK.style.display = 'none';
         document.body.style.overflow = '';
     }
 
-    document.querySelectorAll('.btn-edit-sm').forEach(function(btn) {
-        btn.addEventListener('click', function() { openEditSM(btn.dataset.index); });
+    document.querySelectorAll('.btn-edit-sk').forEach(function(btn) {
+        btn.addEventListener('click', function() { openEditSK(btn.dataset.index); });
     });
-    if (editSMClose)  editSMClose.addEventListener('click', closeEditSM);
-    if (editSMCancel) editSMCancel.addEventListener('click', closeEditSM);
-    if (modalEditSM)  modalEditSM.addEventListener('click', function(e) { if (e.target === modalEditSM) closeEditSM(); });
+    if (editSKClose)  editSKClose.addEventListener('click', closeEditSK);
+    if (editSKCancel) editSKCancel.addEventListener('click', closeEditSK);
+    if (modalEditSK)  modalEditSK.addEventListener('click', function(e) { if (e.target === modalEditSK) closeEditSK(); });
     document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape' && modalEditSM && modalEditSM.style.display === 'flex') closeEditSM();
+        if (e.key === 'Escape' && modalEditSK && modalEditSK.style.display === 'flex') closeEditSK();
     });
 });
 </script>
@@ -1337,9 +1316,9 @@ document.addEventListener('DOMContentLoaded', function () {
     var BULAN_ID       = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
     var BULAN_ID_SHORT = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
     try {
-        var fpInputSM = document.getElementById('tanggal_surat');
-        if (typeof flatpickr !== 'undefined' && fpInputSM) {
-            window._fpSM = flatpickr(fpInputSM, {
+        var fpInputSK = document.getElementById('tanggal_surat');
+        if (typeof flatpickr !== 'undefined' && fpInputSK) {
+            window._fpSK = flatpickr(fpInputSK, {
                 dateFormat: 'j F Y',
                 locale: {
                     months: { longhand: BULAN_ID, shorthand: BULAN_ID_SHORT },
@@ -1353,20 +1332,19 @@ document.addEventListener('DOMContentLoaded', function () {
                 disableMobile: true,
             });
             // Klik icon kalender → buka flatpickr
-            var fpIconSM = document.querySelector('#tanggal-wrap-sm .date-icon');
-            if (fpIconSM) fpIconSM.addEventListener('click', function() { window._fpSM.open(); });
+            var fpIconSK = document.querySelector('#tanggal-wrap-sk .date-icon');
+            if (fpIconSK) fpIconSK.addEventListener('click', function() { window._fpSK.open(); });
         }
-    } catch(e) { console.warn('Flatpickr SM error:', e); }
+    } catch(e) { console.warn('Flatpickr SK error:', e); }
 
     // ── Kode Klasifikasi: paksa uppercase & max 2 karakter ───────────────────
-    var kodeInputSM = document.getElementById('kode_klasifikasi');
-    if (kodeInputSM) {
-        kodeInputSM.addEventListener('input', function() {
+    var kodeInputSK = document.getElementById('kode_klasifikasi');
+    if (kodeInputSK) {
+        kodeInputSK.addEventListener('input', function() {
             var v = this.value.replace(/[^A-Za-z]/g, '').toUpperCase().slice(0, 2);
             if (this.value !== v) this.value = v;
         });
-        kodeInputSM.addEventListener('keydown', function(e) {
-            // Tolak karakter non-huruf dan tolak jika sudah 2 karakter
+        kodeInputSK.addEventListener('keydown', function(e) {
             if (this.value.length >= 2 && e.key.length === 1 && !e.ctrlKey && !e.metaKey) {
                 e.preventDefault();
             }
@@ -1378,4 +1356,4 @@ document.addEventListener('DOMContentLoaded', function () {
 
 <?php $__env->stopSection(); ?>
 
-<?php echo $__env->make('layouts.app', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\laragon\www\project-magang\resources\views/arsip/index.blade.php ENDPATH**/ ?>
+<?php echo $__env->make('layouts.app', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\laragon\www\project-magang\resources\views\arsip\surat-keluar.blade.php ENDPATH**/ ?>

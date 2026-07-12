@@ -10,6 +10,37 @@ use Google\Service\Sheets;
 
 class SuratKeluarController extends Controller
 {
+    private const KODE_KLASIFIKASI_ORDER = [
+        'PR', 'KP', 'OT', 'KU', 'HK', 'UM', 'PL',
+        'UP', 'HM', 'PW', 'LT', 'DL', 'DT', 'KI',
+    ];
+
+    /**
+     * Urutkan baris berdasarkan prefix kode klasifikasi tanpa mengubah indeks sheet.
+     */
+    private function sortByKlasifikasi(array &$rows): void
+    {
+        $rank = array_flip(self::KODE_KLASIFIKASI_ORDER);
+
+        usort($rows, function (array $a, array $b) use ($rank): int {
+            $getKode = static function (array $item): string {
+                $raw = trim((string) ($item['data'][1] ?? ''));
+                return preg_match('/^([A-Za-z]+)/', $raw, $matches)
+                    ? strtoupper($matches[1])
+                    : '';
+            };
+
+            $kodeA = $getKode($a);
+            $kodeB = $getKode($b);
+            $rankA = $rank[$kodeA] ?? PHP_INT_MAX;
+            $rankB = $rank[$kodeB] ?? PHP_INT_MAX;
+
+            return ($rankA <=> $rankB)
+                ?: ($kodeA <=> $kodeB)
+                ?: (($a['index'] ?? 0) <=> ($b['index'] ?? 0));
+        });
+    }
+
     /**
      * Buat instance Google Sheets service.
      */
@@ -82,6 +113,7 @@ class SuratKeluarController extends Controller
                     if (empty($tanggal)) continue;
                     $rows[] = ['index' => $i, 'data' => $row];
                 }
+                $this->sortByKlasifikasi($rows);
             } catch (\Exception $e) {
                 $fetchError = 'Gagal memuat data dari Google Sheets: ' . $e->getMessage();
                 SheetsCache::forget(SheetsCache::KEY_SURAT_KELUAR);
@@ -121,6 +153,7 @@ class SuratKeluarController extends Controller
                 if (empty($tanggal)) continue;
                 $rows[] = ['index' => $i, 'data' => $row];
             }
+            $this->sortByKlasifikasi($rows);
         } catch (\Exception $e) {
             $fetchError = 'Gagal memuat data dari Google Sheets: ' . $e->getMessage();
             SheetsCache::forget(SheetsCache::KEY_SURAT_KELUAR);

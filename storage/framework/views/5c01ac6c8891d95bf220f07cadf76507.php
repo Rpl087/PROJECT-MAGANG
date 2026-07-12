@@ -594,4 +594,4 @@ unset($__errorArgs, $__bag); ?>
     </style>
 </body>
 </html>
-<?php /**PATH C:\laragon\www\project-magang\resources\views/auth/login.blade.php ENDPATH**/ ?>
+<?php /**PATH C:\laragon\www\project-magang\resources\views\auth\login.blade.php ENDPATH**/ ?>
