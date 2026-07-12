@@ -11,11 +11,6 @@
             <p class="page-description">Laporan rekapitulasi surat masuk &amp; keluar</p>
         </div>
         <div class="report-actions no-print" style="display:flex;align-items:center;gap:.75rem;">
-            <div class="report-clock" id="report-clock" style="display:flex;align-items:center;gap:.4rem;font-size:.85rem;font-weight:600;color:var(--color-text-muted);">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                <span id="clock-text">--:--:--</span>
-                <span id="clock-date" style="font-weight:500;"></span>
-            </div>
             {{-- tombol: TIDAK pakai onclick, JS handler yang handle --}}
             <button type="button" class="btn-report-print" id="btn-print">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -39,12 +34,12 @@
 <div class="print-header" id="print-header-wrap">
     <div class="print-header-inner">
         <div class="print-logo-wrap">
-            <div class="print-logo-text">BPSDMP</div>
+            <img class="print-logo-image" src="{{ route('image.view', 'komdigi-logo.png') }}" alt="Logo Komdigi">
         </div>
         <div class="print-header-text">
             <h1 class="print-title">LAPORAN REKAPITULASI ARSIP SURAT</h1>
             <p class="print-subtitle">Balai Pengembangan Sumber Daya Manusia dan Penelitian (BPSDMP)</p>
-            <p class="print-meta" id="print-meta-date">Dicetak pada: {{ now()->format('d F Y, H:i') }} WIB</p>
+            <p class="print-meta" id="print-meta-date">Dicetak pada: {{ now()->format('d F Y, H:i') }} WITA</p>
         </div>
     </div>
     <div class="print-divider"></div>
@@ -103,57 +98,30 @@
             </div>
             <div style="overflow-x:auto;">
                 <table class="report-table">
-                    <thead>
-                        <tr>
-                            <th class="th-no">No</th>
-                            <th>Bulan</th>
-                            <th class="th-num">Surat Masuk</th>
-                            <th class="th-num">Surat Keluar</th>
-                            <th class="th-num">Total</th>
-                        </tr>
-                    </thead>
+                    <thead><tr><th class="th-no">No</th><th>Bulan</th><th class="th-num">Surat Masuk</th><th class="th-num">Surat Keluar</th><th class="th-num">Total</th><th class="th-expand no-print">Detail Kode</th></tr></thead>
                     <tbody>
                         @foreach($rekap['rows'] as $i => $row)
-                        <tr class="{{ ($row['bulan_no'] == $currentMonth && $year == $currentYear) ? 'row-active' : '' }} {{ $row['total'] == 0 ? 'row-empty' : '' }}">
+                        @php
+                            $monthKey = $year . '-' . str_pad($row['bulan_no'], 2, '0', STR_PAD_LEFT);
+                            $monthDetails = $klasifikasiPerBulan[$monthKey] ?? [];
+                        @endphp
+                        <tr class="row-bulan {{ ($row['bulan_no'] == $currentMonth && $year == $currentYear) ? 'row-active' : '' }} {{ $row['total'] == 0 ? 'row-empty' : 'row-bulan-expandable' }}" data-month-key="{{ $monthKey }}" @if($row['total'] > 0) title="Klik untuk lihat detail per kode klasifikasi" @endif>
                             <td class="td-no">{{ $i + 1 }}</td>
-                            <td class="td-bulan">
-                                {{ $row['bulan'] }}
-                                @if($row['bulan_no'] == $currentMonth && $year == $currentYear)
-                                    <span class="badge-month">Berjalan</span>
-                                @endif
-                            </td>
-                            <td class="td-num">
-                                @if($row['sm_count'] > 0)
-                                    <span class="count-sm">{{ $row['sm_count'] }}</span>
-                                @else
-                                    <span class="count-zero">—</span>
-                                @endif
-                            </td>
-                            <td class="td-num">
-                                @if($row['sk_count'] > 0)
-                                    <span class="count-sk">{{ $row['sk_count'] }}</span>
-                                @else
-                                    <span class="count-zero">—</span>
-                                @endif
-                            </td>
-                            <td class="td-num">
-                                @if($row['total'] > 0)
-                                    <strong>{{ $row['total'] }}</strong>
-                                @else
-                                    <span class="count-zero">—</span>
-                                @endif
-                            </td>
+                            <td class="td-bulan">@if($row['total'] > 0)<span class="bulan-toggle-icon no-print" aria-hidden="true">&#9654;</span>@endif {{ $row['bulan'] }} @if($row['bulan_no'] == $currentMonth && $year == $currentYear)<span class="badge-month">Berjalan</span>@endif</td>
+                            <td class="td-num">@if($row['sm_count'] > 0)<span class="count-sm">{{ $row['sm_count'] }}</span>@else<span class="count-zero">&mdash;</span>@endif</td>
+                            <td class="td-num">@if($row['sk_count'] > 0)<span class="count-sk">{{ $row['sk_count'] }}</span>@else<span class="count-zero">&mdash;</span>@endif</td>
+                            <td class="td-num">@if($row['total'] > 0)<strong>{{ $row['total'] }}</strong>@else<span class="count-zero">&mdash;</span>@endif</td>
+                            <td class="td-center no-print detail-code-count">@if($row['total'] > 0){{ count($monthDetails) }} kode @else<span class="count-zero">&mdash;</span>@endif</td>
                         </tr>
+                        @if($row['total'] > 0)
+                        <tr class="row-kode-detail row-kode-detail-bulan" id="detail-bulan-{{ $monthKey }}" style="display:none;"><td colspan="6" style="padding:0;"><div class="kode-detail-wrap"><table class="kode-detail-table">
+                            <thead><tr><th>Kode Klasifikasi</th><th class="th-num">Surat Masuk</th><th class="th-num">Surat Keluar</th><th class="th-num">Total</th></tr></thead>
+                            <tbody>@foreach($monthDetails as $kode => $counts)<tr><td><span class="badge-kode-report">{{ $kode }}</span></td><td class="td-num">@if($counts[0] > 0)<span class="count-sm">{{ $counts[0] }}</span>@else<span class="count-zero">&mdash;</span>@endif</td><td class="td-num">@if($counts[1] > 0)<span class="count-sk">{{ $counts[1] }}</span>@else<span class="count-zero">&mdash;</span>@endif</td><td class="td-num"><strong>{{ $counts[2] }}</strong></td></tr>@endforeach</tbody>
+                        </table></div></td></tr>
+                        @endif
                         @endforeach
                     </tbody>
-                    <tfoot>
-                        <tr class="tfoot-total">
-                            <td colspan="2" class="tfoot-label">TOTAL TAHUN {{ $year }}</td>
-                            <td class="td-num"><strong>{{ $rekap['total_sm'] }}</strong></td>
-                            <td class="td-num"><strong>{{ $rekap['total_sk'] }}</strong></td>
-                            <td class="td-num"><strong>{{ $rekap['total'] }}</strong></td>
-                        </tr>
-                    </tfoot>
+                    <tfoot><tr class="tfoot-total"><td colspan="2" class="tfoot-label">TOTAL TAHUN {{ $year }}</td><td class="td-num"><strong>{{ $rekap['total_sm'] }}</strong></td><td class="td-num"><strong>{{ $rekap['total_sk'] }}</strong></td><td class="td-num"><strong>{{ $rekap['total'] }}</strong></td><td class="no-print"></td></tr></tfoot>
                 </table>
             </div>
         </div>
@@ -830,8 +798,9 @@
 }
 
 .kode-detail-wrap {
-    background: rgba(15,23,42,.6);
-    border-top: 1px dashed rgba(99,102,241,.2);
+    background: var(--color-surface);
+    background: color-mix(in srgb, var(--color-surface) 94%, #6366f1 6%);
+    border-top: 1px dashed var(--color-border);
     padding: .85rem 1.75rem 1.1rem;
 }
 .kode-detail-table {
@@ -849,27 +818,28 @@
 }
 .kode-detail-table td {
     padding: .48rem .85rem;
-    border-bottom: 1px solid rgba(255,255,255,.04);
+    border-bottom: 1px solid var(--color-border);
     color: var(--color-text); vertical-align: middle;
 }
 .kode-detail-table tbody tr:last-child td { border-bottom: none; }
 .kode-detail-table tbody tr:hover td { background: rgba(99,102,241,.04); }
 
-/* ── Report Clock ───────────────────────────────── */
-.report-clock {
-    display: flex; align-items: center; gap: .4rem;
-    font-size: .8rem; font-weight: 600;
-    color: var(--color-text-muted);
-    padding: .35rem .75rem;
-    background: var(--color-surface, #1a2236);
-    border: 1px solid var(--color-border, #2a3347);
-    border-radius: .5rem;
-}
-.report-clock svg { color: #818cf8; }
+.row-bulan-expandable { cursor: pointer; }
+.row-bulan-expandable:hover td { background: rgba(99,102,241,.08) !important; }
+.row-bulan-expandable.expanded td { background: rgba(99,102,241,.07) !important; }
+.bulan-toggle-icon { display:inline-block; width:.8rem; color:#6366f1; font-size:.65rem; margin-right:.35rem; transition:transform .2s ease; }
+.detail-code-count { font-size:.75rem; color:var(--color-primary); }
 
 /* ── Print Header ─────────────────────────────── */
-.print-header   { display: none; }
-.print-signature{ display: none; }
+.print-header,
+.print-signature { display: none !important; }
+.print-logo-image {
+    display: block;
+    width: auto;
+    height: auto;
+    max-width: 100%;
+    object-fit: contain;
+}
 
 @page {
     size: A4 portrait;
@@ -892,7 +862,14 @@
     .report-section { margin-bottom: 1.5rem; }
 
     * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-    html, body { background: #fff !important; color: #000 !important; font-size: 10pt; }
+    html, body { background: #fff !important; color: #111827 !important; font-size: 10pt; }
+    html, body, .layout-body, .main-content, .main-content-wrap {
+        background-image: none !important;
+        box-shadow: none !important;
+    }
+    .layout-body, .main-content, .main-content-wrap, .report-section, .report-card,
+    .report-table, .report-table tbody, .report-table tr, .kode-detail-table,
+    .kode-detail-table tbody, .kode-detail-table tr { background: #fff !important; }
     .main-content { margin-left: 0 !important; padding: 0 !important; }
     .main-content-wrap { max-width: 100% !important; padding: 0 !important; }
     .layout-body { display: block !important; }
@@ -905,10 +882,21 @@
         display: flex !important; align-items: flex-start; gap: 1rem;
         margin-bottom: .5rem;
     }
-    .print-logo-text {
-        font-size: 16pt; font-weight: 900; color: #1e3a5f;
-        letter-spacing: .05em; border: 3px solid #1e3a5f;
-        padding: .25rem .6rem; border-radius: 4px; flex-shrink: 0;
+    .print-logo-wrap {
+        width: 18mm;
+        flex: 0 0 18mm;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .print-logo-image {
+        display: block !important;
+        width: auto !important;
+        height: 14mm !important;
+        max-width: 18mm !important;
+        max-height: 14mm !important;
+        object-fit: contain !important;
+        object-position: center;
     }
     .print-header-text { flex: 1; }
     .print-title { font-size: 12pt; font-weight: 700; color: #1e3a5f; margin: 0 0 .15rem; text-transform: uppercase; letter-spacing: .04em; }
@@ -939,9 +927,9 @@
 
     .report-table { width: 100% !important; border-collapse: collapse !important; font-size: 9pt !important; }
     .report-table th {
-        background: #1e3a5f !important; color: #fff !important;
+        background: #eef2ff !important; color: #1e3a5f !important;
         font-size: 8pt !important; padding: .35rem .6rem !important;
-        border: 1px solid #1e3a5f !important;
+        border: 1px solid #cbd5e1 !important;
     }
     .report-table td {
         color: #000 !important;
@@ -988,10 +976,25 @@
 
     /* ── Accordion kode detail: tampil saat print ── */
     .row-kode-detail { display: table-row !important; }
-    .kode-detail-wrap { padding: .5rem 1rem !important; }
+    .kode-detail-wrap {
+        padding: .5rem 1rem !important;
+        background: #f8fafc !important;
+        border-top: 1px solid #cbd5e1 !important;
+    }
     .kode-detail-table { font-size: 8.5pt !important; }
-    .kode-detail-table th { font-size: 7.5pt !important; padding: .3rem .5rem !important; }
-    .kode-detail-table td { padding: .3rem .5rem !important; }
+    .kode-detail-table th {
+        background: #eef2ff !important;
+        color: #1e3a5f !important;
+        border: 1px solid #cbd5e1 !important;
+        font-size: 7.5pt !important;
+        padding: .3rem .5rem !important;
+    }
+    .kode-detail-table td {
+        background: #fff !important;
+        color: #111827 !important;
+        border: 1px solid #d1d5db !important;
+        padding: .3rem .5rem !important;
+    }
     .no-print { display: none !important; }
 }
 </style>
@@ -1034,6 +1037,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // ── Print: cetak HANYA tab yang sedang aktif ─────────────────────────
     function preparePrint() {
+        document.documentElement.classList.add('report-printing');
+        document.body.classList.add('report-printing');
+
         // Dapatkan tab aktif
         var activeTab = document.querySelector('.report-tab.active');
         var activeId  = activeTab ? activeTab.dataset.tab : 'bulanan';
@@ -1050,52 +1056,48 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
 
-        // Jika tab tahunan aktif: buka semua accordion detail kode
-        if (activeId === 'tahunan') {
-            document.querySelectorAll('.row-kode-detail').forEach(function(r) {
-                r.style.display = 'table-row';
-            });
-            document.querySelectorAll('.tahun-toggle-icon').forEach(function(ic) {
-                ic.style.transform = 'rotate(90deg)';
-            });
-        }
-
-        // Tampilkan print header & signature, sembunyikan page header
-        var hdr      = document.getElementById('print-header-wrap');
-        var sig      = document.getElementById('print-signature-wrap');
-        var pgHeader = document.getElementById('report-page-header');
-        if (hdr)      hdr.style.display      = 'block';
-        if (sig)      sig.style.display      = 'block';
-        if (pgHeader) pgHeader.style.display = 'none';
 
         // Update teks tanggal cetak
         var metaDate = document.getElementById('print-meta-date');
         if (metaDate) {
             var n = new Date();
-            metaDate.textContent = 'Dicetak pada: '+formatDateID(n)+', '+pad(n.getHours())+':'+pad(n.getMinutes())+' WIB';
+            metaDate.textContent = 'Dicetak pada: '+formatDateID(n)+', '+pad(n.getHours())+':'+pad(n.getMinutes())+' WITA';
         }
         var sigDate = document.getElementById('sig-date');
         if (sigDate) sigDate.textContent = formatDateShortID(new Date());
     }
 
     function restoreAfterPrint() {
+        document.documentElement.classList.remove('report-printing');
+        document.body.classList.remove('report-printing');
+
         var activeTab = document.querySelector('.report-tab.active');
         var activeId  = activeTab ? activeTab.dataset.tab : 'bulanan';
         sections.forEach(function(sec) {
             sec.style.display      = (sec.id === 'tab-' + activeId) ? '' : 'none';
             sec.style.marginBottom = '';
         });
-        var hdr      = document.getElementById('print-header-wrap');
-        var sig      = document.getElementById('print-signature-wrap');
-        var pgHeader = document.getElementById('report-page-header');
-        if (hdr)      hdr.style.display      = 'none';
-        if (sig)      sig.style.display      = 'none';
-        if (pgHeader) pgHeader.style.display = '';
     }
 
     // beforeprint/afterprint events
     window.addEventListener('beforeprint', preparePrint);
     window.addEventListener('afterprint',  restoreAfterPrint);
+
+    // Chromium pada beberapa perangkat tidak selalu memicu afterprint.
+    // Pulihkan tampilan ketika media print berakhir atau tab kembali fokus.
+    if (window.matchMedia) {
+        var printMedia = window.matchMedia('print');
+        var handlePrintMedia = function(e) {
+            if (!e.matches) restoreAfterPrint();
+        };
+        if (printMedia.addEventListener) printMedia.addEventListener('change', handlePrintMedia);
+        else if (printMedia.addListener) printMedia.addListener(handlePrintMedia);
+    }
+    window.addEventListener('focus', function() {
+        if (document.documentElement.classList.contains('report-printing')) {
+            setTimeout(restoreAfterPrint, 150);
+        }
+    });
 
     // ── Modal Konfirmasi Cetak ───────────────────────────────────────────
     var TAB_LABELS = {
@@ -1148,7 +1150,6 @@ document.addEventListener('DOMContentLoaded', function () {
             closeModalCetak();
             // Sedikit delay agar modal benar-benar hilang dulu sebelum print dialog muncul
             setTimeout(function() {
-                preparePrint();
                 window.print();
             }, 80);
         });
@@ -1174,6 +1175,19 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
+    // Accordion rincian kode klasifikasi per bulan
+    document.querySelectorAll('.row-bulan-expandable').forEach(function(row) {
+        row.addEventListener('click', function() {
+            var key = this.getAttribute('data-month-key');
+            var detail = document.getElementById('detail-bulan-' + key);
+            var icon = this.querySelector('.bulan-toggle-icon');
+            if (!detail) return;
+            var isOpen = detail.style.display === 'table-row';
+            detail.style.display = isOpen ? 'none' : 'table-row';
+            this.classList.toggle('expanded', !isOpen);
+            if (icon) icon.style.transform = isOpen ? '' : 'rotate(90deg)';
+        });
+    });
     // ── Filter Tahun: Tab Bulanan ────────────────────────────────────────
     var selTahunBulanan = document.getElementById('filter-tahun-bulanan');
     if (selTahunBulanan) {
@@ -1217,20 +1231,10 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // ── Live Clock ────────────────────────────────────────────────────
-    var clockText = document.getElementById('clock-text');
-    var clockDate = document.getElementById('clock-date');
 
-    function tickClock() {
-        var now = new Date();
-        if (clockText) clockText.textContent = pad(now.getHours())+':'+pad(now.getMinutes())+':'+pad(now.getSeconds());
-        if (clockDate) clockDate.textContent = formatDateID(now);
-    }
-    tickClock();
-    setInterval(tickClock, 1000);
 
     // Init: sembunyikan header/sig di layar
     restoreAfterPrint();
 });
 </script>
 @endpush
-

@@ -500,7 +500,7 @@
     {{-- Pre-render toast dari session flash agar tampil tanpa bergantung JS dinamis --}}
     <div id="toast-container" aria-live="polite" aria-atomic="false">
         @if(session('success'))
-        <div class="toast toast-success" role="alert" id="flash-toast-success">
+        <div class="toast toast-success toast-show" role="alert" id="flash-toast-success">
             <span class="toast-icon">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
@@ -518,8 +518,8 @@
             <div class="toast-progress"></div>
         </div>
         @endif
-        @if(session('error'))
-        <div class="toast toast-error" role="alert" id="flash-toast-error">
+        @if(session('error') || $errors->any())
+        <div class="toast toast-error toast-show" role="alert" id="flash-toast-error">
             <span class="toast-icon">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                     <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
@@ -527,7 +527,7 @@
             </span>
             <div class="toast-body">
                 <div class="toast-title">Gagal</div>
-                <div class="toast-msg">{{ session('error') }}</div>
+                <div class="toast-msg">{{ session('error') ?: $errors->first() }}</div>
             </div>
             <button class="toast-close" aria-label="Tutup notifikasi" id="flash-toast-close-err">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">

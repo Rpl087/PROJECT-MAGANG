@@ -6,6 +6,7 @@ use App\Services\SheetsCache;
 use Illuminate\Http\Request;
 use Google\Client;
 use Google\Service\Sheets;
+use Illuminate\Support\Facades\Storage;
 
 class ArsipController extends Controller
 {
@@ -213,6 +214,8 @@ class ArsipController extends Controller
      */
     public function store(Request $request)
     {
+        $storedFilePath = null;
+
         // Validasi input sesuai kolom dbSM
         $validated = $request->validate([
             'kode_klasifikasi'        => 'required|string|max:255',
@@ -273,7 +276,10 @@ class ArsipController extends Controller
             $timestamp     = now()->format('Ymd_His');
             $filename = strtoupper($kodeKlasSlug) . '_' . $timestamp . '_' . $originalSlug . '.pdf';
 
-            $file->storeAs('arsip/surat-masuk', $filename, 'public');
+            $storedFilePath = $file->storeAs('arsip/surat-masuk', $filename, 'public');
+            if ($storedFilePath === false) {
+                throw new \RuntimeException('File PDF gagal disimpan ke storage arsip.');
+            }
             // Simpan hanya filename — URL di-generate dinamis saat tampil
             $linkFolder = $filename;
 
@@ -318,6 +324,10 @@ class ArsipController extends Controller
             return redirect()->route('arsip.index')
                 ->with('success', 'Data surat masuk berhasil diarsipkan ke Spreadsheet!');
         } catch (\Exception $e) {
+            if ($storedFilePath !== null) {
+                Storage::disk('public')->delete($storedFilePath);
+            }
+
             return redirect()->route('arsip.index')
                 ->with('error', 'Gagal menyimpan data: ' . $e->getMessage());
         }
