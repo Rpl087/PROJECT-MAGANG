@@ -293,6 +293,48 @@
         /* drawer-footer-fixed: hanya tampil di mobile via JS */
         .drawer-footer-fixed { display: none; }
 
+            /* Mode display/kiosk: navbar dan dashboard terkunci tepat satu viewport. */
+            body.navbar-only .burger-btn,
+            body.navbar-only .sidebar,
+            body.navbar-only .sidebar-overlay,
+            body.navbar-only .drawer-footer-fixed,
+            body.navbar-only .footer { display: none !important; }
+            html:has(body.navbar-only),
+            body.navbar-only {
+                width: 100%;
+                height: 100%;
+                min-height: 100%;
+                overflow: hidden !important;
+                overscroll-behavior: none;
+            }
+            body.navbar-only .header {
+                position: fixed;
+                inset: 0 0 auto 0;
+                width: 100%;
+            }
+            body.navbar-only .layout-body {
+                width: 100vw;
+                height: 100dvh;
+                min-height: 0;
+                padding-top: var(--header-height, 64px);
+                overflow: hidden;
+            }
+            body.navbar-only .main-content {
+                margin-left: 0 !important;
+                padding: 0 !important;
+                width: 100%;
+                height: calc(100dvh - var(--header-height, 64px));
+                min-height: 0;
+                overflow: hidden;
+            }
+            body.navbar-only .main-content-wrap {
+                max-width: none !important;
+                width: 100%;
+                height: calc(100dvh - var(--header-height, 64px));
+                min-height: 0;
+                overflow: hidden;
+            }
+
     </style>
 
     {{-- ── Page Transition (fade antar halaman) ── --}}
@@ -425,7 +467,7 @@
     }
     </style>
 </head>
-<body>
+<body class="@hasSection('navbarOnly') navbar-only @endif">
     {{-- Inisialisasi tema sebelum render (mencegah flash of wrong theme) --}}
     <script>
         (function(){

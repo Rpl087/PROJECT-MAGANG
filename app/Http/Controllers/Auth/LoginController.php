@@ -84,10 +84,8 @@ class LoginController extends Controller
                 'ip'       => $request->ip(),
             ]);
 
-            if (Auth::user()->isAdmin()) {
-                return redirect()->intended(route('dashboard.index'));
-            }
-            return redirect()->intended(route('arsip.index'));
+            // Redirect all users to dashboard after login
+            return redirect()->intended(route('dashboard.index'));
         }
 
         // ── Login Gagal — tambah hit rate limiter & log ───────────────────────

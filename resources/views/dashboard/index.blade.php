@@ -1,12 +1,29 @@
 @extends('layouts.app')
 
 @section('title', 'Dashboard')
+@section('navbarOnly', true)
 
 @section('content')
 
+<div class="dashboard-viewport">
 <div class="page-header pre-hide">
-    <h2 class="page-title">Dashboard</h2>
-    <p class="page-description">Rekap surat masuk &amp; keluar — Tahun {{ $currentYear }}</p>
+    <div>
+        <h2 class="page-title">Dashboard</h2>
+        <p class="page-description">Rekap surat masuk &amp; keluar — Tahun {{ $currentYear }}</p>
+    </div>
+    <button type="button" class="db-fullscreen-btn" id="db-fullscreen-btn" aria-label="Aktifkan layar penuh" title="Tampilkan layar penuh">
+        <svg class="db-fullscreen-enter" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="8 3 3 3 3 8"/><line x1="3" y1="3" x2="9" y2="9"/>
+            <polyline points="16 3 21 3 21 8"/><line x1="21" y1="3" x2="15" y2="9"/>
+            <polyline points="8 21 3 21 3 16"/><line x1="3" y1="21" x2="9" y2="15"/>
+            <polyline points="16 21 21 21 21 16"/><line x1="21" y1="21" x2="15" y2="15"/>
+        </svg>
+        <svg class="db-fullscreen-exit" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="4 14 10 14 10 20"/><line x1="10" y1="14" x2="3" y2="21"/>
+            <polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/>
+        </svg>
+        <span id="db-fullscreen-label">Layar Penuh</span>
+    </button>
 </div>
 
 @if(isset($error))
@@ -59,7 +76,8 @@
 </div>
 
 {{-- ── Tabel Rekap Bulanan ──────────────────────────────────────── --}}
-<div class="db-card pre-hide" style="margin-bottom:1.5rem;">
+<div class="db-main-grid">
+<div class="db-card db-table-card pre-hide">
     <div class="db-card-header">
         <div class="db-card-title-wrap">
             <div class="db-card-icon db-card-icon-table">
@@ -72,7 +90,7 @@
 @php $bulanAktif = collect($monthlyRecap)->filter(fn($r) => $r['total'] > 0)->count(); @endphp
         <span class="db-badge">{{ $bulanAktif > 0 ? $bulanAktif . ' Bulan Aktif' : '0 Bulan' }}</span>
     </div>
-    <div class="db-table-wrap" style="overflow-x:auto;">
+    <div class="db-table-wrap">
         <table class="db-table" id="tabel-rekap">
             <thead>
                 <tr>
@@ -233,20 +251,40 @@
         </div>
     </div>
 </div>
+</div>
+</div>
 
 <style>
 /* ── Dashboard Styles ─────────────────────────────── */
+.dashboard-viewport {
+    height: 100%; min-height: 0; padding: .75rem 1rem; overflow: hidden;
+    display: grid; grid-template-rows: auto auto minmax(0, 1fr); gap: .65rem;
+}
+.dashboard-viewport .page-header { margin: 0; display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.dashboard-viewport .page-title { font-size: 1.25rem; }
+.dashboard-viewport .page-description { font-size: .78rem; }
+.db-fullscreen-btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: .45rem;
+    padding: .42rem .75rem; border: 1px solid var(--color-border); border-radius: 8px;
+    background: var(--color-surface); color: var(--color-primary); font: inherit;
+    font-size: .75rem; font-weight: 600; cursor: pointer; white-space: nowrap;
+    box-shadow: var(--shadow-sm); transition: background .2s ease, border-color .2s ease, color .2s ease;
+}
+.db-fullscreen-btn:hover { background: var(--color-primary); border-color: var(--color-primary); color: #fff; }
+.db-fullscreen-exit { display: none; }
+.db-fullscreen-btn.is-fullscreen .db-fullscreen-enter { display: none; }
+.db-fullscreen-btn.is-fullscreen .db-fullscreen-exit { display: block; }
 .db-stats-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 1rem;
-    margin-bottom: 1.5rem;
+    gap: .65rem;
+    margin-bottom: 0;
 }
 .db-stat-card {
     background: var(--color-surface);
     border: 1px solid var(--color-border);
     border-radius: var(--radius-lg);
-    padding: 1.25rem 1.25rem;
+    padding: .65rem .85rem;
     display: flex;
     align-items: center;
     gap: 1rem;
@@ -255,7 +293,7 @@
 }
 .db-stat-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
 .db-stat-icon {
-    width: 48px; height: 48px; border-radius: var(--radius-md);
+    width: 36px; height: 36px; border-radius: var(--radius-md);
     display: flex; align-items: center; justify-content: center; flex-shrink: 0;
 }
 .db-stat-icon-sm   { background: #e0f2fe; color: #0369a1; }
@@ -264,7 +302,12 @@
 .db-stat-icon-month{ background: #dcfce7; color: #15803d; }
 .db-stat-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .db-stat-label { font-size: 0.78rem; font-weight: 500; color: var(--color-text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.db-stat-value { font-size: 1.75rem; font-weight: 700; color: var(--color-text); letter-spacing: -0.03em; line-height: 1.1; }
+.db-stat-value { font-size: 1.3rem; font-weight: 700; color: var(--color-text); letter-spacing: -0.03em; line-height: 1.1; }
+.db-main-grid {
+    display: grid; grid-template-columns: minmax(470px, 1.1fr) minmax(0, 1.4fr);
+    gap: .65rem; min-height: 0;
+}
+.db-table-card { display: flex; flex-direction: column; min-height: 0; }
 
 /* ── Card ──────────────────────────── */
 .db-card {
@@ -276,7 +319,7 @@
 }
 .db-card-header {
     display: flex; align-items: center; justify-content: space-between;
-    padding: 1rem 1.25rem;
+    padding: .5rem .7rem;
     border-bottom: 1px solid var(--color-border);
     background: var(--color-bg);
 }
@@ -295,19 +338,19 @@
 }
 
 /* ── Table ─────────────────────────── */
-.db-table-wrap { overflow-x: auto; }
-.db-table { width: 100%; border-collapse: collapse; font-size: .875rem; }
+.db-table-wrap { overflow: auto; min-height: 0; flex: 1; }
+.db-table { width: 100%; border-collapse: collapse; font-size: .75rem; }
 .db-table th {
-    padding: .65rem 1rem; text-align: left; font-size: .75rem; font-weight: 600;
+    padding: .38rem .55rem; text-align: left; font-size: .66rem; font-weight: 600;
     color: #ffffff; text-transform: uppercase; letter-spacing: .06em;
     background: var(--color-primary); border-bottom: none;
-    white-space: nowrap;
+    white-space: nowrap; position: sticky; top: 0; z-index: 2;
 }
 [data-theme="dark"] .db-table th {
     background: var(--color-primary-hover, #15314f);
     color: #e2e8f0;
 }
-.db-table td { padding: .65rem 1rem; border-bottom: 1px solid var(--color-border); vertical-align: middle; color: var(--color-text); }
+.db-table td { padding: .34rem .55rem; border-bottom: 1px solid var(--color-border); vertical-align: middle; color: var(--color-text); }
 .db-table tbody tr:last-child td { border-bottom: none; }
 .db-table tbody tr:hover { background: var(--color-primary-light); }
 .db-row-active { background: var(--color-primary-light) !important; }
@@ -331,27 +374,30 @@
 .db-charts-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 1.25rem;
-    margin-bottom: 2rem;
+    gap: .65rem;
+    margin-bottom: 0;
     align-items: stretch;
+    min-height: 0;
 }
 .db-charts-grid .db-card {
     display: flex;
     flex-direction: column;
 }
 .db-chart-container {
-    padding: 1.25rem 1.25rem 1rem;
+    padding: .4rem;
     display: flex;
     flex-direction: column;
     align-items: stretch;
     flex: 1;
-    min-height: 280px;
+    min-height: 0;
+    position: relative;
 }
 /* Bar chart: canvas melebar penuh, bukan dibatasi seperti pie */
 .db-chart-container canvas {
     width: 100% !important;
     max-width: 100% !important;
-    max-height: none !important;
+    height: 100% !important;
+    max-height: 100% !important;
 }
 .db-empty {
     display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -360,16 +406,30 @@
 }
 
 /* ── Responsive ────────────────── */
-@media (max-width: 1024px) {
+@media (min-width: 769px) and (max-width: 1100px) {
     .db-stats-grid { grid-template-columns: repeat(3, 1fr); }
+    .dashboard-viewport { padding: .5rem; gap: .45rem; }
+    .db-main-grid { grid-template-columns: minmax(390px, 1fr) minmax(0, 1.25fr); gap: .45rem; }
+    .db-charts-grid { gap: .45rem; }
+    .db-card-title { font-size: .76rem; }
+    .db-badge { display: none; }
 }
 @media (max-width: 768px) {
+    html:has(body.navbar-only), body.navbar-only { height: auto; overflow: auto !important; }
+    body.navbar-only .layout-body,
+    body.navbar-only .main-content,
+    body.navbar-only .main-content-wrap { height: auto; min-height: calc(100dvh - var(--header-height, 64px)); overflow: visible; }
+    .dashboard-viewport { height: auto; min-height: 100%; overflow: visible; }
+    .db-main-grid { grid-template-columns: 1fr; }
+    .db-table-wrap { max-height: 440px; }
     .db-stats-grid  { grid-template-columns: 1fr 1fr; }
     .db-charts-grid { grid-template-columns: 1fr; }
     .db-stat-value  { font-size: 1.4rem; }
     .db-chart-container { min-height: 260px; } /* reduce di tablet */
 }
 @media (max-width: 480px) {
+    .db-fullscreen-btn span { display: none; }
+    .db-fullscreen-btn { padding: .5rem; }
     .db-stats-grid  { grid-template-columns: 1fr; }
     .db-chart-container { min-height: 220px; padding: .75rem; } /* reduce di HP */
     .db-chart-container canvas { max-width: 180px; max-height: 180px; }
@@ -389,6 +449,32 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
 (function () {
+    var fullscreenButton = document.getElementById('db-fullscreen-btn');
+    var fullscreenLabel = document.getElementById('db-fullscreen-label');
+
+    function updateFullscreenButton() {
+        var active = Boolean(document.fullscreenElement);
+        if (!fullscreenButton) return;
+        fullscreenButton.classList.toggle('is-fullscreen', active);
+        fullscreenButton.setAttribute('aria-label', active ? 'Keluar dari layar penuh' : 'Aktifkan layar penuh');
+        fullscreenButton.title = active ? 'Keluar dari layar penuh' : 'Tampilkan layar penuh';
+        if (fullscreenLabel) fullscreenLabel.textContent = active ? 'Keluar Fullscreen' : 'Layar Penuh';
+        setTimeout(function () { window.dispatchEvent(new Event('resize')); }, 100);
+    }
+
+    if (fullscreenButton && document.fullscreenEnabled) {
+        fullscreenButton.addEventListener('click', function () {
+            if (document.fullscreenElement) {
+                document.exitFullscreen().catch(function () {});
+            } else {
+                document.documentElement.requestFullscreen().catch(function () {});
+            }
+        });
+        document.addEventListener('fullscreenchange', updateFullscreenButton);
+    } else if (fullscreenButton) {
+        fullscreenButton.hidden = true;
+    }
+
     // ── Deteksi dark mode ──────────────────────────────────────────────
     var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
     var gridColor   = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.06)';
@@ -465,8 +551,7 @@
             },
             options: {
                 responsive: true,
-                maintainAspectRatio: true,
-                aspectRatio: 1.9,
+                maintainAspectRatio: false,
                 animation: {
                     duration: 600,
                     easing: 'easeOutQuart'
