@@ -261,12 +261,12 @@
                 <div class="report-card-icon">
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
                 </div>
-                <h3 class="report-card-title">Rekap Per Kode Klasifikasi (Semua Tahun)</h3>
+                <h3 class="report-card-title" id="klas-card-title">Rekap Per Kode Klasifikasi (Semua Tahun)</h3>
             </div>
-            <span class="report-badge">{{ count($rekapKlasifikasi) }} Kode</span>
+            <span class="report-badge" id="klas-badge">{{ count($rekapKlasifikasi) }} Kode</span>
         </div>
         <div style="overflow-x:auto;">
-            <table class="report-table">
+            <table class="report-table" id="tabel-klasifikasi">
                 <thead>
                     <tr>
                         <th class="th-no">No</th>
@@ -276,9 +276,9 @@
                         <th class="th-num">Total</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="tbody-klasifikasi">
                     @forelse($rekapKlasifikasi as $i => $row)
-                    <tr>
+                    <tr data-kode="{{ $row['kode'] }}" data-sm="{{ $row['sm_count'] }}" data-sk="{{ $row['sk_count'] }}" data-total="{{ $row['total'] }}">
                         <td class="td-no">{{ $i + 1 }}</td>
                         <td><span class="badge-kode-report">{{ $row['kode'] }}</span></td>
                         <td class="td-num"><span class="count-sm">{{ $row['sm_count'] }}</span></td>
@@ -291,11 +291,11 @@
                 </tbody>
                 @if(count($rekapKlasifikasi) > 0)
                 <tfoot>
-                    <tr class="tfoot-total">
-                        <td colspan="2" class="tfoot-label">TOTAL SEMUA KLASIFIKASI</td>
-                        <td class="td-num"><strong>{{ collect($rekapKlasifikasi)->sum('sm_count') }}</strong></td>
-                        <td class="td-num"><strong>{{ collect($rekapKlasifikasi)->sum('sk_count') }}</strong></td>
-                        <td class="td-num"><strong>{{ collect($rekapKlasifikasi)->sum('total') }}</strong></td>
+                    <tr class="tfoot-total" id="klas-tfoot">
+                        <td colspan="2" class="tfoot-label" id="klas-tfoot-label">TOTAL SEMUA KLASIFIKASI</td>
+                        <td class="td-num"><strong id="klas-total-sm">{{ collect($rekapKlasifikasi)->sum('sm_count') }}</strong></td>
+                        <td class="td-num"><strong id="klas-total-sk">{{ collect($rekapKlasifikasi)->sum('sk_count') }}</strong></td>
+                        <td class="td-num"><strong id="klas-total-all">{{ collect($rekapKlasifikasi)->sum('total') }}</strong></td>
                     </tr>
                 </tfoot>
                 @endif
@@ -975,7 +975,11 @@
     }
 
     /* ── Accordion kode detail: tampil saat print ── */
+    /* Hanya tampil accordion yang TIDAK ditandai filter-hidden */
     .row-kode-detail { display: table-row !important; }
+    .row-kode-detail.print-row-hidden { display: none !important; }
+    /* Baris tabel yang disembunyikan oleh filter juga tetap tersembunyi saat print */
+    tr.print-row-hidden { display: none !important; }
     .kode-detail-wrap {
         padding: .5rem 1rem !important;
         background: #f8fafc !important;
@@ -1056,6 +1060,31 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
 
+        // ── Tandai baris yang disembunyikan oleh filter agar tetap hidden saat print ──
+        // Rekap Tahunan: mark hidden rows & their detail
+        document.querySelectorAll('#tabel-tahunan tbody tr').forEach(function(tr) {
+            if (tr.style.display === 'none') {
+                tr.classList.add('print-row-hidden');
+            } else {
+                tr.classList.remove('print-row-hidden');
+                // Jika detail row dari baris visible, buka saat print
+                if (tr.classList.contains('row-kode-detail')) {
+                    tr.classList.remove('print-row-hidden');
+                }
+            }
+        });
+        // Detail row accordion ikut hidden jika parent tahun hidden
+        document.querySelectorAll('#tabel-tahunan tbody .row-tahun').forEach(function(tr) {
+            var yr = tr.getAttribute('data-year');
+            var detail = document.getElementById('detail-' + yr);
+            if (detail) {
+                if (tr.style.display === 'none') {
+                    detail.classList.add('print-row-hidden');
+                } else {
+                    detail.classList.remove('print-row-hidden');
+                }
+            }
+        });
 
         // Update teks tanggal cetak
         var metaDate = document.getElementById('print-meta-date');
@@ -1076,6 +1105,10 @@ document.addEventListener('DOMContentLoaded', function () {
         sections.forEach(function(sec) {
             sec.style.display      = (sec.id === 'tab-' + activeId) ? '' : 'none';
             sec.style.marginBottom = '';
+        });
+        // Hapus semua class print-row-hidden setelah print selesai
+        document.querySelectorAll('.print-row-hidden').forEach(function(el) {
+            el.classList.remove('print-row-hidden');
         });
     }
 
@@ -1211,22 +1244,72 @@ document.addEventListener('DOMContentLoaded', function () {
                 var detail = document.getElementById('detail-' + yr);
                 if (detail && !show) detail.style.display = 'none';
             });
+            // Update tfoot label jika ada filter
+            var tfootLabel = document.querySelector('#tabel-tahunan tfoot .tfoot-label');
+            if (tfootLabel) {
+                tfootLabel.textContent = tahun ? ('TOTAL TAHUN ' + tahun) : 'TOTAL KESELURUHAN';
+            }
         });
     }
 
     // ── Filter Tahun: Tab Klasifikasi ────────────────────────────────────
+    // Data per tahun di-embed sebagai JSON dari PHP untuk rendering dinamis
+    var REKAP_KLAS_PER_TAHUN = @json($rekapKlasifikasiPerTahun ?? []);
+    var REKAP_KLAS_ALL       = @json($rekapKlasifikasi ?? []);
+    var KODE_ORDER = ['PR','KP','OT','KU','HK','UM','PL','UP','HM','PW','LT','DL','DT','KI'];
+
     var selTahunKlas = document.getElementById('filter-tahun-klasifikasi');
+    var tbodyKlas    = document.getElementById('tbody-klasifikasi');
+    var klasTitle    = document.getElementById('klas-card-title');
+    var klasBadge    = document.getElementById('klas-badge');
+    var klasTfootLbl = document.getElementById('klas-tfoot-label');
+    var klasTotalSM  = document.getElementById('klas-total-sm');
+    var klasTotalSK  = document.getElementById('klas-total-sk');
+    var klasTotalAll = document.getElementById('klas-total-all');
+
+    function renderKlasifikasiTable(tahun) {
+        if (!tbodyKlas) return;
+        var rows = tahun ? (REKAP_KLAS_PER_TAHUN[tahun] || []) : REKAP_KLAS_ALL;
+
+        // Sort berdasarkan KODE_ORDER
+        rows = rows.slice().sort(function(a, b) {
+            var ia = KODE_ORDER.indexOf(a.kode);
+            var ib = KODE_ORDER.indexOf(b.kode);
+            return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
+        });
+
+        var totalSM = 0, totalSK = 0, totalAll = 0;
+        var html = '';
+        if (rows.length === 0) {
+            html = '<tr><td colspan="5" class="td-empty-row">Belum ada data untuk tahun ' + (tahun || 'ini') + '</td></tr>';
+        } else {
+            rows.forEach(function(row, i) {
+                totalSM  += parseInt(row.sm_count) || 0;
+                totalSK  += parseInt(row.sk_count) || 0;
+                totalAll += parseInt(row.total)    || 0;
+                html += '<tr>';
+                html += '<td class="td-no">' + (i + 1) + '</td>';
+                html += '<td><span class="badge-kode-report">' + row.kode + '</span></td>';
+                html += '<td class="td-num"><span class="count-sm">' + row.sm_count + '</span></td>';
+                html += '<td class="td-num"><span class="count-sk">' + row.sk_count + '</span></td>';
+                html += '<td class="td-num"><strong>' + row.total + '</strong></td>';
+                html += '</tr>';
+            });
+        }
+        tbodyKlas.innerHTML = html;
+
+        // Update judul & badge
+        if (klasTitle) klasTitle.textContent = 'Rekap Per Kode Klasifikasi' + (tahun ? ' Tahun ' + tahun : ' (Semua Tahun)');
+        if (klasBadge) klasBadge.textContent = rows.length + ' Kode';
+        if (klasTfootLbl) klasTfootLbl.textContent = tahun ? 'TOTAL TAHUN ' + tahun : 'TOTAL SEMUA KLASIFIKASI';
+        if (klasTotalSM)  klasTotalSM.textContent  = totalSM;
+        if (klasTotalSK)  klasTotalSK.textContent  = totalSK;
+        if (klasTotalAll) klasTotalAll.textContent = totalAll;
+    }
+
     if (selTahunKlas) {
         selTahunKlas.addEventListener('change', function() {
-            var tahun = this.value;
-            document.querySelectorAll('#tab-klasifikasi table tbody tr[data-years]').forEach(function(tr) {
-                if (!tahun) { tr.style.display = ''; return; }
-                var years = (tr.getAttribute('data-years') || '').split(',');
-                tr.style.display = years.indexOf(tahun) > -1 ? '' : 'none';
-            });
-            document.querySelectorAll('#tab-klasifikasi table tbody tr:not([data-years])').forEach(function(tr) {
-                tr.style.display = '';
-            });
+            renderKlasifikasiTable(this.value);
         });
     }
 

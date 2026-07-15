@@ -100,9 +100,18 @@
         /* ══════════════════════════════════════════════════════════
            DESKTOP (>768px): Sidebar collapse via burger
            ══════════════════════════════════════════════════════════ */
-        .sidebar { transition: transform 0.3s cubic-bezier(0.4,0,0.2,1); }
-        .main-content  { transition: margin-left 0.3s cubic-bezier(0.4,0,0.2,1); }
-        .footer        { transition: margin-left 0.3s cubic-bezier(0.4,0,0.2,1); }
+        .sidebar {
+            transition: transform 0.32s cubic-bezier(0.4,0,0.2,1);
+            will-change: transform;
+        }
+        .main-content {
+            transition: margin-left 0.32s cubic-bezier(0.4,0,0.2,1);
+            will-change: margin-left;
+        }
+        .footer {
+            transition: margin-left 0.32s cubic-bezier(0.4,0,0.2,1);
+            will-change: margin-left;
+        }
 
         /* State: sidebar tersembunyi (desktop) */
         body.sidebar-collapsed .sidebar   { transform: translateX(calc(-1 * var(--sidebar-width, 240px))); }
@@ -590,7 +599,11 @@
             <nav class="sidebar-nav">
                 @if(Auth::user()->isAdmin())
                 <a href="{{ route('dashboard.index') }}"
-                   class="sidebar-link {{ request()->routeIs('dashboard.index') ? 'sidebar-link-active' : '' }}">
+                   class="sidebar-link {{ request()->routeIs('dashboard.index') ? 'sidebar-link-active' : '' }}"
+                   data-confirm-nav="dashboard"
+                   data-confirm-title="Buka Dashboard?"
+                   data-confirm-desc="Anda akan diarahkan ke halaman Dashboard. Pastikan semua perubahan sudah tersimpan sebelum berpindah."
+                   data-confirm-label="Dashboard">
                     <span class="sidebar-link-icon">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
@@ -600,7 +613,11 @@
                     Dashboard
                 </a>
                 <a href="{{ route('dashboard.report') }}"
-                   class="sidebar-link {{ request()->routeIs('dashboard.report') ? 'sidebar-link-active' : '' }}">
+                   class="sidebar-link {{ request()->routeIs('dashboard.report') ? 'sidebar-link-active' : '' }}"
+                   data-confirm-nav="report"
+                   data-confirm-title="Buka Report Rekap?"
+                   data-confirm-desc="Anda akan diarahkan ke halaman Report Rekap. Pastikan semua perubahan sudah tersimpan sebelum berpindah."
+                   data-confirm-label="Report Rekap">
                     <span class="sidebar-link-icon">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
@@ -688,6 +705,78 @@
             </div>
         </main>
 
+    </div>
+
+    {{-- ── Modal Konfirmasi Navigasi ke Dashboard / Report ── --}}
+    <div id="modal-nav-confirm" style="
+        display:none; position:fixed; inset:0; z-index:9998;
+        background:rgba(10,15,30,0.55); backdrop-filter:blur(4px);
+        align-items:center; justify-content:center;
+        opacity:0; transition:opacity 0.22s ease;
+    ">
+        <div id="modal-nav-confirm-box" style="
+            background:var(--color-surface,#ffffff);
+            border:1px solid var(--color-border,#e2e5ea);
+            border-radius:16px;
+            box-shadow:0 24px 64px rgba(0,0,0,0.22);
+            padding:2rem 2rem 1.5rem;
+            max-width:420px; width:90%;
+            transform:scale(0.93) translateY(12px);
+            transition:transform 0.25s cubic-bezier(0.34,1.56,0.64,1), opacity 0.22s ease;
+            opacity:0;
+        ">
+            {{-- Icon --}}
+            <div style="
+                width:52px;height:52px;border-radius:14px;
+                background:rgba(59,130,246,0.13);
+                display:flex;align-items:center;justify-content:center;
+                margin-bottom:1.1rem;
+            ">
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                    <polyline points="9 22 9 12 15 12 15 22"/>
+                </svg>
+            </div>
+            {{-- Title --}}
+            <h4 id="modal-nav-confirm-title" style="
+                margin:0 0 .45rem;
+                font-size:1.05rem; font-weight:700;
+                color:var(--color-text,#1e293b);
+            ">Buka Dashboard?</h4>
+            {{-- Description --}}
+            <p id="modal-nav-confirm-desc" style="
+                margin:0 0 1.5rem;
+                font-size:.875rem; line-height:1.55;
+                color:var(--color-text-muted,#64748b);
+            ">Anda akan diarahkan ke halaman Dashboard. Pastikan semua perubahan sudah tersimpan sebelum berpindah.</p>
+            {{-- Actions --}}
+            <div style="display:flex;gap:.65rem;justify-content:flex-end;">
+                <button type="button" id="modal-nav-cancel" style="
+                    padding:.55rem 1.2rem; border-radius:8px; cursor:pointer;
+                    background:transparent; border:1px solid var(--color-border,#e2e5ea);
+                    font-size:.875rem; font-weight:600; font-family:inherit;
+                    color:var(--color-text-muted,#64748b);
+                    transition:background .18s, border-color .18s;
+                " onmouseover="this.style.background='var(--color-primary-light,#e8edf4)';this.style.borderColor='var(--color-primary,#1e3a5f)';"
+                   onmouseout="this.style.background='transparent';this.style.borderColor='var(--color-border,#e2e5ea)';"
+                >Batal</button>
+                <button type="button" id="modal-nav-confirm-btn" style="
+                    padding:.55rem 1.35rem; border-radius:8px; cursor:pointer;
+                    background:#3b82f6; border:1px solid #2563eb;
+                    font-size:.875rem; font-weight:600; font-family:inherit;
+                    color:#ffffff; display:inline-flex; align-items:center; gap:.4rem;
+                    transition:background .18s, box-shadow .18s;
+                    box-shadow:0 2px 8px rgba(59,130,246,.28);
+                " onmouseover="this.style.background='#2563eb';this.style.boxShadow='0 4px 14px rgba(59,130,246,.38)';"
+                   onmouseout="this.style.background='#3b82f6';this.style.boxShadow='0 2px 8px rgba(59,130,246,.28)';"
+                >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M5 12l5 5L20 7"/>
+                    </svg>
+                    Ya, Lanjutkan
+                </button>
+            </div>
+        </div>
     </div>
 
     <!-- Footer -->
@@ -1047,6 +1136,99 @@
             }, { passive: true });
         });
     </script>
+    <script>
+    // ── Modal Konfirmasi Navigasi ke Dashboard / Report ──────────────────────
+    (function () {
+        var modal     = document.getElementById('modal-nav-confirm');
+        var modalBox  = document.getElementById('modal-nav-confirm-box');
+        var titleEl   = document.getElementById('modal-nav-confirm-title');
+        var descEl    = document.getElementById('modal-nav-confirm-desc');
+        var cancelBtn = document.getElementById('modal-nav-cancel');
+        var confirmBtn = document.getElementById('modal-nav-confirm-btn');
+        var pendingHref = null;
+
+        if (!modal) return;
+
+        function openModal(href, title, desc) {
+            pendingHref = href;
+            if (titleEl) titleEl.textContent = title;
+            if (descEl)  descEl.textContent  = desc;
+
+            // Tampilkan overlay
+            modal.style.display = 'flex';
+            requestAnimationFrame(function () {
+                requestAnimationFrame(function () {
+                    modal.style.opacity = '1';
+                    if (modalBox) {
+                        modalBox.style.opacity   = '1';
+                        modalBox.style.transform = 'scale(1) translateY(0)';
+                    }
+                });
+            });
+            // Fokus ke tombol batal agar aksesibel
+            if (cancelBtn) setTimeout(function () { cancelBtn.focus(); }, 220);
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeModal() {
+            if (modal)    { modal.style.opacity = '0'; }
+            if (modalBox) { modalBox.style.opacity = '0'; modalBox.style.transform = 'scale(0.93) translateY(12px)'; }
+            setTimeout(function () {
+                if (modal) modal.style.display = 'none';
+                document.body.style.overflow = '';
+            }, 230);
+            pendingHref = null;
+        }
+
+        // Intercept klik pada link dengan data-confirm-nav
+        document.querySelectorAll('a[data-confirm-nav]').forEach(function (link) {
+            link.addEventListener('click', function (e) {
+                // Abaikan jika sudah di halaman yg sama (link aktif)
+                if (link.classList.contains('sidebar-link-active')) return;
+
+                e.preventDefault();
+                e.stopPropagation(); // cegah page-leaving transition global
+
+                var href  = link.getAttribute('href');
+                var title = link.getAttribute('data-confirm-title') || 'Pindah halaman?';
+                var desc  = link.getAttribute('data-confirm-desc')  || 'Anda akan meninggalkan halaman ini.';
+                openModal(href, title, desc);
+            });
+        });
+
+        // Tombol Batal
+        if (cancelBtn) {
+            cancelBtn.addEventListener('click', closeModal);
+        }
+
+        // Tombol Ya, Lanjutkan — navigasi sebenarnya
+        if (confirmBtn) {
+            confirmBtn.addEventListener('click', function () {
+                if (!pendingHref) return;
+                // Jalankan page-leaving animation lalu navigasi
+                document.body.classList.add('page-leaving');
+                var target = pendingHref;
+                pendingHref = null;
+                if (modal) { modal.style.opacity = '0'; modal.style.display = 'none'; }
+                document.body.style.overflow = '';
+                setTimeout(function () { location.href = target; }, 180);
+            });
+        }
+
+        // Klik overlay = tutup
+        modal.addEventListener('click', function (e) {
+            if (e.target === modal) closeModal();
+        });
+
+        // Escape = tutup
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape' && modal && modal.style.display === 'flex') {
+                closeModal();
+            }
+        });
+    })();
+    </script>
+
     {{-- ── Script dari child views (modal, file upload, flatpickr, dll.) ── --}}
     @stack('scripts')
 </body>

@@ -85,9 +85,17 @@
                                 $kodeListSK[$kp] = true;
                             }
                         }
-                        ksort($kodeListSK);
+                        // Urutkan berdasarkan urutan prioritas kode klasifikasi
+                        $kodePriorityOrder = ['PR','KP','OT','KU','HK','UM','PL','UP','HM','PW','LT','DL','DT','KI'];
+                        $kodeListSKSorted = [];
+                        foreach ($kodePriorityOrder as $pk) {
+                            if (isset($kodeListSK[$pk])) $kodeListSKSorted[$pk] = true;
+                        }
+                        foreach ($kodeListSK as $kk => $_) {
+                            if (!isset($kodeListSKSorted[$kk])) $kodeListSKSorted[$kk] = true;
+                        }
                     @endphp
-                    @foreach($kodeListSK as $kd => $_)
+                    @foreach($kodeListSKSorted as $kd => $_)
                     <option value="{{ $kd }}">{{ $kd }}</option>
                     @endforeach
                 </select>
