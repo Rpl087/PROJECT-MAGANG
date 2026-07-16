@@ -144,7 +144,7 @@
                             $d = $item['data'];
                             $tanggal     = $d[7]  ?? '-';
                             $kodeKlasRaw = trim($d[1] ?? '');
-                            $kodeKlas    = $kodeKlasRaw !== '' ? $kodeKlasRaw : '—';
+                            $kodeKlas    = (str_starts_with($kodeKlasRaw, '#') || $kodeKlasRaw === '') ? '—' : $kodeKlasRaw;
                             $kodePrefix  = preg_match('/^([A-Za-z]+)/', $kodeKlasRaw, $km) ? strtoupper($km[1]) : '';
                             $uraian      = $d[2]  ?? '-';
 
@@ -1292,10 +1292,8 @@ document.addEventListener('DOMContentLoaded', function () {
             document.getElementById('edit-sk-jumlah-lembar').value         = data.jumlah_lembar || '';
             document.getElementById('edit-sk-tingkat-perkembangan').value  = data.tingkat_perkembangan || '';
             document.getElementById('edit-sk-lokasi-simpan').value         = data.lokasi_simpan || '';
-            document.getElementById('edit-sk-retensi-aktif').value         = data.retensi_aktif || '';
-            document.getElementById('edit-sk-retensi-inaktif').value       = data.retensi_inaktif || '';
-            document.getElementById('edit-sk-retensi-keterangan').value    = data.retensi_keterangan || '';
-            // Field readonly auto dari KODE_MAP_SK berdasarkan kode klasifikasi
+            // Field auto-fill dari KODE_MAP_SK berdasarkan kode klasifikasi;
+            // jika kode tidak dikenali, fallback ke nilai dari server
             var kodeForMapSK = (data.kode_klasifikasi || '').replace(/[^A-Za-z]/g,'').toUpperCase().slice(0,2);
             var mapDataSK    = window.KODE_MAP_SK && window.KODE_MAP_SK[kodeForMapSK] ? window.KODE_MAP_SK[kodeForMapSK] : null;
             document.getElementById('edit-sk-retensi-aktif').value       = mapDataSK ? mapDataSK[0] : (data.retensi_aktif       || '');

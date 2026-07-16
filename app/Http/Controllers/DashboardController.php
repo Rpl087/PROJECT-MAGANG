@@ -39,8 +39,8 @@ class DashboardController extends Controller
                     $smResponse = $service->spreadsheets_values->get($spreadsheetId, 'dbSM!A:R');
                     $smRows     = $smResponse->getValues() ?? [];
 
-                    // Baca sheet SURAT KELUAR
-                    $skResponse = $service->spreadsheets_values->get($spreadsheetId, 'SURAT KELUAR!A:Q');
+                    // Baca sheet dbSK (Surat Keluar)
+                    $skResponse = $service->spreadsheets_values->get($spreadsheetId, 'dbSK!A:R');
                     $skRows     = $skResponse->getValues() ?? [];
 
                     return [$smRows, $skRows];
@@ -59,9 +59,9 @@ class DashboardController extends Controller
             $smData = $this->processRows($smRows, dateColIndex: 8, klasifikasiColIndex: 1);
 
             // ── Proses Surat Keluar ────────────────────────────────────────
-            // B(1)=Kode Klasifikasi, H(7)=Tanggal Surat — filter baris tanpa tanggal
-            $skRowsFiltered = array_filter($skRows, fn($r) => !empty(trim($r[7] ?? '')));
-            $skData = $this->processRows(array_values($skRowsFiltered), dateColIndex: 7, klasifikasiColIndex: 1);
+            // B(1)=Kode Klasifikasi, J(9)=Tanggal Surat — filter baris tanpa tanggal (dbSK menggunakan indeks 9)
+            $skRowsFiltered = array_filter($skRows, fn($r) => !empty(trim($r[9] ?? '')));
+            $skData = $this->processRows(array_values($skRowsFiltered), dateColIndex: 9, klasifikasiColIndex: 1);
 
             // ── Rekap Bulanan (12 bulan dalam tahun berjalan) ──────────────
             $bulanNames = [
@@ -160,8 +160,8 @@ class DashboardController extends Controller
                     $smResponse = $service->spreadsheets_values->get($spreadsheetId, 'dbSM!A:R');
                     $smRows     = $smResponse->getValues() ?? [];
 
-                    // Baca sheet SURAT KELUAR
-                    $skResponse = $service->spreadsheets_values->get($spreadsheetId, 'SURAT KELUAR!A:Q');
+                    // Baca sheet dbSK (Surat Keluar)
+                    $skResponse = $service->spreadsheets_values->get($spreadsheetId, 'dbSK!A:R');
                     $skRows     = $skResponse->getValues() ?? [];
 
                     return [$smRows, $skRows];
@@ -175,9 +175,9 @@ class DashboardController extends Controller
             // ── Proses Surat Masuk — I(8)=Tanggal ──────────────────────────
             $smData = $this->processRows($smRows, dateColIndex: 8, klasifikasiColIndex: 1);
 
-            // ── Proses Surat Keluar — H(7)=Tanggal ────────────────────────
-            $skRowsFiltered = array_filter($skRows, fn($r) => !empty(trim($r[7] ?? '')));
-            $skData = $this->processRows(array_values($skRowsFiltered), dateColIndex: 7, klasifikasiColIndex: 1);
+            // ── Proses Surat Keluar — J(9)=Tanggal (dbSK menggunakan indeks 9)
+            $skRowsFiltered = array_filter($skRows, fn($r) => !empty(trim($r[9] ?? '')));
+            $skData = $this->processRows(array_values($skRowsFiltered), dateColIndex: 9, klasifikasiColIndex: 1);
 
             $bulanNames = [
                 1  => 'Januari',  2  => 'Februari', 3  => 'Maret',

@@ -101,8 +101,42 @@ class ArsipController extends Controller
                     SheetsCache::TTL_TABLE,
                     function () {
                         [$service, $spreadsheetId] = $this->getSheetService();
-                        $response = $service->spreadsheets_values->get($spreadsheetId, 'SURAT MASUK!A:Q');
-                        return $response->getValues() ?? [];
+                        $response = $service->spreadsheets_values->get($spreadsheetId, 'dbSM!A:R');
+                        $dbRows = $response->getValues() ?? [];
+
+                        $mappedRows = [];
+                        if (!empty($dbRows)) {
+                            // Header row
+                            $mappedRows[] = $dbRows[0];
+                            foreach ($dbRows as $i => $row) {
+                                if ($i === 0) continue;
+                                $mappedRow = [];
+                                $mappedRow[0]  = $row[0]  ?? ''; // A: Timestamp (NO)
+                                
+                                // Gabungkan Kode Klasifikasi & Kode Surat (misal: "KP" & "04.01" -> "KP 04.01")
+                                $kodeKlas = trim($row[1] ?? '');
+                                $kodeSurat = trim($row[2] ?? '');
+                                $mappedRow[1]  = ($kodeKlas !== '' && $kodeSurat !== '') ? "{$kodeKlas} {$kodeSurat}" : ($kodeKlas ?: $kodeSurat); // B: Kode Klasifikasi
+                                
+                                $mappedRow[2]  = $row[3]  ?? ''; // C: Uraian Berkas
+                                $mappedRow[3]  = $row[4]  ?? ''; // D: Kurun Waktu
+                                $mappedRow[4]  = $row[5]  ?? ''; // E: Jumlah Folder
+                                $mappedRow[5]  = $row[6]  ?? ''; // F: Nomor Item
+                                $mappedRow[6]  = $row[7]  ?? ''; // G: Uraian Arsip
+                                $mappedRow[7]  = $row[8]  ?? ''; // H: Tanggal Surat
+                                $mappedRow[8]  = $row[9]  ?? ''; // I: Jumlah Lembar
+                                $mappedRow[9]  = $row[10] ?? ''; // J: Tingkat Perkembangan
+                                $mappedRow[10] = $row[11] ?? ''; // K: Lokasi Simpan
+                                $mappedRow[11] = $row[12] ?? ''; // L: Klasifikasi Keamanan
+                                $mappedRow[12] = $row[13] ?? ''; // M: Tingkat Akses
+                                $mappedRow[13] = $row[14] ?? ''; // N: Retensi Aktif
+                                $mappedRow[14] = $row[15] ?? ''; // O: Retensi Inaktif
+                                $mappedRow[15] = $row[16] ?? ''; // P: Retensi Keterangan
+                                $mappedRow[16] = $row[17] ?? ''; // Q: Link Folder (PDF filename)
+                                $mappedRows[] = $mappedRow;
+                            }
+                        }
+                        return $mappedRows;
                     }
                 );
 
@@ -143,8 +177,38 @@ class ArsipController extends Controller
                 SheetsCache::TTL_TABLE,
                 function () {
                     [$service, $spreadsheetId] = $this->getSheetService();
-                    $response = $service->spreadsheets_values->get($spreadsheetId, 'SURAT MASUK!A:Q');
-                    return $response->getValues() ?? [];
+                    $response = $service->spreadsheets_values->get($spreadsheetId, 'dbSM!A:R');
+                    $dbRows = $response->getValues() ?? [];
+
+                    $mappedRows = [];
+                    if (!empty($dbRows)) {
+                        $mappedRows[] = $dbRows[0];
+                        foreach ($dbRows as $i => $row) {
+                            if ($i === 0) continue;
+                            $mappedRow = [];
+                            $mappedRow[0]  = $row[0]  ?? '';
+                            $kodeKlas = trim($row[1] ?? '');
+                            $kodeSurat = trim($row[2] ?? '');
+                            $mappedRow[1]  = ($kodeKlas !== '' && $kodeSurat !== '') ? "{$kodeKlas} {$kodeSurat}" : ($kodeKlas ?: $kodeSurat);
+                            $mappedRow[2]  = $row[3]  ?? '';
+                            $mappedRow[3]  = $row[4]  ?? '';
+                            $mappedRow[4]  = $row[5]  ?? '';
+                            $mappedRow[5]  = $row[6]  ?? '';
+                            $mappedRow[6]  = $row[7]  ?? '';
+                            $mappedRow[7]  = $row[8]  ?? '';
+                            $mappedRow[8]  = $row[9]  ?? '';
+                            $mappedRow[9]  = $row[10] ?? '';
+                            $mappedRow[10] = $row[11] ?? '';
+                            $mappedRow[11] = $row[12] ?? '';
+                            $mappedRow[12] = $row[13] ?? '';
+                            $mappedRow[13] = $row[14] ?? '';
+                            $mappedRow[14] = $row[15] ?? '';
+                            $mappedRow[15] = $row[16] ?? '';
+                            $mappedRow[16] = $row[17] ?? '';
+                            $mappedRows[] = $mappedRow;
+                        }
+                    }
+                    return $mappedRows;
                 }
             );
 
@@ -411,55 +475,36 @@ class ArsipController extends Controller
         try {
             [$service, $spreadsheetId] = $this->getSheetService();
 
-            // Baca dari sheet SURAT MASUK (tampilan) — struktur A–Q sesuai index()
-            $response = $service->spreadsheets_values->get($spreadsheetId, 'SURAT MASUK!A:Q');
-            $values   = $response->getValues() ?? [];
-            $row      = $values[$rowIndex] ?? null;
+            $dbsmResponse = $service->spreadsheets_values->get($spreadsheetId, 'dbSM!A:R');
+            $dbsmValues   = $dbsmResponse->getValues() ?? [];
+            $dbsmRow      = $dbsmValues[$rowIndex] ?? null;
 
-            if ($row === null) {
+            if ($dbsmRow === null) {
                 return response()->json(['error' => 'Data tidak ditemukan.'], 404);
             }
 
-            // Juga baca dari dbSM untuk mendapatkan field yang tidak ada di SURAT MASUK
-            // (Kode Surat ada di dbSM kolom C / index 2)
-            $dbsmResponse = $service->spreadsheets_values->get($spreadsheetId, 'dbSM!A:R');
-            $dbsmValues   = $dbsmResponse->getValues() ?? [];
-
-            // Cari baris dbSM yang cocok berdasarkan PDF filename (kolom Q index 16 di SURAT MASUK = kolom R index 17 di dbSM)
-            $pdfFilename = trim($row[16] ?? '');
-            $dbsmRow     = null;
-            $dbsmIndex   = null;
-            foreach ($dbsmValues as $i => $dbRow) {
-                if ($i === 0) continue;
-                if (trim($dbRow[17] ?? '') === $pdfFilename && $pdfFilename !== '') {
-                    $dbsmRow   = $dbRow;
-                    $dbsmIndex = $i;
-                    break;
-                }
-            }
+            $pdfFilename = trim($dbsmRow[17] ?? '');
 
             return response()->json([
                 'rowIndex'               => $rowIndex,
-                'dbsmIndex'              => $dbsmIndex,
-                // Field dari SURAT MASUK (display sheet)
-                'kode_klasifikasi'       => $row[1]  ?? '',   // B
-                'uraian_informasi_berkas'=> $row[2]  ?? '',   // C
-                'kurun_waktu'            => $row[3]  ?? '',   // D
-                'jumlah_folder'          => $row[4]  ?? '',   // E
-                'nomor_item_arsip'       => $row[5]  ?? '',   // F
-                'uraian_informasi_arsip' => $row[6]  ?? '',   // G
-                'tanggal_surat'          => $row[7]  ?? '',   // H
-                'jumlah_lembar'          => $row[8]  ?? '',   // I
-                'tingkat_perkembangan'   => $row[9]  ?? '',   // J
-                'lokasi_simpan'          => $row[10] ?? '',   // K
-                'klasifikasi_keamanan'   => $row[11] ?? '',   // L
-                'tingkat_akses'          => $row[12] ?? '',   // M
-                'retensi_aktif'          => $row[13] ?? '',   // N
-                'retensi_inaktif'        => $row[14] ?? '',   // O
-                'retensi_keterangan'     => $row[15] ?? '',   // P
-                'pdf_filename'           => $pdfFilename,     // Q (link)
-                // Dari dbSM (jika ditemukan): Kode Surat
-                'kode_surat'             => $dbsmRow[2] ?? '',
+                'dbsmIndex'              => $rowIndex,
+                'kode_klasifikasi'       => $dbsmRow[1]  ?? '',   // B
+                'uraian_informasi_berkas'=> $dbsmRow[3]  ?? '',   // D
+                'kurun_waktu'            => $dbsmRow[4]  ?? '',   // E
+                'jumlah_folder'          => $dbsmRow[5]  ?? '',   // F
+                'nomor_item_arsip'       => $dbsmRow[6]  ?? '',   // G
+                'uraian_informasi_arsip' => $dbsmRow[7]  ?? '',   // H
+                'tanggal_surat'          => $dbsmRow[8]  ?? '',   // I
+                'jumlah_lembar'          => $dbsmRow[9]  ?? '',   // J
+                'tingkat_perkembangan'   => $dbsmRow[10] ?? '',   // K
+                'lokasi_simpan'          => $dbsmRow[11] ?? '',   // L
+                'klasifikasi_keamanan'   => $dbsmRow[12] ?? '',   // M
+                'tingkat_akses'          => $dbsmRow[13] ?? '',   // N
+                'retensi_aktif'          => $dbsmRow[14] ?? '',   // O
+                'retensi_inaktif'        => $dbsmRow[15] ?? '',   // P
+                'retensi_keterangan'     => $dbsmRow[16] ?? '',   // Q
+                'pdf_filename'           => $pdfFilename,         // R
+                'kode_surat'             => $dbsmRow[2]  ?? '',   // C
             ]);
         } catch (\Exception $e) {
             return response()->json(['error' => 'Gagal memuat data: ' . $e->getMessage()], 500);
