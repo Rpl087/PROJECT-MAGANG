@@ -24,4 +24,16 @@ return [
     */
     'sheet_id' => env('GOOGLE_SHEET_ID'),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Google Drive Folder ID
+    |--------------------------------------------------------------------------
+    |
+    | ID folder Google Drive tujuan upload file PDF arsip.
+    | Jika kosong, file akan diupload ke root Drive service account.
+    | Set GOOGLE_DRIVE_FOLDER_ID di .env untuk mengisi nilai ini.
+    |
+    */
+    'drive_folder_id' => env('GOOGLE_DRIVE_FOLDER_ID'),
+
 ];

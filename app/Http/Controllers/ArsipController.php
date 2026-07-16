@@ -3,10 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Services\SheetsCache;
+use App\Services\GoogleDriveService;
 use Illuminate\Http\Request;
 use Google\Client;
 use Google\Service\Sheets;
-use Illuminate\Support\Facades\Storage;
 
 class ArsipController extends Controller
 {
@@ -186,11 +186,11 @@ class ArsipController extends Controller
                     ->with('error', 'Data tidak ditemukan di sheet dbSM.');
             }
 
-            // PDF link ada di kolom R (index 17) di sheet dbSM
+            // PDF link ada di kolom R (index 17) di sheet dbSM — digunakan sebagai unique identifier
             $pdfLink      = trim($targetRow[17] ?? '');
-            $dbsmRowIndex = $rowIndex; // default: pakai langsung
+            $dbsmRowIndex = null; // harus ditemukan lewat lookup PDF link
 
-            // Konfirmasi dengan lookup berdasarkan PDF link (jika ada)
+            // Cari baris di dbSM yang cocok berdasarkan PDF link
             if (!empty($pdfLink)) {
                 foreach ($dbsmRows as $i => $row) {
                     if ($i === 0) continue; // skip header
@@ -199,6 +199,12 @@ class ArsipController extends Controller
                         break;
                     }
                 }
+            }
+
+            // Batalkan jika baris tidak dapat diidentifikasi — lebih aman daripada hapus baris salah
+            if ($dbsmRowIndex === null) {
+                return redirect()->route('arsip.index')
+                    ->with('error', 'Gagal menghapus: data tidak dapat diidentifikasi secara unik di dbSM (PDF link tidak ditemukan atau kosong).');
             }
 
             // ── Hapus baris dari dbSM ─────────────────────────────────────────────
@@ -222,6 +228,15 @@ class ArsipController extends Controller
 
             $body = new Sheets\BatchUpdateSpreadsheetRequest(['requests' => $requests]);
             $service->spreadsheets->batchUpdate($spreadsheetId, $body);
+
+            // Hapus file lokal dari uploads/ jika PDF link adalah nama file (bukan URL Google Drive)
+            // Jika berupa URL Drive (https://...), file backup lokal tetap dipertahankan
+            if ($pdfLink !== '' && !str_starts_with($pdfLink, 'http')) {
+                $localFilePath = base_path('uploads/' . $pdfLink);
+                if (file_exists($localFilePath)) {
+                    @unlink($localFilePath);
+                }
+            }
 
             // Invalidasi cache agar halaman menampilkan data terbaru
             SheetsCache::forgetSuratMasuk();
@@ -262,11 +277,11 @@ class ArsipController extends Controller
             'jumlah_lembar'           => 'required|string|max:255',
             'tingkat_perkembangan'    => 'required|string|max:255',
             'lokasi_simpan'           => 'required|string|max:255',
-            'klasifikasi_keamanan'    => 'required|string|max:255',
-            'tingkat_akses'           => 'required|string|max:255',
-            'retensi_aktif'           => 'required|string|max:255',
-            'retensi_inaktif'         => 'required|string|max:255',
-            'retensi_keterangan'      => 'required|string|max:1000',
+            'klasifikasi_keamanan'    => 'nullable|string|max:255',  // diisi otomatis oleh JS/kodeMap
+            'tingkat_akses'           => 'nullable|string|max:255',  // diisi otomatis oleh JS/kodeMap
+            'retensi_aktif'           => 'nullable|string|max:255',  // diisi otomatis oleh JS/kodeMap
+            'retensi_inaktif'         => 'nullable|string|max:255',  // diisi otomatis oleh JS/kodeMap
+            'retensi_keterangan'      => 'nullable|string|max:1000', // diisi otomatis oleh JS/kodeMap
             'surat_masuk'             => 'required|file|mimes:pdf|max:10240',
         ], [
             'kode_klasifikasi.required'        => 'Kode Klasifikasi wajib diisi.',
@@ -285,13 +300,39 @@ class ArsipController extends Controller
             'jumlah_lembar.required'           => 'Jumlah Lembar wajib diisi.',
             'tingkat_perkembangan.required'    => 'Tingkat Perkembangan wajib diisi.',
             'lokasi_simpan.required'           => 'Lokasi Simpan wajib diisi.',
-            'klasifikasi_keamanan.required'    => 'Klasifikasi Keamanan wajib dipilih.',
-            'tingkat_akses.required'           => 'Tingkat Akses wajib dipilih.',
-            'retensi_aktif.required'           => 'Retensi Aktif wajib diisi.',
-            'retensi_inaktif.required'         => 'Retensi Inaktif wajib diisi.',
-            'retensi_keterangan.required'      => 'Retensi Keterangan wajib diisi.',
+            // klasifikasi_keamanan, tingkat_akses, retensi_* sekarang nullable (diisi server-side)
             'surat_masuk.required'             => 'File Surat Masuk (PDF) wajib diunggah.',
         ]);
+
+        // ── Server-side kodeMap fallback (konsisten dengan SuratKeluarController) ──────────────
+        // Jika field auto-filled kosong (JS gagal atau kode tidak dikenali), isi dari kodeMap.
+        $kodeMap = [
+            //  Kode    [Aktif,       Inaktif,      Keterangan,  Keamanan,  Akses      ]
+            'PR' => ['2 Tahun',  '3 Tahun',  'Musnah',    'Biasa',   'Terbuka' ],
+            'KP' => ['5 Tahun',  '10 Tahun', 'Permanen',  'Biasa',   'Terbatas'],
+            'OT' => ['2 Tahun',  '3 Tahun',  'Musnah',    'Biasa',   'Terbuka' ],
+            'KU' => ['5 Tahun',  '10 Tahun', 'Permanen',  'Biasa',   'Terbatas'],
+            'HK' => ['5 Tahun',  '10 Tahun', 'Permanen',  'Biasa',   'Terbatas'],
+            'UM' => ['2 Tahun',  '3 Tahun',  'Musnah',    'Biasa',   'Terbuka' ],
+            'PL' => ['5 Tahun',  '10 Tahun', 'Musnah',    'Biasa',   'Terbatas'],
+            'UP' => ['5 Tahun',  '10 Tahun', 'Permanen',  'Biasa',   'Terbatas'],
+            'HM' => ['5 Tahun',  '10 Tahun', 'Permanen',  'Biasa',   'Terbatas'],
+            'PW' => ['5 Tahun',  '10 Tahun', 'Musnah',    'Biasa',   'Terbatas'],
+            'LT' => ['5 Tahun',  '10 Tahun', 'Musnah',    'Biasa',   'Terbatas'],
+            'DL' => ['2 Tahun',  '3 Tahun',  'Musnah',    'Biasa',   'Terbuka' ],
+            'DT' => ['5 Tahun',  '10 Tahun', 'Permanen',  'Biasa',   'Terbatas'],
+            'KI' => ['5 Tahun',  '10 Tahun', 'Permanen',  'Biasa',   'Terbatas'],
+        ];
+        $kodePrefix = strtoupper(preg_replace('/[^A-Za-z]/', '', $validated['kode_klasifikasi']));
+        $kodePrefix = substr($kodePrefix, 0, 2);
+        if (isset($kodeMap[$kodePrefix])) {
+            $mapRow = $kodeMap[$kodePrefix];
+            if (empty($validated['retensi_aktif']))        $validated['retensi_aktif']        = $mapRow[0];
+            if (empty($validated['retensi_inaktif']))      $validated['retensi_inaktif']      = $mapRow[1];
+            if (empty($validated['retensi_keterangan']))   $validated['retensi_keterangan']   = $mapRow[2];
+            if (empty($validated['klasifikasi_keamanan'])) $validated['klasifikasi_keamanan'] = $mapRow[3];
+            if (empty($validated['tingkat_akses']))        $validated['tingkat_akses']        = $mapRow[4];
+        }
 
         try {
             [$service, $spreadsheetId] = $this->getSheetService();
@@ -299,22 +340,11 @@ class ArsipController extends Controller
             // Target: sheet dbSM (sumber data asli)
             $sheetRange = 'dbSM!A:R';
 
-            // ── Upload file PDF dengan nama pendek berisi kode klasifikasi ────
+            // ── Upload file PDF ke Google Drive & Backup Lokal ke uploads/ ────
             $file = $request->file('surat_masuk');
-
-            // Format: {KodeKlas}_{Ymd_His}_{NamaFileAsli}.pdf
-            $kodeKlasSlug  = preg_replace('/[^a-zA-Z0-9\-]/', '_', $validated['kode_klasifikasi']);
-            $originalName  = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
-            $originalSlug  = preg_replace('/[^a-zA-Z0-9\-]/', '_', $originalName);
-            $timestamp     = now()->format('Ymd_His');
-            $filename = strtoupper($kodeKlasSlug) . '_' . $timestamp . '_' . $originalSlug . '.pdf';
-
-            $storedFilePath = $file->storeAs('arsip/surat-masuk', $filename, 'public');
-            if ($storedFilePath === false) {
-                throw new \RuntimeException('File PDF gagal disimpan ke storage arsip.');
-            }
-            // Simpan hanya filename — URL di-generate dinamis saat tampil
-            $linkFolder = $filename;
+            $uploadResult = GoogleDriveService::uploadAndBackup($file, $validated['kode_klasifikasi']);
+            $linkFolder = $uploadResult['driveLink']; // Gunakan link Google Drive untuk disimpan ke spreadsheet
+            $storedFilePath = $uploadResult['filename'];
 
             // Timestamp otomatis
             $timestamp = now()->format('Y-m-d H:i:s');
@@ -357,8 +387,12 @@ class ArsipController extends Controller
             return redirect()->route('arsip.index')
                 ->with('success', 'Data surat masuk berhasil diarsipkan ke Spreadsheet!');
         } catch (\Exception $e) {
+            // Hapus file orphan yang sudah ter-upload ke uploads/ agar tidak menumpuk
             if ($storedFilePath !== null) {
-                Storage::disk('public')->delete($storedFilePath);
+                $orphanPath = base_path('uploads/' . $storedFilePath);
+                if (file_exists($orphanPath)) {
+                    @unlink($orphanPath);
+                }
             }
 
             return redirect()->route('arsip.index')
@@ -470,10 +504,11 @@ class ArsipController extends Controller
             // Baris di Google Sheets dimulai dari 1 (row 1 = header, row 2 = data ke-1)
             // dbsmIndex adalah 0-based array index, jadi row number = dbsmIndex + 1
             $sheetRowNumber = $dbsmIndex + 1;
-            $range = "dbSM!A{$sheetRowNumber}:R{$sheetRowNumber}";
+            // Mulai dari kolom B agar timestamp di kolom A TIDAK tertimpa
+            $range = "dbSM!B{$sheetRowNumber}:R{$sheetRowNumber}";
 
             $values = [[
-                '', // A: Timestamp — tidak diubah (kosongkan agar tidak overwrite)
+                // Kolom A (Timestamp) dilewati — range dimulai dari B
                 $validated['kode_klasifikasi'],            // B
                 $validated['kode_surat'],                  // C
                 $validated['uraian_informasi_berkas'],     // D

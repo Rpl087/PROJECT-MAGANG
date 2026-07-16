@@ -356,14 +356,20 @@
     </main>
 
     <script>
+        // Pencarian real-time dengan debounce (mencegah lag pada data besar)
         const searchInput = document.getElementById('searchInput');
         const table       = document.getElementById('arsipTable');
         if (searchInput && table) {
+            var searchTimer;
             searchInput.addEventListener('input', function () {
-                const keyword = this.value.toLowerCase().trim();
-                table.querySelectorAll('tbody tr').forEach(function (row) {
-                    row.style.display = row.textContent.toLowerCase().includes(keyword) ? '' : 'none';
-                });
+                clearTimeout(searchTimer);
+                var self = this;
+                searchTimer = setTimeout(function () {
+                    const keyword = self.value.toLowerCase().trim();
+                    table.querySelectorAll('tbody tr').forEach(function (row) {
+                        row.style.display = row.textContent.toLowerCase().includes(keyword) ? '' : 'none';
+                    });
+                }, 120);
             });
         }
 

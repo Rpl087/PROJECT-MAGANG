@@ -84,8 +84,12 @@ class LoginController extends Controller
                 'ip'       => $request->ip(),
             ]);
 
-            // Redirect all users to dashboard after login
-            return redirect()->intended(route('dashboard.index'));
+            // Redirect berdasarkan role: admin ke dashboard, internship ke arsip.index
+            // (dashboard dilindungi AdminOnly middleware — internship akan 403 jika diarahkan ke sana)
+            $redirectTo = Auth::user()->isAdmin()
+                ? route('dashboard.index')
+                : route('arsip.index');
+            return redirect()->intended($redirectTo);
         }
 
         // ── Login Gagal — tambah hit rate limiter & log ───────────────────────

@@ -21,14 +21,15 @@ class GuestNetwork
     public function handle(Request $request, Closure $next): Response
     {
         // ── [BYPASS] Sistem intranet dinonaktifkan sementara ─────────────────
-        // Set INTRANET_ENABLED=true di .env untuk mengaktifkan kembali
-        if (!env('INTRANET_ENABLED', false)) {
+        // Set INTRANET_ENABLED=true di .env (via config/network.php) untuk mengaktifkan kembali
+        if (!config('network.intranet_enabled', false)) {
             return $next($request);
         }
 
         $clientIp        = $request->ip();
-        $internalSubnet  = env('INTERNAL_NETWORK_SUBNET', '192.168.248.0/22');
-        $guestSubnet     = env('GUEST_NETWORK_SUBNET',    '192.168.252.0/22');
+        // Baca subnet dari config/network.php (aman saat config:cache — tidak pakai env() langsung)
+        $internalSubnet  = config('network.internal_subnet', '192.168.248.0/22');
+        $guestSubnet     = config('network.guest_subnet',    '192.168.252.0/22');
 
         // Izinkan jika dari jaringan tamu atau internal
         if ($this->ipInSubnet($clientIp, $guestSubnet) || $this->ipInSubnet($clientIp, $internalSubnet)) {

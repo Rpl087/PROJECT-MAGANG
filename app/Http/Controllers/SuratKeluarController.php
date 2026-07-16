@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Services\SheetsCache;
+use App\Services\GoogleDriveService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Google\Client;
@@ -211,10 +212,11 @@ class SuratKeluarController extends Controller
                 }
             }
 
-            // Fallback: jika PDF link kosong atau tidak ditemukan, gunakan rowIndex langsung
+            // Jika PDF link tidak ditemukan, batalkan — lebih aman dari hapus baris salah
             if ($dbskRowIndex === null) {
-                Log::warning('[SK destroy] Fallback: PDF link tidak cocok, gunakan rowIndex=' . $rowIndex . ' langsung ke dbSK.');
-                $dbskRowIndex = $rowIndex;
+                Log::warning('[SK destroy] Gagal: PDF link tidak ditemukan di dbSK, hapus dibatalkan.');
+                return redirect()->route('surat-keluar.index')
+                    ->with('error', 'Gagal menghapus: data tidak dapat diidentifikasi secara unik di dbSK (PDF link tidak ditemukan atau kosong).');
             }
 
             // ── Langkah 3: Hapus baris dari dbSK ──────────────────────────────────
@@ -239,6 +241,15 @@ class SuratKeluarController extends Controller
             $body = new Sheets\BatchUpdateSpreadsheetRequest(['requests' => $requests]);
             $service->spreadsheets->batchUpdate($spreadsheetId, $body);
 
+            // Hapus file lokal dari uploads/ jika PDF link adalah nama file (bukan URL Google Drive)
+            // Jika berupa URL Drive (https://...), file backup lokal tetap dipertahankan
+            if ($pdfLink !== '' && !str_starts_with($pdfLink, 'http')) {
+                $localFilePath = base_path('uploads/' . $pdfLink);
+                if (file_exists($localFilePath)) {
+                    @unlink($localFilePath);
+                }
+            }
+
             // Invalidasi cache agar halaman menampilkan data terbaru
             SheetsCache::forgetSuratKeluar();
 
@@ -255,6 +266,7 @@ class SuratKeluarController extends Controller
      */
     public function store(Request $request)
     {
+        $storedFilePath = null; // Inisialisasi agar bisa diakses di catch block untuk cleanup
         $validated = $request->validate([
             "kode_klasifikasi"        => "required|string|max:255",
             "kode_surat"              => "required|string|max:255",
@@ -268,11 +280,11 @@ class SuratKeluarController extends Controller
             "jumlah_lembar"           => "required|string|max:255",
             "tingkat_perkembangan"    => "required|string|max:255",
             "lokasi_simpan"           => "required|string|max:255",
-            "klasifikasi_keamanan"    => "required|string|max:255",
-            "tingkat_akses"           => "required|string|max:255",
-            "retensi_aktif"           => "required|string|max:255",
-            "retensi_inaktif"         => "required|string|max:255",
-            "retensi_keterangan"      => "required|string|max:1000",
+            "klasifikasi_keamanan"    => "nullable|string|max:255",
+            "tingkat_akses"           => "nullable|string|max:255",
+            "retensi_aktif"           => "nullable|string|max:255",
+            "retensi_inaktif"         => "nullable|string|max:255",
+            "retensi_keterangan"      => "nullable|string|max:1000",
         ], [
             "kode_klasifikasi.required"        => "Kode Klasifikasi wajib diisi.",
             "kode_surat.required"              => "Kode Surat wajib diisi.",
@@ -291,30 +303,48 @@ class SuratKeluarController extends Controller
             "jumlah_lembar.required"           => "Jumlah Lembar wajib diisi.",
             "tingkat_perkembangan.required"    => "Tingkat Perkembangan wajib diisi.",
             "lokasi_simpan.required"           => "Lokasi Simpan wajib diisi.",
-            "klasifikasi_keamanan.required"    => "Klasifikasi Keamanan wajib dipilih.",
-            "tingkat_akses.required"           => "Tingkat Akses wajib dipilih.",
-            "retensi_aktif.required"           => "Retensi Aktif wajib diisi.",
-            "retensi_inaktif.required"         => "Retensi Inaktif wajib diisi.",
-            "retensi_keterangan.required"      => "Retensi Keterangan wajib diisi.",
         ]);
+
+        // ── Server-side KODE_MAP fallback ─────────────────────────────────────
+        // Jika field hidden kosong (JS gagal atau kode tidak dikenali),
+        // isi otomatis dari KODE_MAP PHP (sama persis dengan KODE_MAP_SK di JS).
+        $kodeMap = [
+            //  Kode    [Aktif,       Inaktif,      Keterangan,  Keamanan,  Akses      ]
+            'PR' => ['2 Tahun',  '3 Tahun',  'Musnah',    'Biasa',   'Terbuka' ],
+            'KP' => ['5 Tahun',  '10 Tahun', 'Permanen',  'Biasa',   'Terbatas'],
+            'OT' => ['2 Tahun',  '3 Tahun',  'Musnah',    'Biasa',   'Terbuka' ],
+            'KU' => ['5 Tahun',  '10 Tahun', 'Permanen',  'Biasa',   'Terbatas'],
+            'HK' => ['5 Tahun',  '10 Tahun', 'Permanen',  'Biasa',   'Terbatas'],
+            'UM' => ['2 Tahun',  '3 Tahun',  'Musnah',    'Biasa',   'Terbuka' ],
+            'PL' => ['5 Tahun',  '10 Tahun', 'Musnah',    'Biasa',   'Terbatas'],
+            'UP' => ['5 Tahun',  '10 Tahun', 'Permanen',  'Biasa',   'Terbatas'],
+            'HM' => ['5 Tahun',  '10 Tahun', 'Permanen',  'Biasa',   'Terbatas'],
+            'PW' => ['5 Tahun',  '10 Tahun', 'Musnah',    'Biasa',   'Terbatas'],
+            'LT' => ['5 Tahun',  '10 Tahun', 'Musnah',    'Biasa',   'Terbatas'],
+            'DL' => ['2 Tahun',  '3 Tahun',  'Musnah',    'Biasa',   'Terbuka' ],
+            'DT' => ['5 Tahun',  '10 Tahun', 'Permanen',  'Biasa',   'Terbatas'],
+            'KI' => ['5 Tahun',  '10 Tahun', 'Permanen',  'Biasa',   'Terbatas'],
+        ];
+        $kodePrefix = strtoupper(preg_replace('/[^A-Za-z]/', '', $validated['kode_klasifikasi']));
+        $kodePrefix = substr($kodePrefix, 0, 2);
+        if (isset($kodeMap[$kodePrefix])) {
+            $mapRow = $kodeMap[$kodePrefix];
+            if (empty($validated['retensi_aktif']))        $validated['retensi_aktif']        = $mapRow[0];
+            if (empty($validated['retensi_inaktif']))      $validated['retensi_inaktif']      = $mapRow[1];
+            if (empty($validated['retensi_keterangan']))   $validated['retensi_keterangan']   = $mapRow[2];
+            if (empty($validated['klasifikasi_keamanan'])) $validated['klasifikasi_keamanan'] = $mapRow[3];
+            if (empty($validated['tingkat_akses']))        $validated['tingkat_akses']        = $mapRow[4];
+        }
 
         try {
             [$service, $spreadsheetId] = $this->getSheetService();
             $range = "dbSK!A:R";
 
-            // Simpan file PDF surat keluar dengan nama pendek berisi kode klasifikasi
+            // ── Upload file PDF ke Google Drive & Backup Lokal ke uploads/ ────
             $file = $request->file("surat_keluar");
-
-            // Format: {KodeKlas}_{Ymd_His}_{NamaFileAsli}.pdf
-            $kodeKlasSlug  = preg_replace('/[^a-zA-Z0-9\-]/', '_', $validated["kode_klasifikasi"]);
-            $originalName  = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
-            $originalSlug  = preg_replace('/[^a-zA-Z0-9\-]/', '_', $originalName);
-            $pdfTimestamp  = now()->format("Ymd_His");
-            $filename = strtoupper($kodeKlasSlug) . '_' . $pdfTimestamp . '_' . $originalSlug . '.pdf';
-
-            $file->storeAs("arsip/surat-keluar", $filename, "public");
-            // Simpan hanya filename — URL di-generate dinamis saat tampil
-            $filePath = $filename;
+            $uploadResult = GoogleDriveService::uploadAndBackup($file, $validated["kode_klasifikasi"]);
+            $filePath = $uploadResult["driveLink"]; // Gunakan link Google Drive untuk disimpan ke spreadsheet
+            $storedFilePath = $uploadResult["filename"];
 
             // Timestamp otomatis
             $timestamp = now()->format("Y-m-d H:i:s");
@@ -366,6 +396,13 @@ class SuratKeluarController extends Controller
             return redirect()->route('surat-keluar.index')
                 ->with('success', 'Data surat keluar berhasil diarsipkan ke Spreadsheet!');
         } catch (\Exception $e) {
+            // Hapus file orphan yang sudah ter-upload ke uploads/ agar tidak menumpuk
+            if ($storedFilePath !== null) {
+                $orphanPath = base_path('uploads/' . $storedFilePath);
+                if (file_exists($orphanPath)) {
+                    @unlink($orphanPath);
+                }
+            }
             return redirect()->route('surat-keluar.index')
                 ->with('error', 'Gagal menyimpan data: ' . $e->getMessage());
         }
@@ -468,15 +505,16 @@ class SuratKeluarController extends Controller
 
             $dbskIndex      = (int) $validated['dbsk_index'];
             $sheetRowNumber = $dbskIndex + 1;
-            $range = "dbSK!A{$sheetRowNumber}:R{$sheetRowNumber}";
+            // Mulai dari kolom B agar timestamp di kolom A TIDAK tertimpa
+            $range = "dbSK!B{$sheetRowNumber}:R{$sheetRowNumber}";
 
-            // Struktur dbSK: A=Timestamp|B=Kode Klas|C=Kode Surat|D=Uraian Berkas|
+            // Struktur dbSK: B=Kode Klas|C=Kode Surat|D=Uraian Berkas|
             //                E=Kurun Waktu|F=Jumlah Folder|G=Nomor Item|H=PDF|
             //                I=Uraian Arsip|J=Tanggal Surat|K=Jumlah Lembar|L=Tingkat Perkembangan|
             //                M=Lokasi Simpan|N=Klas Keamanan|O=Tingkat Akses|
             //                P=Retensi Aktif|Q=Retensi Inaktif|R=Retensi Ket
             $values = [[
-                '',                                        // A: Timestamp (tidak diubah)
+                // Kolom A (Timestamp) dilewati — range dimulai dari B
                 $validated['kode_klasifikasi'],            // B
                 $validated['kode_surat'],                  // C
                 $validated['uraian_informasi_berkas'],     // D

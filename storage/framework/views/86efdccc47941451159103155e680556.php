@@ -966,16 +966,23 @@ unset($__errorArgs, $__bag); ?>
     transition:all .2s;
 }
 .btn-hapus:hover { background:rgba(239,68,68,.2); }
+.btn-edit-sm {
+    display:inline-flex; align-items:center; gap:.3rem; padding:.3rem .65rem;
+    border-radius:.375rem; font-size:.75rem; font-weight:600; cursor:pointer;
+    background:rgba(59,130,246,.1); color:#60a5fa; border:1px solid rgba(59,130,246,.2);
+    transition:all .2s;
+}
+.btn-edit-sm:hover { background:rgba(59,130,246,.22); }
 
 /* ── Modal ────────────────────────────────────────────── */
 /* .modal-overlay: didefinisikan di app.css secara global */
-@keyframes fadeIn { from{opacity:0} to{opacity:1} }
 .modal-box {
     background:var(--color-surface, #1a2236); border:1px solid var(--color-border,#2a3347);
     border-radius:1rem; padding:2rem; max-width:420px; width:90%; text-align:center;
-    box-shadow:0 20px 60px rgba(0,0,0,.5); animation:slideUp .2s ease;
+    box-shadow:0 20px 60px rgba(0,0,0,.5);
+    /* Transisi dikelola oleh app.css .modal-overlay.is-open .modal-box */
 }
-@keyframes slideUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+
 .modal-icon {
     width:56px; height:56px; border-radius:50%; background:rgba(239,68,68,.12);
     display:flex; align-items:center; justify-content:center; margin:0 auto 1rem;
@@ -1047,15 +1054,27 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!modal) return;
         pendingForm = form;
         if (modalLabel) modalLabel.textContent = label;
-        modal.style.display    = 'flex';
+        modal.style.display = 'flex';
         document.body.style.overflow = 'hidden';
+        // Trigger smooth open
+        requestAnimationFrame(function () {
+            requestAnimationFrame(function () {
+                modal.classList.add('is-open');
+            });
+        });
     }
 
     function closeModal() {
         if (!modal) return;
-        modal.style.display = 'none';
+        modal.classList.remove('is-open');
         pendingForm = null;
-        document.body.style.overflow = '';
+        // Hide after transition ends
+        setTimeout(function () {
+            if (!modal.classList.contains('is-open')) {
+                modal.style.display = 'none';
+            }
+            document.body.style.overflow = '';
+        }, 240);
     }
 
     document.querySelectorAll('.btn-hapus').forEach(function (btn) {
@@ -1090,15 +1109,25 @@ document.addEventListener('DOMContentLoaded', function () {
     function showPreview(file) {
         fileName.textContent = file.name;
         fileSize.textContent = formatBytes(file.size);
-        placeholder.style.display = 'none';
-        preview.style.display     = 'flex';
+        placeholder.style.opacity = '0';
+        setTimeout(function() {
+            placeholder.style.display = 'none';
+            preview.style.display = 'flex';
+            preview.style.opacity = '0';
+            requestAnimationFrame(function() { preview.style.opacity = '1'; });
+        }, 180);
         zone.classList.add('file-upload-has-file');
         zone.classList.remove('file-upload-error');
     }
     function clearFile() {
-        input.value           = '';
-        preview.style.display = 'none';
-        placeholder.style.display = '';
+        input.value = '';
+        preview.style.opacity = '0';
+        setTimeout(function() {
+            preview.style.display = 'none';
+            placeholder.style.display = '';
+            placeholder.style.opacity = '0';
+            requestAnimationFrame(function() { placeholder.style.opacity = '1'; });
+        }, 180);
         zone.classList.remove('file-upload-has-file');
     }
     removeBtn.addEventListener('click', function (e) { e.preventDefault(); clearFile(); });
@@ -1261,11 +1290,18 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function openEditSM(rowIndex) {
         if (!modalEditSM) return;
-        formEditSM.style.display   = 'none';
+        formEditSM.style.display    = 'none';
         editSMLoading.style.display = 'block';
-        editSMError.style.display  = 'none';
-        modalEditSM.style.display  = 'flex';
+        editSMError.style.display   = 'none';
+        modal.classList && modal.classList.remove('is-open'); // reset hapus modal jika masih open
+        modalEditSM.style.display   = 'flex';
         document.body.style.overflow = 'hidden';
+        // Trigger smooth open
+        requestAnimationFrame(function () {
+            requestAnimationFrame(function () {
+                modalEditSM.classList.add('is-open');
+            });
+        });
 
         fetch('/arsip/' + rowIndex + '/edit', {
             headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
@@ -1309,7 +1345,14 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function closeEditSM() {
-        if (modalEditSM) modalEditSM.style.display = 'none';
+        if (modalEditSM) {
+            modalEditSM.classList.remove('is-open');
+            setTimeout(function () {
+                if (!modalEditSM.classList.contains('is-open')) {
+                    modalEditSM.style.display = 'none';
+                }
+            }, 240);
+        }
         document.body.style.overflow = '';
     }
 

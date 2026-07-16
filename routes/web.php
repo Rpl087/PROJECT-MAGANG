@@ -27,13 +27,23 @@ Route::get('/pdf/{type}/{filename}', function (string $type, string $filename) {
         abort(403, 'Akses ditolak.');
     }
 
-    $path = "arsip/{$type}/{$filename}";
+    $fullPath = null;
 
-    if (!Storage::disk('public')->exists($path)) {
-        abort(404, 'File tidak ditemukan.');
+    // Cek di folder backup uploads/ di root project terlebih dahulu (untuk file baru)
+    $backupPath = base_path('uploads/' . $filename);
+    if (file_exists($backupPath)) {
+        $fullPath = $backupPath;
+    } else {
+        // Fallback ke storage/app/public/arsip/ (untuk file lama)
+        $path = "arsip/{$type}/{$filename}";
+        if (Storage::disk('public')->exists($path)) {
+            $fullPath = Storage::disk('public')->path($path);
+        }
     }
 
-    $fullPath = Storage::disk('public')->path($path);
+    if (!$fullPath) {
+        abort(404, 'File tidak ditemukan.');
+    }
 
     return response()->file($fullPath, [
         'Content-Type'        => 'application/pdf',

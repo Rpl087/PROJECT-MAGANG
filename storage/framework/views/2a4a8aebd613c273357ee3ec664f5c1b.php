@@ -113,7 +113,7 @@
                             <td class="td-center no-print detail-code-count"><?php if($row['total'] > 0): ?><?php echo e(count($monthDetails)); ?> kode <?php else: ?><span class="count-zero">&mdash;</span><?php endif; ?></td>
                         </tr>
                         <?php if($row['total'] > 0): ?>
-                        <tr class="row-kode-detail row-kode-detail-bulan" id="detail-bulan-<?php echo e($monthKey); ?>" style="display:none;"><td colspan="6" style="padding:0;"><div class="kode-detail-wrap"><table class="kode-detail-table">
+                        <tr class="row-kode-detail row-kode-detail-bulan" id="detail-bulan-<?php echo e($monthKey); ?>"><td colspan="6" style="padding:0;"><div class="kode-detail-wrap"><table class="kode-detail-table">
                             <thead><tr><th>Kode Klasifikasi</th><th class="th-num">Surat Masuk</th><th class="th-num">Surat Keluar</th><th class="th-num">Total</th></tr></thead>
                             <tbody><?php $__currentLoopData = $monthDetails; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $kode => $counts): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?><tr><td><span class="badge-kode-report"><?php echo e($kode); ?></span></td><td class="td-num"><?php if($counts[0] > 0): ?><span class="count-sm"><?php echo e($counts[0]); ?></span><?php else: ?><span class="count-zero">&mdash;</span><?php endif; ?></td><td class="td-num"><?php if($counts[1] > 0): ?><span class="count-sk"><?php echo e($counts[1]); ?></span><?php else: ?><span class="count-zero">&mdash;</span><?php endif; ?></td><td class="td-num"><strong><?php echo e($counts[2]); ?></strong></td></tr><?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?></tbody>
                         </table></div></td></tr>
@@ -188,7 +188,7 @@
                         </td>
                     </tr>
                     
-                    <tr class="row-kode-detail" id="detail-<?php echo e($row['tahun']); ?>" style="display:none;">
+                    <tr class="row-kode-detail" id="detail-<?php echo e($row['tahun']); ?>">
                         <td colspan="6" style="padding:0;">
                             <div class="kode-detail-wrap">
                                 <table class="kode-detail-table">
@@ -800,7 +800,14 @@
     background: var(--color-surface);
     background: color-mix(in srgb, var(--color-surface) 94%, #6366f1 6%);
     border-top: 1px dashed var(--color-border);
-    padding: .85rem 1.75rem 1.1rem;
+    padding: 0 1.75rem;
+    overflow: hidden;
+    max-height: 0;
+    opacity: 0;
+    transition:
+        max-height .35s cubic-bezier(.4, 0, .2, 1),
+        opacity     .28s ease,
+        padding     .35s ease;
 }
 .kode-detail-table {
     width: 100%;
@@ -983,6 +990,9 @@
         padding: .5rem 1rem !important;
         background: #f8fafc !important;
         border-top: 1px solid #cbd5e1 !important;
+        max-height: none !important;
+        opacity: 1 !important;
+        overflow: visible !important;
     }
     .kode-detail-table { font-size: 8.5pt !important; }
     .kode-detail-table th {
@@ -1017,10 +1027,36 @@ document.addEventListener('DOMContentLoaded', function () {
     var sections = document.querySelectorAll('.report-section');
 
     function showTab(target) {
-        // Hanya atur visibility section — active class dikelola di click handler
+        var currentSection = null;
         sections.forEach(function(sec) {
-            sec.style.display = (sec.id === 'tab-' + target) ? '' : 'none';
+            if (sec.style.display !== 'none' && sec.id !== 'tab-' + target) {
+                currentSection = sec;
+            }
         });
+
+        function revealTarget() {
+            sections.forEach(function(sec) {
+                if (sec.id === 'tab-' + target) {
+                    sec.style.display = '';
+                    sec.classList.remove('tab-leaving');
+                    // Force reflow so animation restarts
+                    sec.offsetHeight;
+                    sec.classList.add('tab-entering');
+                    // Remove animation class after it ends
+                    setTimeout(function() { sec.classList.remove('tab-entering'); }, 280);
+                } else {
+                    sec.style.display = 'none';
+                    sec.classList.remove('tab-leaving', 'tab-entering');
+                }
+            });
+        }
+
+        if (currentSection) {
+            currentSection.classList.add('tab-leaving');
+            setTimeout(revealTarget, 200);
+        } else {
+            revealTarget();
+        }
     }
 
     tabs.forEach(function(tab) {
@@ -1037,6 +1073,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (!initActiveTab && tabs.length > 0) {
         tabs[0].classList.add('active');
     }
+
 
     // ── Print: cetak HANYA tab yang sedang aktif ─────────────────────────
     function preparePrint() {
@@ -1187,6 +1224,41 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    // ── Inisialisasi: sembunyikan semua detail row saat halaman load ──────────
+    document.querySelectorAll('.row-kode-detail').forEach(function(tr) {
+        tr.style.display = 'none';
+    });
+
+    // ── Smooth accordion toggle helper ─────────────────────────────────────
+    function openDetailRow(detailTr, icon) {
+        var wrap = detailTr.querySelector('.kode-detail-wrap');
+        detailTr.style.display = 'table-row';
+        // Force reflow so transition fires
+        detailTr.offsetHeight;
+        if (wrap) {
+            wrap.style.maxHeight = wrap.scrollHeight + 200 + 'px';
+            wrap.style.opacity   = '1';
+            wrap.style.padding   = '.85rem 1.75rem 1.1rem';
+        }
+        if (icon) icon.style.transform = 'rotate(90deg)';
+    }
+
+    function closeDetailRow(detailTr, icon) {
+        var wrap = detailTr.querySelector('.kode-detail-wrap');
+        if (wrap) {
+            wrap.style.maxHeight = '0';
+            wrap.style.opacity   = '0';
+            wrap.style.padding   = '0 1.75rem';
+        }
+        if (icon) icon.style.transform = '';
+        // Hide the tr after transition ends
+        setTimeout(function() {
+            if (wrap && wrap.style.maxHeight === '0px') {
+                detailTr.style.display = 'none';
+            }
+        }, 360);
+    }
+
     // ── Accordion Rekap Tahunan ──────────────────────────────────────────
     document.querySelectorAll('.row-tahun').forEach(function(row) {
         row.addEventListener('click', function() {
@@ -1194,15 +1266,15 @@ document.addEventListener('DOMContentLoaded', function () {
             var detail = document.getElementById('detail-' + year);
             var icon   = this.querySelector('.tahun-toggle-icon');
             if (!detail) return;
-            var isOpen = (detail.style.display !== 'none' && detail.style.display !== '');
+            var isOpen = detail.style.display === 'table-row' &&
+                         detail.querySelector('.kode-detail-wrap') &&
+                         parseFloat(detail.querySelector('.kode-detail-wrap').style.maxHeight) > 0;
             if (isOpen) {
-                detail.style.display = 'none';
+                closeDetailRow(detail, icon);
                 this.classList.remove('expanded');
-                if (icon) icon.style.transform = '';
             } else {
-                detail.style.display = 'table-row';
+                openDetailRow(detail, icon);
                 this.classList.add('expanded');
-                if (icon) icon.style.transform = 'rotate(90deg)';
             }
         });
     });
@@ -1210,14 +1282,20 @@ document.addEventListener('DOMContentLoaded', function () {
     // Accordion rincian kode klasifikasi per bulan
     document.querySelectorAll('.row-bulan-expandable').forEach(function(row) {
         row.addEventListener('click', function() {
-            var key = this.getAttribute('data-month-key');
+            var key    = this.getAttribute('data-month-key');
             var detail = document.getElementById('detail-bulan-' + key);
-            var icon = this.querySelector('.bulan-toggle-icon');
+            var icon   = this.querySelector('.bulan-toggle-icon');
             if (!detail) return;
-            var isOpen = detail.style.display === 'table-row';
-            detail.style.display = isOpen ? 'none' : 'table-row';
-            this.classList.toggle('expanded', !isOpen);
-            if (icon) icon.style.transform = isOpen ? '' : 'rotate(90deg)';
+            var isOpen = detail.style.display === 'table-row' &&
+                         detail.querySelector('.kode-detail-wrap') &&
+                         parseFloat(detail.querySelector('.kode-detail-wrap').style.maxHeight) > 0;
+            if (isOpen) {
+                closeDetailRow(detail, icon);
+                this.classList.remove('expanded');
+            } else {
+                openDetailRow(detail, icon);
+                this.classList.add('expanded');
+            }
         });
     });
     // ── Filter Tahun: Tab Bulanan ────────────────────────────────────────

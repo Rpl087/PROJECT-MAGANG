@@ -113,6 +113,11 @@
             will-change: margin-left;
         }
 
+        /* Kompensasi saat header tersembunyi (scroll ke bawah) */
+        body.header-is-hidden .layout-body {
+            padding-top: 0;
+        }
+
         /* State: sidebar tersembunyi (desktop) */
         body.sidebar-collapsed .sidebar   { transform: translateX(calc(-1 * var(--sidebar-width, 240px))); }
         body.sidebar-collapsed .main-content { margin-left: 0 !important; }
@@ -708,23 +713,8 @@
     </div>
 
     {{-- ── Modal Konfirmasi Navigasi ke Dashboard / Report ── --}}
-    <div id="modal-nav-confirm" style="
-        display:none; position:fixed; inset:0; z-index:9998;
-        background:rgba(10,15,30,0.55); backdrop-filter:blur(4px);
-        align-items:center; justify-content:center;
-        opacity:0; transition:opacity 0.22s ease;
-    ">
-        <div id="modal-nav-confirm-box" style="
-            background:var(--color-surface,#ffffff);
-            border:1px solid var(--color-border,#e2e5ea);
-            border-radius:16px;
-            box-shadow:0 24px 64px rgba(0,0,0,0.22);
-            padding:2rem 2rem 1.5rem;
-            max-width:420px; width:90%;
-            transform:scale(0.93) translateY(12px);
-            transition:transform 0.25s cubic-bezier(0.34,1.56,0.64,1), opacity 0.22s ease;
-            opacity:0;
-        ">
+    <div id="modal-nav-confirm" class="modal-overlay" style="display:none;">
+        <div id="modal-nav-confirm-box" class="modal-box" style="max-width:420px;width:90%;text-align:left;">
             {{-- Icon --}}
             <div style="
                 width:52px;height:52px;border-radius:14px;
@@ -751,25 +741,8 @@
             ">Anda akan diarahkan ke halaman Dashboard. Pastikan semua perubahan sudah tersimpan sebelum berpindah.</p>
             {{-- Actions --}}
             <div style="display:flex;gap:.65rem;justify-content:flex-end;">
-                <button type="button" id="modal-nav-cancel" style="
-                    padding:.55rem 1.2rem; border-radius:8px; cursor:pointer;
-                    background:transparent; border:1px solid var(--color-border,#e2e5ea);
-                    font-size:.875rem; font-weight:600; font-family:inherit;
-                    color:var(--color-text-muted,#64748b);
-                    transition:background .18s, border-color .18s;
-                " onmouseover="this.style.background='var(--color-primary-light,#e8edf4)';this.style.borderColor='var(--color-primary,#1e3a5f)';"
-                   onmouseout="this.style.background='transparent';this.style.borderColor='var(--color-border,#e2e5ea)';"
-                >Batal</button>
-                <button type="button" id="modal-nav-confirm-btn" style="
-                    padding:.55rem 1.35rem; border-radius:8px; cursor:pointer;
-                    background:#3b82f6; border:1px solid #2563eb;
-                    font-size:.875rem; font-weight:600; font-family:inherit;
-                    color:#ffffff; display:inline-flex; align-items:center; gap:.4rem;
-                    transition:background .18s, box-shadow .18s;
-                    box-shadow:0 2px 8px rgba(59,130,246,.28);
-                " onmouseover="this.style.background='#2563eb';this.style.boxShadow='0 4px 14px rgba(59,130,246,.38)';"
-                   onmouseout="this.style.background='#3b82f6';this.style.boxShadow='0 2px 8px rgba(59,130,246,.28)';"
-                >
+                <button type="button" id="modal-nav-cancel" class="btn btn-secondary">Batal</button>
+                <button type="button" id="modal-nav-confirm-btn" class="btn btn-primary" style="background:#3b82f6;border-color:#2563eb;">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M5 12l5 5L20 7"/>
                     </svg>
@@ -912,23 +885,35 @@
         });
 
         // ── Resize: transisi antar mode ──
+        var resizeTimer;
         window.addEventListener('resize', function () {
-            if (isMobile()) {
-                // Pindah ke mobile: bersihkan state desktop, pastikan burger tetap burger
-                body.classList.remove('sidebar-collapsed', 'sidebar-open');
-                if (btn) btn.classList.remove('is-collapsed');
-                closeDrawer();
-            } else if (isSplitScreen()) {
-                // Pindah ke split-screen: tutup drawer, inisialisasi split-screen
-                closeDrawer();
-                body.classList.remove('sidebar-collapsed');
-                initSplitScreenState();
-            } else {
-                // Pindah ke desktop lebar: tutup drawer, inisialisasi desktop
-                closeDrawer();
-                body.classList.remove('sidebar-open');
-                initDesktopState();
-            }
+            // Debounce resize agar tidak firing tiap pixel
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(function () {
+                if (isMobile()) {
+                    // Pindah ke mobile: bersihkan state desktop, pastikan burger tetap burger
+                    body.classList.remove('sidebar-collapsed', 'sidebar-open');
+                    if (btn) btn.classList.remove('is-collapsed');
+                    // Pastikan overlay tertutup saat pindah ke mobile
+                    if (overlay) overlay.classList.remove('is-visible');
+                    closeDrawer();
+                } else if (isSplitScreen()) {
+                    // Pindah ke split-screen: tutup drawer, inisialisasi split-screen
+                    closeDrawer();
+                    body.classList.remove('sidebar-collapsed');
+                    // Pastikan overlay bersih
+                    if (overlay) overlay.classList.remove('is-visible');
+                    initSplitScreenState();
+                } else {
+                    // Pindah ke desktop lebar: tutup drawer, inisialisasi desktop
+                    closeDrawer();
+                    body.classList.remove('sidebar-open');
+                    // Pastikan overlay bersih & drawer footer tersembunyi
+                    if (overlay) overlay.classList.remove('is-visible');
+                    if (drawerFooter) { drawerFooter.classList.remove('is-open'); drawerFooter.style.display = 'none'; }
+                    initDesktopState();
+                }
+            }, 80);
         });
     })();
     </script>
@@ -1107,33 +1092,49 @@
             // ── Auto-hide header on scroll ────────────────────────
             var header  = document.getElementById('main-header');
             var lastY   = window.scrollY;
-            var ticking = false;
-            var OFFSET  = 80; // px sebelum header mulai disembunyikan
-
+            var OFFSET  = 60;   // px pertama: header tidak disembunyikan
+            var DELTA   = 12;   // minimum scroll delta sebelum trigger hide/show
+            var hidden  = false;
 
             function handleScroll() {
-                var y = window.scrollY;
+                var y     = window.scrollY;
+                var delta = y - lastY;
 
-                if (y > lastY && y > OFFSET) {
-                    // Scroll ke bawah → sembunyikan header
-                    header.classList.add('is-hidden');
-                    document.body.classList.add('header-is-hidden');
-                } else if (y < lastY) {
-                    // Scroll ke atas → tampilkan kembali header
-                    header.classList.remove('is-hidden');
-                    document.body.classList.remove('header-is-hidden');
+                // Selalu tampilkan saat di atas halaman
+                if (y <= OFFSET) {
+                    if (hidden) {
+                        header.classList.remove('is-hidden');
+                        document.body.classList.remove('header-is-hidden');
+                        hidden = false;
+                    }
+                    lastY = y;
+                    return;
                 }
 
-                lastY   = y;
-                ticking = false;
+                // Hanya trigger jika delta cukup besar (menghindari micro-jitter)
+                if (Math.abs(delta) < DELTA) return;
+
+                if (delta > 0) {
+                    // Scroll ke bawah → sembunyikan
+                    if (!hidden) {
+                        header.classList.add('is-hidden');
+                        document.body.classList.add('header-is-hidden');
+                        hidden = true;
+                    }
+                } else {
+                    // Scroll ke atas → tampilkan langsung
+                    if (hidden) {
+                        header.classList.remove('is-hidden');
+                        document.body.classList.remove('header-is-hidden');
+                        hidden = false;
+                    }
+                }
+
+                lastY = y;
             }
 
-            window.addEventListener('scroll', function () {
-                if (!ticking) {
-                    requestAnimationFrame(handleScroll);
-                    ticking = true;
-                }
-            }, { passive: true });
+            // Langsung di scroll event (tanpa ticking/rAF) agar responsif
+            window.addEventListener('scroll', handleScroll, { passive: true });
         });
     </script>
     <script>
@@ -1154,30 +1155,27 @@
             if (titleEl) titleEl.textContent = title;
             if (descEl)  descEl.textContent  = desc;
 
-            // Tampilkan overlay
+            // Tampilkan overlay dengan smooth open
             modal.style.display = 'flex';
             requestAnimationFrame(function () {
                 requestAnimationFrame(function () {
-                    modal.style.opacity = '1';
-                    if (modalBox) {
-                        modalBox.style.opacity   = '1';
-                        modalBox.style.transform = 'scale(1) translateY(0)';
-                    }
+                    modal.classList.add('is-open');
                 });
             });
             // Fokus ke tombol batal agar aksesibel
-            if (cancelBtn) setTimeout(function () { cancelBtn.focus(); }, 220);
+            if (cancelBtn) setTimeout(function () { cancelBtn.focus(); }, 260);
             document.body.style.overflow = 'hidden';
         }
 
         function closeModal() {
-            if (modal)    { modal.style.opacity = '0'; }
-            if (modalBox) { modalBox.style.opacity = '0'; modalBox.style.transform = 'scale(0.93) translateY(12px)'; }
-            setTimeout(function () {
-                if (modal) modal.style.display = 'none';
-                document.body.style.overflow = '';
-            }, 230);
+            modal.classList.remove('is-open');
             pendingHref = null;
+            setTimeout(function () {
+                if (!modal.classList.contains('is-open')) {
+                    modal.style.display = 'none';
+                }
+                document.body.style.overflow = '';
+            }, 240);
         }
 
         // Intercept klik pada link dengan data-confirm-nav
@@ -1205,13 +1203,16 @@
         if (confirmBtn) {
             confirmBtn.addEventListener('click', function () {
                 if (!pendingHref) return;
-                // Jalankan page-leaving animation lalu navigasi
-                document.body.classList.add('page-leaving');
                 var target = pendingHref;
                 pendingHref = null;
-                if (modal) { modal.style.opacity = '0'; modal.style.display = 'none'; }
                 document.body.style.overflow = '';
-                setTimeout(function () { location.href = target; }, 180);
+                // Tutup modal dulu, lalu jalankan page-leaving
+                modal.classList.remove('is-open');
+                setTimeout(function () {
+                    modal.style.display = 'none';
+                    document.body.classList.add('page-leaving');
+                    setTimeout(function () { location.href = target; }, 180);
+                }, 220);
             });
         }
 

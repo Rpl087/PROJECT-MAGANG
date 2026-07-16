@@ -549,18 +549,23 @@
     </main>
 
     <script>
-        // Pencarian real-time
+        // Pencarian real-time dengan debounce (mencegah lag pada data besar)
         const searchInput = document.getElementById('searchInput');
         const table       = document.getElementById('arsipTable');
 
         if (searchInput && table) {
+            var searchTimer;
             searchInput.addEventListener('input', function () {
-                const keyword = this.value.toLowerCase().trim();
-                const rows    = table.querySelectorAll('tbody tr');
-                rows.forEach(function (row) {
-                    const text = row.textContent.toLowerCase();
-                    row.style.display = text.includes(keyword) ? '' : 'none';
-                });
+                clearTimeout(searchTimer);
+                var self = this;
+                searchTimer = setTimeout(function () {
+                    const keyword = self.value.toLowerCase().trim();
+                    const rows    = table.querySelectorAll('tbody tr');
+                    rows.forEach(function (row) {
+                        const text = row.textContent.toLowerCase();
+                        row.style.display = text.includes(keyword) ? '' : 'none';
+                    });
+                }, 120);
             });
         }
 

@@ -84,9 +84,17 @@
                                 $kodeListSK[$kp] = true;
                             }
                         }
-                        ksort($kodeListSK);
+                        // Urutkan berdasarkan urutan prioritas kode klasifikasi
+                        $kodePriorityOrder = ['PR','KP','OT','KU','HK','UM','PL','UP','HM','PW','LT','DL','DT','KI'];
+                        $kodeListSKSorted = [];
+                        foreach ($kodePriorityOrder as $pk) {
+                            if (isset($kodeListSK[$pk])) $kodeListSKSorted[$pk] = true;
+                        }
+                        foreach ($kodeListSK as $kk => $_) {
+                            if (!isset($kodeListSKSorted[$kk])) $kodeListSKSorted[$kk] = true;
+                        }
                     ?>
-                    <?php $__currentLoopData = $kodeListSK; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $kd => $_): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                    <?php $__currentLoopData = $kodeListSKSorted; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $kd => $_): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                     <option value="<?php echo e($kd); ?>"><?php echo e($kd); ?></option>
                     <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                 </select>
@@ -299,34 +307,28 @@
                 </div>
                 <div class="edit-field-group">
                     <label class="edit-field-label">Klasifikasi Keamanan <span class="req">*</span></label>
-                    <select name="klasifikasi_keamanan" id="edit-sk-klas-keamanan" class="edit-field-input" required>
-                        <option value="">Pilih...</option>
-                        <option value="Biasa">Biasa</option>
-                        <option value="Terbatas">Terbatas</option>
-                        <option value="Rahasia">Rahasia</option>
-                        <option value="Sangat Rahasia">Sangat Rahasia</option>
-                    </select>
+                    <input type="text" name="klasifikasi_keamanan" id="edit-sk-klas-keamanan" class="edit-field-input edit-kode-auto" readonly style="background:var(--color-bg,#f8fafc);cursor:not-allowed;opacity:.85;" required>
+                    <small style="color:var(--color-text-muted);font-size:.72rem;">Diisi otomatis dari kode klasifikasi</small>
                 </div>
                 <div class="edit-field-group">
                     <label class="edit-field-label">Tingkat Akses <span class="req">*</span></label>
-                    <select name="tingkat_akses" id="edit-sk-tingkat-akses" class="edit-field-input" required>
-                        <option value="">Pilih...</option>
-                        <option value="Terbuka">Terbuka</option>
-                        <option value="Terbatas">Terbatas</option>
-                        <option value="Tertutup">Tertutup</option>
-                    </select>
+                    <input type="text" name="tingkat_akses" id="edit-sk-tingkat-akses" class="edit-field-input edit-kode-auto" readonly style="background:var(--color-bg,#f8fafc);cursor:not-allowed;opacity:.85;" required>
+                    <small style="color:var(--color-text-muted);font-size:.72rem;">Diisi otomatis dari kode klasifikasi</small>
                 </div>
                 <div class="edit-field-group">
                     <label class="edit-field-label">Retensi Aktif <span class="req">*</span></label>
-                    <input type="text" name="retensi_aktif" id="edit-sk-retensi-aktif" class="edit-field-input" required>
+                    <input type="text" name="retensi_aktif" id="edit-sk-retensi-aktif" class="edit-field-input edit-retensi-auto" readonly style="background:var(--color-bg,#f8fafc);cursor:not-allowed;opacity:.85;" required>
+                    <small style="color:var(--color-text-muted);font-size:.72rem;">Diisi otomatis dari kode klasifikasi</small>
                 </div>
                 <div class="edit-field-group">
                     <label class="edit-field-label">Retensi Inaktif <span class="req">*</span></label>
-                    <input type="text" name="retensi_inaktif" id="edit-sk-retensi-inaktif" class="edit-field-input" required>
+                    <input type="text" name="retensi_inaktif" id="edit-sk-retensi-inaktif" class="edit-field-input edit-retensi-auto" readonly style="background:var(--color-bg,#f8fafc);cursor:not-allowed;opacity:.85;" required>
+                    <small style="color:var(--color-text-muted);font-size:.72rem;">Diisi otomatis dari kode klasifikasi</small>
                 </div>
                 <div class="edit-field-group edit-field-full">
                     <label class="edit-field-label">Retensi Keterangan <span class="req">*</span></label>
-                    <textarea name="retensi_keterangan" id="edit-sk-retensi-keterangan" class="edit-field-input" rows="2" required></textarea>
+                    <input type="text" name="retensi_keterangan" id="edit-sk-retensi-keterangan" class="edit-field-input edit-retensi-auto" readonly style="background:var(--color-bg,#f8fafc);cursor:not-allowed;opacity:.85;" required>
+                    <small style="color:var(--color-text-muted);font-size:.72rem;">Diisi otomatis dari kode klasifikasi</small>
                 </div>
             </div>
             <div id="modal-edit-sk-error" style="display:none;margin-top:.75rem;padding:.65rem 1rem;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:.5rem;font-size:.82rem;color:#fca5a5;"></div>
@@ -380,7 +382,7 @@ endif;
 unset($__errorArgs, $__bag); ?>"
                        value="<?php echo e(old('kode_klasifikasi')); ?>"
                        placeholder="Contoh: PR" maxlength="2"
-                       style="text-transform:uppercase;letter-spacing:.1em;"
+                       style="letter-spacing:.1em;"
                        autocomplete="off" required>
                 <?php $__errorArgs = ['kode_klasifikasi'];
 $__bag = $errors->getBag($__errorArgs[1] ?? 'default');
@@ -724,20 +726,15 @@ unset($__errorArgs, $__bag); ?>
 
             <div class="form-group">
                 <label for="klasifikasi_keamanan" class="form-label">Klasifikasi Keamanan <span class="required">*</span></label>
-                <select name="klasifikasi_keamanan" id="klasifikasi_keamanan" class="form-input form-select <?php $__errorArgs = ['klasifikasi_keamanan'];
+                <input type="text" name="klasifikasi_keamanan" id="klasifikasi_keamanan" class="form-input kode-auto <?php $__errorArgs = ['klasifikasi_keamanan'];
 $__bag = $errors->getBag($__errorArgs[1] ?? 'default');
 if ($__bag->has($__errorArgs[0])) :
 if (isset($message)) { $__messageOriginal = $message; }
 $message = $__bag->first($__errorArgs[0]); ?> input-error <?php unset($message);
 if (isset($__messageOriginal)) { $message = $__messageOriginal; }
 endif;
-unset($__errorArgs, $__bag); ?>" required>
-                    <option value="" disabled <?php echo e(old('klasifikasi_keamanan') ? '' : 'selected'); ?>>— Pilih —</option>
-                    <option value="Biasa"         <?php echo e(old('klasifikasi_keamanan') == 'Biasa'         ? 'selected' : ''); ?>>Biasa</option>
-                    <option value="Terbatas"      <?php echo e(old('klasifikasi_keamanan') == 'Terbatas'      ? 'selected' : ''); ?>>Terbatas</option>
-                    <option value="Rahasia"       <?php echo e(old('klasifikasi_keamanan') == 'Rahasia'       ? 'selected' : ''); ?>>Rahasia</option>
-                    <option value="Sangat Rahasia"<?php echo e(old('klasifikasi_keamanan') == 'Sangat Rahasia'? 'selected' : ''); ?>>Sangat Rahasia</option>
-                </select>
+unset($__errorArgs, $__bag); ?>" value="<?php echo e(old('klasifikasi_keamanan')); ?>" placeholder="Otomatis dari Kode Klasifikasi" readonly style="background:var(--color-bg,#f8fafc);cursor:not-allowed;opacity:.85;" required>
+                <span style="font-size:.72rem;color:var(--color-text-muted);">Diisi otomatis berdasarkan Kode Klasifikasi</span>
                 <?php $__errorArgs = ['klasifikasi_keamanan'];
 $__bag = $errors->getBag($__errorArgs[1] ?? 'default');
 if ($__bag->has($__errorArgs[0])) :
@@ -750,19 +747,15 @@ unset($__errorArgs, $__bag); ?>
 
             <div class="form-group">
                 <label for="tingkat_akses" class="form-label">Tingkat Akses <span class="required">*</span></label>
-                <select name="tingkat_akses" id="tingkat_akses" class="form-input form-select <?php $__errorArgs = ['tingkat_akses'];
+                <input type="text" name="tingkat_akses" id="tingkat_akses" class="form-input kode-auto <?php $__errorArgs = ['tingkat_akses'];
 $__bag = $errors->getBag($__errorArgs[1] ?? 'default');
 if ($__bag->has($__errorArgs[0])) :
 if (isset($message)) { $__messageOriginal = $message; }
 $message = $__bag->first($__errorArgs[0]); ?> input-error <?php unset($message);
 if (isset($__messageOriginal)) { $message = $__messageOriginal; }
 endif;
-unset($__errorArgs, $__bag); ?>" required>
-                    <option value="" disabled <?php echo e(old('tingkat_akses') ? '' : 'selected'); ?>>— Pilih —</option>
-                    <option value="Terbuka"  <?php echo e(old('tingkat_akses') == 'Terbuka'  ? 'selected' : ''); ?>>Terbuka</option>
-                    <option value="Tertutup" <?php echo e(old('tingkat_akses') == 'Tertutup' ? 'selected' : ''); ?>>Tertutup</option>
-                    <option value="Terbatas" <?php echo e(old('tingkat_akses') == 'Terbatas' ? 'selected' : ''); ?>>Terbatas</option>
-                </select>
+unset($__errorArgs, $__bag); ?>" value="<?php echo e(old('tingkat_akses')); ?>" placeholder="Otomatis dari Kode Klasifikasi" readonly style="background:var(--color-bg,#f8fafc);cursor:not-allowed;opacity:.85;" required>
+                <span style="font-size:.72rem;color:var(--color-text-muted);">Diisi otomatis berdasarkan Kode Klasifikasi</span>
                 <?php $__errorArgs = ['tingkat_akses'];
 $__bag = $errors->getBag($__errorArgs[1] ?? 'default');
 if ($__bag->has($__errorArgs[0])) :
@@ -777,15 +770,15 @@ unset($__errorArgs, $__bag); ?>
         <div class="form-grid form-grid-3">
             <div class="form-group">
                 <label for="retensi_aktif" class="form-label">Retensi — Aktif <span class="required">*</span></label>
-                <input type="text" name="retensi_aktif" id="retensi_aktif"
-                       class="form-input <?php $__errorArgs = ['retensi_aktif'];
+                <input type="text" name="retensi_aktif" id="retensi_aktif" class="form-input retensi-auto <?php $__errorArgs = ['retensi_aktif'];
 $__bag = $errors->getBag($__errorArgs[1] ?? 'default');
 if ($__bag->has($__errorArgs[0])) :
 if (isset($message)) { $__messageOriginal = $message; }
 $message = $__bag->first($__errorArgs[0]); ?> input-error <?php unset($message);
 if (isset($__messageOriginal)) { $message = $__messageOriginal; }
 endif;
-unset($__errorArgs, $__bag); ?>" value="<?php echo e(old('retensi_aktif')); ?>" placeholder="Contoh: 2 Tahun" required>
+unset($__errorArgs, $__bag); ?>" value="<?php echo e(old('retensi_aktif')); ?>" placeholder="Otomatis dari Kode Klasifikasi" readonly style="background:var(--color-bg,#f8fafc);cursor:not-allowed;opacity:.85;" required>
+                <span class="error-text" style="font-size:.72rem;color:var(--color-text-muted);">Diisi otomatis berdasarkan Kode Klasifikasi</span>
                 <?php $__errorArgs = ['retensi_aktif'];
 $__bag = $errors->getBag($__errorArgs[1] ?? 'default');
 if ($__bag->has($__errorArgs[0])) :
@@ -798,15 +791,15 @@ unset($__errorArgs, $__bag); ?>
 
             <div class="form-group">
                 <label for="retensi_inaktif" class="form-label">Retensi — Inaktif <span class="required">*</span></label>
-                <input type="text" name="retensi_inaktif" id="retensi_inaktif"
-                       class="form-input <?php $__errorArgs = ['retensi_inaktif'];
+                <input type="text" name="retensi_inaktif" id="retensi_inaktif" class="form-input retensi-auto <?php $__errorArgs = ['retensi_inaktif'];
 $__bag = $errors->getBag($__errorArgs[1] ?? 'default');
 if ($__bag->has($__errorArgs[0])) :
 if (isset($message)) { $__messageOriginal = $message; }
 $message = $__bag->first($__errorArgs[0]); ?> input-error <?php unset($message);
 if (isset($__messageOriginal)) { $message = $__messageOriginal; }
 endif;
-unset($__errorArgs, $__bag); ?>" value="<?php echo e(old('retensi_inaktif')); ?>" placeholder="Contoh: 5 Tahun" required>
+unset($__errorArgs, $__bag); ?>" value="<?php echo e(old('retensi_inaktif')); ?>" placeholder="Otomatis dari Kode Klasifikasi" readonly style="background:var(--color-bg,#f8fafc);cursor:not-allowed;opacity:.85;" required>
+                <span class="error-text" style="font-size:.72rem;color:var(--color-text-muted);">Diisi otomatis berdasarkan Kode Klasifikasi</span>
                 <?php $__errorArgs = ['retensi_inaktif'];
 $__bag = $errors->getBag($__errorArgs[1] ?? 'default');
 if ($__bag->has($__errorArgs[0])) :
@@ -819,15 +812,15 @@ unset($__errorArgs, $__bag); ?>
 
             <div class="form-group">
                 <label for="retensi_keterangan" class="form-label">Retensi — Keterangan <span class="required">*</span></label>
-                <input type="text" name="retensi_keterangan" id="retensi_keterangan"
-                       class="form-input <?php $__errorArgs = ['retensi_keterangan'];
+                <input type="text" name="retensi_keterangan" id="retensi_keterangan" class="form-input retensi-auto <?php $__errorArgs = ['retensi_keterangan'];
 $__bag = $errors->getBag($__errorArgs[1] ?? 'default');
 if ($__bag->has($__errorArgs[0])) :
 if (isset($message)) { $__messageOriginal = $message; }
 $message = $__bag->first($__errorArgs[0]); ?> input-error <?php unset($message);
 if (isset($__messageOriginal)) { $message = $__messageOriginal; }
 endif;
-unset($__errorArgs, $__bag); ?>" value="<?php echo e(old('retensi_keterangan')); ?>" placeholder="Contoh: Musnah / Permanen" required>
+unset($__errorArgs, $__bag); ?>" value="<?php echo e(old('retensi_keterangan')); ?>" placeholder="Otomatis dari Kode Klasifikasi" readonly style="background:var(--color-bg,#f8fafc);cursor:not-allowed;opacity:.85;" required>
+                <span class="error-text" style="font-size:.72rem;color:var(--color-text-muted);">Diisi otomatis berdasarkan Kode Klasifikasi</span>
                 <?php $__errorArgs = ['retensi_keterangan'];
 $__bag = $errors->getBag($__errorArgs[1] ?? 'default');
 if ($__bag->has($__errorArgs[0])) :
@@ -973,6 +966,13 @@ unset($__errorArgs, $__bag); ?>
     transition:all .2s;
 }
 .btn-hapus:hover { background:rgba(239,68,68,.2); }
+.btn-edit-sk {
+    display:inline-flex; align-items:center; gap:.3rem; padding:.3rem .65rem;
+    border-radius:.375rem; font-size:.75rem; font-weight:600; cursor:pointer;
+    background:rgba(59,130,246,.1); color:#60a5fa; border:1px solid rgba(59,130,246,.2);
+    transition:all .2s;
+}
+.btn-edit-sk:hover { background:rgba(59,130,246,.22); }
 /* ── Modal ────────────────────────────────────────────── */
 /* .modal-overlay: didefinisikan di app.css secara global */
 @keyframes fadeIn { from{opacity:0} to{opacity:1} }
@@ -1054,13 +1054,26 @@ document.addEventListener('DOMContentLoaded', function () {
         if (modalLabel) modalLabel.textContent = label;
         modal.style.display    = 'flex';
         document.body.style.overflow = 'hidden'; // lock scroll
+        // Trigger smooth open (sama seperti modal SM)
+        requestAnimationFrame(function () {
+            requestAnimationFrame(function () {
+                modal.classList.add('is-open');
+            });
+        });
+        if (modalCancel) setTimeout(function () { modalCancel.focus(); }, 260);
     }
 
     function closeModal() {
         if (!modal) return;
-        modal.style.display = 'none';
+        modal.classList.remove('is-open');
         pendingForm = null;
-        document.body.style.overflow = ''; // unlock scroll
+        // Tunggu transisi selesai sebelum display:none
+        setTimeout(function () {
+            if (!modal.classList.contains('is-open')) {
+                modal.style.display = 'none';
+            }
+            document.body.style.overflow = ''; // unlock scroll
+        }, 240);
     }
 
     document.querySelectorAll('.btn-hapus').forEach(function (btn) {
@@ -1252,6 +1265,12 @@ document.addEventListener('DOMContentLoaded', function () {
         editSKError.style.display   = 'none';
         modalEditSK.style.display   = 'flex';
         document.body.style.overflow = 'hidden';
+        // Trigger smooth open (sama seperti modal Edit SM)
+        requestAnimationFrame(function () {
+            requestAnimationFrame(function () {
+                modalEditSK.classList.add('is-open');
+            });
+        });
 
         fetch('/surat-keluar/' + rowIndex + '/edit', {
             headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
@@ -1276,12 +1295,14 @@ document.addEventListener('DOMContentLoaded', function () {
             document.getElementById('edit-sk-retensi-aktif').value         = data.retensi_aktif || '';
             document.getElementById('edit-sk-retensi-inaktif').value       = data.retensi_inaktif || '';
             document.getElementById('edit-sk-retensi-keterangan').value    = data.retensi_keterangan || '';
-            ['edit-sk-klas-keamanan','edit-sk-tingkat-akses'].forEach(function(id) {
-                var el = document.getElementById(id);
-                if (!el) return;
-                var key = id === 'edit-sk-klas-keamanan' ? data.klasifikasi_keamanan : data.tingkat_akses;
-                Array.from(el.options).forEach(function(opt) { opt.selected = opt.value === key; });
-            });
+            // Field readonly auto dari KODE_MAP_SK berdasarkan kode klasifikasi
+            var kodeForMapSK = (data.kode_klasifikasi || '').replace(/[^A-Za-z]/g,'').toUpperCase().slice(0,2);
+            var mapDataSK    = window.KODE_MAP_SK && window.KODE_MAP_SK[kodeForMapSK] ? window.KODE_MAP_SK[kodeForMapSK] : null;
+            document.getElementById('edit-sk-retensi-aktif').value       = mapDataSK ? mapDataSK[0] : (data.retensi_aktif       || '');
+            document.getElementById('edit-sk-retensi-inaktif').value     = mapDataSK ? mapDataSK[1] : (data.retensi_inaktif     || '');
+            document.getElementById('edit-sk-retensi-keterangan').value  = mapDataSK ? mapDataSK[2] : (data.retensi_keterangan  || '');
+            document.getElementById('edit-sk-klas-keamanan').value       = mapDataSK ? mapDataSK[3] : (data.klasifikasi_keamanan|| '');
+            document.getElementById('edit-sk-tingkat-akses').value       = mapDataSK ? mapDataSK[4] : (data.tingkat_akses        || '');
             editSKLoading.style.display = 'none';
             formEditSK.style.display    = 'block';
         })
@@ -1293,7 +1314,14 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function closeEditSK() {
-        if (modalEditSK) modalEditSK.style.display = 'none';
+        if (modalEditSK) {
+            modalEditSK.classList.remove('is-open');
+            setTimeout(function () {
+                if (!modalEditSK.classList.contains('is-open')) {
+                    modalEditSK.style.display = 'none';
+                }
+            }, 240);
+        }
         document.body.style.overflow = '';
     }
 
@@ -1343,11 +1371,79 @@ document.addEventListener('DOMContentLoaded', function () {
         kodeInputSK.addEventListener('input', function() {
             var v = this.value.replace(/[^A-Za-z]/g, '').toUpperCase().slice(0, 2);
             if (this.value !== v) this.value = v;
+            // Auto-fill retensi dari KODE_MAP_SK
+            applyRetensiFromKodeSK(v);
         });
         kodeInputSK.addEventListener('keydown', function(e) {
             if (this.value.length >= 2 && e.key.length === 1 && !e.ctrlKey && !e.metaKey) {
                 e.preventDefault();
             }
+        });
+        // Inisialisasi: isi dari nilai awal kode (jika ada, misal dari old())
+        applyRetensiFromKodeSK(kodeInputSK.value.toUpperCase());
+    }
+
+    // ── Tabel KODE_MAP untuk Surat Keluar ──────────────────────────────────────
+    // Format: [retensi_aktif, retensi_inaktif, retensi_keterangan, klas_keamanan, tingkat_akses]
+    window.KODE_MAP_SK = {
+        //  Kode    Aktif        Inaktif       Keterangan   Keamanan   Akses
+        'PR': ['2 Tahun',  '3 Tahun',  'Musnah',    'Biasa',   'Terbuka' ],
+        'KP': ['5 Tahun',  '10 Tahun', 'Permanen',  'Biasa',   'Terbatas'],
+        'OT': ['2 Tahun',  '3 Tahun',  'Musnah',    'Biasa',   'Terbuka' ],
+        'KU': ['5 Tahun',  '10 Tahun', 'Permanen',  'Biasa',   'Terbatas'],
+        'HK': ['5 Tahun',  '10 Tahun', 'Permanen',  'Biasa',   'Terbatas'],
+        'UM': ['2 Tahun',  '3 Tahun',  'Musnah',    'Biasa',   'Terbuka' ],
+        'PL': ['5 Tahun',  '10 Tahun', 'Musnah',    'Biasa',   'Terbatas'],
+        'UP': ['5 Tahun',  '10 Tahun', 'Permanen',  'Biasa',   'Terbatas'],
+        'HM': ['5 Tahun',  '10 Tahun', 'Permanen',  'Biasa',   'Terbatas'],
+        'PW': ['5 Tahun',  '10 Tahun', 'Musnah',    'Biasa',   'Terbatas'],
+        'LT': ['5 Tahun',  '10 Tahun', 'Musnah',    'Biasa',   'Terbatas'],
+        'DL': ['2 Tahun',  '3 Tahun',  'Musnah',    'Biasa',   'Terbuka' ],
+        'DT': ['5 Tahun',  '10 Tahun', 'Permanen',  'Biasa',   'Terbatas'],
+        'KI': ['5 Tahun',  '10 Tahun', 'Permanen',  'Biasa',   'Terbatas'],
+    };
+
+    // Auto-fill SEMUA field hidden dari KODE_MAP_SK (termasuk keamanan & akses)
+    function applyRetensiFromKodeSK(kode) {
+        var map  = window.KODE_MAP_SK || {};
+        var data = map[kode] || null;
+        var fields = {
+            'retensi_aktif'        : data ? data[0] : '',
+            'retensi_inaktif'      : data ? data[1] : '',
+            'retensi_keterangan'   : data ? data[2] : '',
+            'klasifikasi_keamanan' : data ? data[3] : '',
+            'tingkat_akses'        : data ? data[4] : '',
+        };
+        Object.keys(fields).forEach(function(id) {
+            var el = document.getElementById(id);
+            if (el) el.value = fields[id];
+        });
+    }
+
+    // ── Auto-fill untuk modal Edit Surat Keluar (kode klasifikasi berubah) ──────
+    var editKodeElSK = document.getElementById('edit-sk-kode-klasifikasi');
+    if (editKodeElSK) {
+        editKodeElSK.addEventListener('input', function() {
+            var kode = this.value.replace(/[^A-Za-z]/g, '').toUpperCase().slice(0, 2);
+            if (this.value !== kode) this.value = kode;
+            applyKodeMapEditSK(kode);
+        });
+    }
+
+    function applyKodeMapEditSK(kode) {
+        var map  = window.KODE_MAP_SK || {};
+        var data = map[kode] || null;
+        var fields = {
+            'edit-sk-retensi-aktif'      : data ? data[0] : null,
+            'edit-sk-retensi-inaktif'    : data ? data[1] : null,
+            'edit-sk-retensi-keterangan' : data ? data[2] : null,
+            'edit-sk-klas-keamanan'      : data ? data[3] : null,
+            'edit-sk-tingkat-akses'      : data ? data[4] : null,
+        };
+        Object.keys(fields).forEach(function(id) {
+            var el  = document.getElementById(id);
+            var val = fields[id];
+            if (el && val !== null) el.value = val;
         });
     }
 })();
