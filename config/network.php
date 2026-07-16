@@ -15,6 +15,26 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Internet Access (Dual Access Mode)
+    |--------------------------------------------------------------------------
+    |
+    | Jika true, pengguna dari IP publik (internet di luar kantor) dapat
+    | mengakses aplikasi meskipun INTRANET_ENABLED=true. Sistem akan
+    | mengenali IP publik dan melewati batasan subnet lokal secara otomatis.
+    |
+    | Syarat keamanan:
+    |   - Pengguna internet tetap WAJIB login (autentikasi normal)
+    |   - Session & CSRF protection tetap aktif
+    |   - Akses admin tetap dikontrol oleh middleware AdminOnly
+    |
+    | Set INTERNET_ACCESS_ENABLED=false jika ingin MENUTUP akses internet
+    | sepenuhnya (aplikasi hanya bisa diakses dari dalam jaringan kantor).
+    |
+    */
+    'internet_access_enabled' => env('INTERNET_ACCESS_ENABLED', true),
+
+    /*
+    |--------------------------------------------------------------------------
     | Internal Network Subnet
     |--------------------------------------------------------------------------
     |
