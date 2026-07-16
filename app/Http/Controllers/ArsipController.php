@@ -421,22 +421,22 @@ class ArsipController extends Controller
             // O=Retensi Aktif | P=Retensi Inaktif | Q=Retensi Ket | R=Link Folder
             $values = [[
                 $timestamp,                                // A: Timestamp
-                $validated['kode_klasifikasi'],            // B: Kode Klasifikasi
-                $validated['kode_surat'],                  // C: Kode Surat
-                $validated['uraian_informasi_berkas'],     // D: Uraian Informasi Berkas
-                $validated['kurun_waktu'],                 // E: Kurun Waktu
-                $validated['jumlah_folder'],               // F: Jumlah Folder
-                $validated['nomor_item_arsip'],            // G: Nomor: Item Arsip
-                $validated['uraian_informasi_arsip'],      // H: Uraian Informasi Arsip
-                $validated['tanggal_surat'],               // I: Tanggal Surat
-                $validated['jumlah_lembar'],               // J: Jumlah Lembar
-                $validated['tingkat_perkembangan'],        // K: Tingkat Perkembangan
-                $validated['lokasi_simpan'],               // L: Lokasi Simpan
-                $validated['klasifikasi_keamanan'],        // M: Klasifikasi Keamanan
-                $validated['tingkat_akses'],               // N: Tingkat Akses
-                $validated['retensi_aktif'],               // O: Retensi "Aktif"
-                $validated['retensi_inaktif'],             // P: Retensi "Inaktif"
-                $validated['retensi_keterangan'],          // Q: Retensi "Keterangan"
+                $this->escapeFormula($validated['kode_klasifikasi']),            // B: Kode Klasifikasi
+                $this->escapeFormula($validated['kode_surat']),                  // C: Kode Surat
+                $this->escapeFormula($validated['uraian_informasi_berkas']),     // D: Uraian Informasi Berkas
+                $this->escapeFormula($validated['kurun_waktu']),                 // E: Kurun Waktu
+                $this->escapeFormula($validated['jumlah_folder']),               // F: Jumlah Folder
+                $this->escapeFormula($validated['nomor_item_arsip']),            // G: Nomor: Item Arsip
+                $this->escapeFormula($validated['uraian_informasi_arsip']),      // H: Uraian Informasi Arsip
+                $this->escapeFormula($validated['tanggal_surat']),               // I: Tanggal Surat
+                $this->escapeFormula($validated['jumlah_lembar']),               // J: Jumlah Lembar
+                $this->escapeFormula($validated['tingkat_perkembangan']),        // K: Tingkat Perkembangan
+                $this->escapeFormula($validated['lokasi_simpan']),               // L: Lokasi Simpan
+                $this->escapeFormula($validated['klasifikasi_keamanan']),        // M: Klasifikasi Keamanan
+                $this->escapeFormula($validated['tingkat_akses']),               // N: Tingkat Akses
+                $this->escapeFormula($validated['retensi_aktif']),               // O: Retensi "Aktif"
+                $this->escapeFormula($validated['retensi_inaktif']),             // P: Retensi "Inaktif"
+                $this->escapeFormula($validated['retensi_keterangan']),          // Q: Retensi "Keterangan"
                 $linkFolder,                               // R: Link Folder
             ]];
 
@@ -554,22 +554,22 @@ class ArsipController extends Controller
 
             $values = [[
                 // Kolom A (Timestamp) dilewati — range dimulai dari B
-                $validated['kode_klasifikasi'],            // B
-                $validated['kode_surat'],                  // C
-                $validated['uraian_informasi_berkas'],     // D
-                $validated['kurun_waktu'],                 // E
-                $validated['jumlah_folder'],               // F
-                $validated['nomor_item_arsip'],            // G
-                $validated['uraian_informasi_arsip'],      // H
-                $validated['tanggal_surat'],               // I
-                $validated['jumlah_lembar'],               // J
-                $validated['tingkat_perkembangan'],        // K
-                $validated['lokasi_simpan'],               // L
-                $validated['klasifikasi_keamanan'],        // M
-                $validated['tingkat_akses'],               // N
-                $validated['retensi_aktif'],               // O
-                $validated['retensi_inaktif'],             // P
-                $validated['retensi_keterangan'],          // Q
+                $this->escapeFormula($validated['kode_klasifikasi']),            // B
+                $this->escapeFormula($validated['kode_surat']),                  // C
+                $this->escapeFormula($validated['uraian_informasi_berkas']),     // D
+                $this->escapeFormula($validated['kurun_waktu']),                 // E
+                $this->escapeFormula($validated['jumlah_folder']),               // F
+                $this->escapeFormula($validated['nomor_item_arsip']),            // G
+                $this->escapeFormula($validated['uraian_informasi_arsip']),      // H
+                $this->escapeFormula($validated['tanggal_surat']),               // I
+                $this->escapeFormula($validated['jumlah_lembar']),               // J
+                $this->escapeFormula($validated['tingkat_perkembangan']),        // K
+                $this->escapeFormula($validated['lokasi_simpan']),               // L
+                $this->escapeFormula($validated['klasifikasi_keamanan']),        // M
+                $this->escapeFormula($validated['tingkat_akses']),               // N
+                $this->escapeFormula($validated['retensi_aktif']),               // O
+                $this->escapeFormula($validated['retensi_inaktif']),             // P
+                $this->escapeFormula($validated['retensi_keterangan']),          // Q
                 $validated['pdf_filename'] ?? '',          // R
             ]];
 

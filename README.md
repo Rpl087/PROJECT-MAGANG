@@ -13,14 +13,14 @@ Aplikasi web berbasis **Laravel 13.19** untuk pengarsipan surat masuk dan surat 
 - ✏️ **Edit Data** — Admin dapat mengedit semua field surat masuk & keluar via modal popup (update langsung ke Google Sheets dbSM/dbSK)
 - 🗑️ **Hapus Data** — Hanya Admin yang dapat menghapus baris data dari Google Sheets
 - 🔍 **Filter Kode Klasifikasi** — Dropdown filter kode (PR, KP, OT, dll) di tabel admin surat masuk & keluar
-- 📊 **Google Sheets Integration** — Data tersimpan ke `dbSM`/`dbSK`; tabel tampilan membaca dari sheet `SURAT MASUK` & `SURAT KELUAR`
+- 📊 **Google Sheets Integration** — Data tersimpan ke `dbSM`/`dbSK`; pembacaan data langsung dari sheet sumber (bukan sheet formula)
 - 📎 **PDF Publik** — File PDF surat dapat diakses publik via URL `/pdf/{type}/{filename}` tanpa login
 - 📈 **Dashboard Rangkuman** — Statistik bulanan & tahunan + pie chart klasifikasi; header tabel seragam navy (hanya Admin)
 - 📋 **Rekap & Laporan** — Filter tahun (5 tahun terakhir) di Rekap Bulanan, Tahunan, Per Klasifikasi + tombol Cetak per Tab
-- 🖼️ **Logo Komdigi** — Logo resmi Komdigi ditampilkan di header aplikasi (menggantikan ikon generik)
+- 🖼️ **Logo Komdigi** — Logo resmi Komdigi ditampilkan di header aplikasi
 - 📱 **Responsive** — Hamburger/drawer menu untuk tampilan mobile & tablet
 - 🌐 **Intranet Ready** — Dapat diakses oleh semua perangkat di jaringan WiFi yang sama tanpa internet
-- 🔒 **Cybersecurity** — CSP, HSTS, XSS Protection, Rate Limiting, Session Security, IP-based Access Control
+- 🔒 **Cybersecurity** — Formula Injection Protection, CSP, HSTS, XSS Protection, Rate Limiting, Session Security, IP-based Access Control
 
 ---
 
@@ -28,13 +28,13 @@ Aplikasi web berbasis **Laravel 13.19** untuk pengarsipan surat masuk dan surat 
 
 | Layer | Teknologi |
 |---|---|
-| Framework | Laravel 13.19 (PHP 8.4) |
-| Database | SQLite (local auth & sessions) |
+| Framework | Laravel 13.19 (PHP 8.3+) |
+| Database | MySQL / MariaDB (auth & sessions) |
 | Storage | Google Sheets API v4 |
 | Frontend | Blade + Vanilla CSS (Pure CSS, tanpa framework) |
 | Auth | Laravel Session Auth (`Auth::attempt`) |
 | RBAC | Custom Middleware `AdminOnly` |
-| File Upload | Laravel Storage (`public` disk) |
+| File Upload | Local storage + Google Drive (backup) |
 | Calendar | Flatpickr (CDN jsdelivr.net) |
 | Web Server | Apache (Laragon) — port 80, virtual host `project-magang.test` |
 | Tunnel | Ngrok (opsional, untuk akses publik via PC lokal) |
@@ -81,7 +81,7 @@ Aplikasi web berbasis **Laravel 13.19** untuk pengarsipan surat masuk dan surat 
 **Mengapa?**
 - Laragon menjalankan **Apache Web Server** di laptop Anda (port 80/443)
 - PHP memproses request di laptop Anda
-- SQLite database tersimpan di storage laptop Anda
+- MySQL database tersimpan di laptop Anda
 - Ketika laptop mati → tidak ada yang merespons request → semua koneksi timeout
 
 **Cara agar selalu aktif:**
@@ -200,7 +200,7 @@ https://domain-kamu.com/pdf/surat-masuk/{nama-file.pdf}
 https://domain-kamu.com/pdf/surat-keluar/{nama-file.pdf}
 ```
 
-- URL ini tersimpan otomatis di kolom **R (Surat Masuk)** dan **I (Surat Keluar)** di Google Sheets
+- URL ini tersimpan otomatis di kolom **R (Surat Masuk)** dan **H (Surat Keluar)** di Google Sheets
 - Dapat langsung diklik dari spreadsheet untuk membuka/mengunduh PDF
 - Keamanan: hanya ekstensi `.pdf` yang diizinkan, path traversal dicegah
 
@@ -208,7 +208,7 @@ https://domain-kamu.com/pdf/surat-keluar/{nama-file.pdf}
 
 ## 🔐 Cybersecurity — Lapisan Keamanan
 
-Project ini mengimplementasikan **7 lapisan keamanan**:
+Project ini mengimplementasikan **8 lapisan keamanan**:
 
 ### 1. HTTP Security Headers (`SecurityHeaders.php`)
 ```
@@ -232,13 +232,11 @@ Strict-Transport-Security → 1 tahun (aktif saat HTTPS)
 | `InternalNetworkOnly` | Blokir request write/delete dari luar jaringan internal |
 | `GuestNetwork` | Izinkan akses `/tamu` hanya dari WiFi tamu/internal |
 
-> Subnet diatur via `.env`: `INTERNAL_NETWORK_SUBNET` dan `GUEST_NETWORK_SUBNET`
+> Subnet diatur via `config/network.php` yang membaca dari `.env`
 
 ### 4. Session Security
-```dotenv
-SESSION_ENCRYPT=true       # Enkripsi payload session
-SESSION_SAME_SITE=strict   # Cegah CSRF via cross-site request
-```
+- Enkripsi session aktif (`SESSION_ENCRYPT=true`)
+- Session cookie otomatis hancur saat browser ditutup (`SESSION_EXPIRE_ON_CLOSE=true`)
 - Session di-regenerate saat login (`session()->regenerate()`)
 - Session di-invalidate saat logout (`invalidate()` + `regenerateToken()`)
 
@@ -251,9 +249,12 @@ SESSION_SAME_SITE=strict   # Cegah CSRF via cross-site request
 - Path traversal dicegah via regex di route PDF/Image
 - Kode Klasifikasi: hanya 2 karakter huruf, paksa uppercase (JS)
 
-### 7. Audit Logging
+### 7. Formula Injection Protection (Google Sheets)
+- Semua data string yang dikirim ke Google Sheets disanitasi via `escapeFormula()`
+- Input yang diawali `=`, `+`, `-`, `@` diescaping dengan prefix `'` untuk mencegah eksekusi formula berbahaya di spreadsheet
+
+### 8. Audit Logging
 - Login berhasil/gagal: dicatat ke `storage/logs/laravel.log`
-- Hapus data: dapat ditambahkan audit log di controller
 - Log level: `warning` untuk production (tidak expose debug info)
 
 ---
@@ -264,7 +265,8 @@ SESSION_SAME_SITE=strict   # Cegah CSRF via cross-site request
 
 ### Prasyarat
 - Laragon terinstall & Apache **berjalan** (`Start All`)
-- PHP 8.4 dengan extension `pdo_sqlite` & `sqlite3` aktif di `php.ini`
+- PHP 8.3+ dengan extension `pdo_mysql` aktif di `php.ini`
+- MySQL / MariaDB aktif di Laragon
 - Virtual host `project-magang.test` terkonfigurasi
 - Kredensial Google Service Account tersimpan di `storage/app/google-credentials.json`
 
@@ -281,50 +283,18 @@ composer install
 cp .env.example .env
 php artisan key:generate
 
-# 4. Isi konfigurasi .env (lihat bagian Konfigurasi .env)
-
-# 5. Migrasi & seed database (buat tabel + akun admin & internship)
+# 4. Migrasi & seed database (buat tabel + akun admin & internship)
 php artisan migrate --seed
 
-# 6. Buat symlink storage
+# 5. Buat symlink storage
 php artisan storage:link
 ```
 
 ### Menjalankan Sehari-hari
-1. Pastikan **Laragon** aktif (Apache menyala)
+1. Pastikan **Laragon** aktif (Apache & MySQL menyala)
 2. Akses lokal: `http://project-magang.test`
 3. Untuk akses intranet WiFi, **double-click** `start-intranet.bat`
 4. Untuk akses publik via ngrok, **double-click** `start-ngrok.bat`
-
----
-
-## 🔧 Konfigurasi `.env`
-
-```dotenv
-APP_NAME="Arsip Surat BPSDMP"
-APP_ENV=production
-APP_KEY=base64:...
-APP_DEBUG=false
-APP_URL=http://192.168.252.85  # IP laptop server di jaringan WiFi
-
-# ── Jaringan Intranet ──────────────────────────────────
-# Subnet jaringan internal (staff dengan akses penuh)
-INTERNAL_NETWORK_SUBNET=192.168.252.0/22
-# Subnet WiFi tamu (read-only, tanpa login)
-GUEST_NETWORK_SUBNET=10.0.0.0/24
-
-# ── Google Sheets ──────────────────────────────────────
-GOOGLE_SHEET_ID=1QdlmA0ug3xNY2-...
-GOOGLE_SERVICE_ACCOUNT_JSON=storage/app/google-credentials.json
-
-# ── Session Security ───────────────────────────────────
-SESSION_DRIVER=file
-SESSION_LIFETIME=60
-SESSION_ENCRYPT=true
-SESSION_SAME_SITE=strict
-
-DB_CONNECTION=sqlite
-```
 
 ---
 
@@ -428,9 +398,8 @@ flowchart TD
     L --> M{Validasi Form}
     M -- Gagal --> N[Tampil Pesan Error\nForm tetap terisi]
     N --> K
-    M -- Lolos --> O[Simpan PDF ke Server\nstorage/arsip/surat-masuk/]
-    O --> O2[Generate URL Publik PDF\n/pdf/surat-masuk/nama-file.pdf]
-    O2 --> P[Kirim Data ke Google Sheets\nSheet: dbSM kolom A–R]
+    M -- Lolos --> O[Upload PDF ke Google Drive\nBackup lokal ke uploads/]
+    O --> P[Kirim Data ke Google Sheets\nSheet: dbSM kolom A–R]
     P --> Q[Tampil Notifikasi Berhasil]
     Q --> H
 
@@ -440,9 +409,8 @@ flowchart TD
     T --> U{Validasi Form}
     U -- Gagal --> V[Tampil Pesan Error\nForm tetap terisi]
     V --> S
-    U -- Lolos --> W[Simpan PDF ke Server\nstorage/arsip/surat-keluar/]
-    W --> W2[Generate URL Publik PDF\n/pdf/surat-keluar/nama-file.pdf]
-    W2 --> X[Kirim Data ke Google Sheets\nSheet: dbSK kolom A–R]
+    U -- Lolos --> W[Upload PDF ke Google Drive\nBackup lokal ke uploads/]
+    W --> X[Kirim Data ke Google Sheets\nSheet: dbSK kolom A–R]
     X --> Y[Tampil Notifikasi Berhasil]
     Y --> H
 
@@ -558,11 +526,13 @@ project-magang/
 │           └── SecurityHeaders.php          ← HTTP Security Headers (CSP, HSTS, dll.)
 ├── bootstrap/
 │   └── app.php                              ← TrustProxies + register middleware alias
+├── config/
+│   ├── google.php                           ← Konfigurasi Google Sheets & Drive API
+│   └── network.php                          ← Konfigurasi subnet intranet & tamu
 ├── database/
-│   ├── migrations/                          ← Tabel users (+ kolom role), sessions, cache
-│   ├── seeders/
-│   │   └── DatabaseSeeder.php               ← Akun Admin & Internship (bcrypt)
-│   └── database.sqlite                      ← Database lokal (SQLite)
+│   ├── migrations/                          ← Tabel users (+ kolom role), sessions
+│   └── seeders/
+│       └── DatabaseSeeder.php               ← Akun Admin & Internship (bcrypt)
 ├── public/
 │   ├── css/
 │   │   └── app.css                          ← Stylesheet utama (Vanilla CSS, dark mode)
@@ -584,11 +554,12 @@ project-magang/
 ├── routes/
 │   └── web.php                              ← Route auth, publik PDF, protected, admin-only, tamu
 ├── storage/
-│   ├── app/public/
-│   │   ├── arsip/surat-masuk/               ← PDF surat masuk tersimpan di sini
-│   │   └── arsip/surat-keluar/              ← PDF surat keluar tersimpan di sini
-│   └── image/
-│       └── komdigi-logo.png                 ← Logo header aplikasi
+│   ├── app/
+│   │   ├── google-credentials.json          ← Service Account Google API (JANGAN di-commit)
+│   │   └── public/                          ← File publik via symlink
+│   ├── image/
+│   │   └── komdigi-logo.png                 ← Logo header aplikasi
+│   └── uploads/                             ← Backup PDF lokal (temporary)
 ├── start-intranet.bat                       ← Script 1-klik: aktifkan server intranet WiFi
 ├── start-ngrok.bat                          ← Script 1-klik untuk jalankan ngrok
 └── C:\laragon\etc\apache2\sites-enabled\
@@ -599,7 +570,7 @@ project-magang/
 
 ## 📋 Kolom Google Sheets
 
-> Sheet `dbSM` dan `dbSK` adalah **sumber data tulis** (tempat form menyimpan data). Sheet `SURAT MASUK` dan `SURAT KELUAR` adalah **sheet tampilan** yang sudah di-combine per baris dan dibaca oleh tabel di aplikasi.
+> Sheet `dbSM` dan `dbSK` adalah **sumber data tulis** (tempat form menyimpan data). Aplikasi membaca langsung dari sheet sumber ini tanpa bergantung pada formula sheet tampilan.
 
 ### Sheet `dbSM` — Sumber Data Surat Masuk (Kolom A–R)
 
@@ -624,30 +595,6 @@ project-magang/
 | Q | Retensi Keterangan |
 | R | **Filename PDF** *(digunakan untuk generate URL publik secara dinamis)* |
 
-### Sheet `SURAT MASUK` — Tampilan Tabel Aplikasi (Kolom A–Q)
-
-> Sheet ini dibaca oleh `ArsipController::index()` untuk ditampilkan di tabel admin. Data sudah di-combine menjadi 1 baris per entri.
-
-| Kolom | Field |
-|---|---|
-| A | No |
-| B | Kode Klasifikasi |
-| C | Uraian Berkas |
-| D | Kurun Waktu |
-| E | Jumlah Folder |
-| F | Nomor Item |
-| G | Uraian Arsip |
-| H | Tanggal Surat |
-| I | Jumlah Lembar |
-| J | Tingkat Perkembangan |
-| K | Lokasi Simpan |
-| L | Klasifikasi Keamanan |
-| M | Tingkat Akses |
-| N | Retensi Aktif |
-| O | Retensi Inaktif |
-| P | Retensi Keterangan |
-| Q | **Filename PDF** |
-
 ### Sheet `dbSK` — Sumber Data Surat Keluar (Kolom A–R)
 
 | Kolom | Field |
@@ -671,10 +618,6 @@ project-magang/
 | Q | Retensi Inaktif |
 | R | Retensi Keterangan |
 
-### Sheet `SURAT KELUAR` — Tampilan Tabel Aplikasi
-
-> Sheet ini dibaca oleh `SuratKeluarController::index()` untuk ditampilkan di tabel admin.
-
 ---
 
 ## 🔄 Changelog Signifikan
@@ -682,43 +625,35 @@ project-magang/
 | Versi | Perubahan |
 |---|---|
 | v1.0 | Setup awal: form surat masuk + keluar + Google Sheets |
-| v1.1 | Sistem autentikasi login/logout (SQLite) |
+| v1.1 | Sistem autentikasi login/logout (database-backed) |
 | v1.2 | Responsive layout: hamburger/drawer menu mobile & tablet |
 | v1.3 | Dashboard statistik bulanan & tahunan + pie chart |
 | v1.4 | Apache Laragon virtual host (`project-magang.test`) — tanpa `artisan serve` |
-| v1.4 | Enable PHP extensions `pdo_sqlite` & `sqlite3` untuk Apache |
 | v1.5 | **PDF Publik**: Route `/pdf/{type}/{filename}` tanpa autentikasi |
 | v1.5 | URL PDF (filename saja) tersimpan ke Google Sheets (bisa diklik dari spreadsheet) |
 | v1.6 | **RBAC**: Role `admin` & `internship`, middleware `AdminOnly` |
 | v1.6 | Internship hanya bisa input form; Admin punya akses penuh termasuk hapus data |
 | v1.6 | Tampilan tabel & dashboard disembunyikan dari user Internship |
-| v1.7 | Fix `BadMethodCallException`: hapus blok cookie manual yang memanggil `CookieJar::get()` yang tidak ada |
-| v1.7 | Upgrade framework ke **Laravel 13.8** / PHP 8.4.20 |
-| v1.7 | Navigasi drawer: icon burger konsisten (☰ saat tutup, ← saat buka) di semua ukuran layar |
-| v1.8 | **Logo Komdigi**: header aplikasi menggunakan `komdigi-logo.png` menggantikan SVG generik |
-| v1.8 | **Tabel Surat Masuk**: baca dari sheet `SURAT MASUK` (sudah di-combine per baris) bukan `dbSM` |
-| v1.8 | **Kolom Kode Surat** dihapus dari tampilan tabel surat masuk (tidak tersedia di sheet display) |
-| v1.8 | **Warna header tabel** Dashboard diseragamkan dengan tabel arsip (navy primary + teks putih) |
-| v1.9 | **View Surat Keluar** dipindah ke `resources/views/arsip/surat-keluar.blade.php` (konsisten) |
-| v1.9 | **Anti-FOUC**: CSS tabel dipindah ke `@push('styles')` → dirender di `<head>`, bukan bottom of body |
+| v1.7 | Upgrade framework ke **Laravel 13** / PHP 8.3+ |
+| v1.7 | Navigasi drawer: icon burger konsisten di semua ukuran layar |
+| v1.8 | **Logo Komdigi**: header aplikasi menggunakan `komdigi-logo.png` |
+| v1.9 | **Anti-FOUC**: CSS tabel dipindah ke `@push('styles')` → dirender di `<head>` |
 | v1.9 | **Skeleton Loading**: shimmer placeholder tabel sebelum data ditampilkan |
 | v1.9 | **Page Loading Bar**: indikator progress tipis di atas halaman saat navigasi |
-| v1.9 | **Google Fonts non-blocking**: preload + onload trick, tidak lagi render-blocking |
-| v1.9 | **Security**: `.gitignore` diperkuat — SQLite, credentials, ngrok, key files terlindungi |
 | v2.0 | **Intranet Mode**: `start-intranet.bat` — deteksi IP otomatis, update `.env`, 2 mode server |
 | v2.0 | **Cybersecurity Layer**: `SecurityHeaders`, `InternalNetworkOnly`, `GuestNetwork` middleware |
 | v2.0 | **Mode Tamu WiFi**: route `/tamu` & `/tamu/surat-keluar` — read-only tanpa login |
 | v2.0 | **Rate Limiting** login: 5 percobaan/menit per IP+username (brute force protection) |
-| v2.0 | **Session Security**: enkripsi session + SameSite=Strict + regenerate on login |
-| v2.0 | **🐛 FIX KRITIS**: CSP kini mengizinkan `cdn.jsdelivr.net` → ikon kalender Flatpickr berfungsi |
-| v2.0 | **🐛 FIX**: Typo atribut `style` (kutip buka hilang) di input kode_klasifikasi |
-| v2.1 | **Filter Kode Klasifikasi**: Dropdown filter kode (PR, KP, OT, dll) di tabel SM & SK admin |
-| v2.1 | **Edit Data**: Tombol Edit di kolom Aksi → Modal popup pre-filled via AJAX → PUT ke Google Sheets |
-| v2.1 | **Edit routes**: `GET /arsip/{id}/edit` (JSON) + `PUT /arsip/{id}` + equivalen SK — semua admin-only |
+| v2.0 | **Session Security**: enkripsi session + expire on close + regenerate on login |
+| v2.1 | **Filter Kode Klasifikasi**: Dropdown filter kode di tabel SM & SK admin |
+| v2.1 | **Edit Data**: Tombol Edit via Modal popup pre-filled (AJAX → PUT ke Google Sheets) |
 | v2.1 | **Filter Tahun Rekap**: Dropdown 5 tahun terakhir di Rekap Bulanan, Tahunan, Per Klasifikasi |
-| v2.1 | **Cetak Per Tab**: Tombol "Cetak Tab Ini" di setiap tab rekap — print hanya tab yang aktif |
-| v2.1 | **Security**: Pin `google/apiclient` ke `^2.0` (dari wildcard `*`) di composer.json |
-| v2.1 | **Performance**: Route cache, Events cache, Config cache — semua `CACHED` via `php artisan optimize` |
+| v2.1 | **Cetak Per Tab**: Tombol cetak hanya tab yang aktif di halaman rekap |
+| v2.2 | **Migrasi Database**: SQLite → MySQL/MariaDB (kompatibel phpMyAdmin) |
+| v2.2 | **Formula Injection Protection**: Sanitasi input `=`, `+`, `-`, `@` sebelum simpan ke Sheets |
+| v2.2 | **Baca Langsung dari dbSM/dbSK**: Tidak lagi bergantung pada sheet formula (ARRAYFORMULA) |
+| v2.2 | **config/network.php** & **config/google.php**: Tidak ada `env()` di runtime code (aman untuk `config:cache`) |
+| v2.2 | **Cleanup Otomatis**: File PDF lokal (`uploads/`) terhapus setelah hapus data dari Sheets |
 
 ---
 
