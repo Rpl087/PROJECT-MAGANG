@@ -65,12 +65,6 @@
 .btn-muted:hover { background: rgba(100,116,139,.16); }
 
 /* ── Reset modal ── */
-.modal-overlay {
-    display: none; position: fixed; inset: 0;
-    background: rgba(0,0,0,.55); backdrop-filter: blur(5px);
-    z-index: 1000; align-items: center; justify-content: center; padding: 16px;
-}
-.modal-overlay.is-open { display: flex; }
 .modal-box {
     background: var(--color-surface, #fff);
     border: 1px solid var(--color-border, #e2e5ea);
@@ -235,7 +229,7 @@ function openResetModal(userId, username) {
     const form   = document.getElementById('form-reset-password');
     const label  = document.getElementById('reset-username-label');
     label.textContent = username;
-    form.action = '/admin/users/' + userId + '/reset-password';
+    form.action = "{{ url('/admin/users') }}/" + userId + '/reset-password';
     document.getElementById('new_password').value = '';
     document.getElementById('new_password_confirmation').value = '';
     modal.classList.add('is-open');

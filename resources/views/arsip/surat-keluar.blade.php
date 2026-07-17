@@ -300,7 +300,12 @@
                 </div>
                 <div class="edit-field-group">
                     <label class="edit-field-label">Tingkat Perkembangan <span class="req">*</span></label>
-                    <input type="text" name="tingkat_perkembangan" id="edit-sk-tingkat-perkembangan" class="edit-field-input" required>
+                    <select name="tingkat_perkembangan" id="edit-sk-tingkat-perkembangan" class="edit-field-input" required>
+                        <option value="">-- Pilih Tingkat Perkembangan --</option>
+                        <option value="Asli">Asli</option>
+                        <option value="Fotokopi">Fotokopi</option>
+                        <option value="Salinan">Salinan</option>
+                    </select>
                 </div>
                 <div class="edit-field-group">
                     <label class="edit-field-label">Lokasi Simpan <span class="req">*</span></label>
@@ -308,27 +313,27 @@
                 </div>
                 <div class="edit-field-group">
                     <label class="edit-field-label">Klasifikasi Keamanan <span class="req">*</span></label>
-                    <input type="text" name="klasifikasi_keamanan" id="edit-sk-klas-keamanan" class="edit-field-input edit-kode-auto" readonly style="background:var(--color-bg,#f8fafc);cursor:not-allowed;opacity:.85;" required>
+                    <input type="text" name="klasifikasi_keamanan" id="edit-sk-klas-keamanan" class="edit-field-input edit-kode-auto" {{ Auth::user()->isMaintenance() ? '' : 'readonly' }} style="background:{{ Auth::user()->isMaintenance() ? 'var(--color-surface,#fff)' : 'var(--color-bg,#f8fafc)' }};cursor:{{ Auth::user()->isMaintenance() ? 'text' : 'not-allowed' }};opacity:{{ Auth::user()->isMaintenance() ? '1' : '.85' }};" required>
                     <small style="color:var(--color-text-muted);font-size:.72rem;">Diisi otomatis dari kode klasifikasi</small>
                 </div>
                 <div class="edit-field-group">
                     <label class="edit-field-label">Tingkat Akses <span class="req">*</span></label>
-                    <input type="text" name="tingkat_akses" id="edit-sk-tingkat-akses" class="edit-field-input edit-kode-auto" readonly style="background:var(--color-bg,#f8fafc);cursor:not-allowed;opacity:.85;" required>
+                    <input type="text" name="tingkat_akses" id="edit-sk-tingkat-akses" class="edit-field-input edit-kode-auto" {{ Auth::user()->isMaintenance() ? '' : 'readonly' }} style="background:{{ Auth::user()->isMaintenance() ? 'var(--color-surface,#fff)' : 'var(--color-bg,#f8fafc)' }};cursor:{{ Auth::user()->isMaintenance() ? 'text' : 'not-allowed' }};opacity:{{ Auth::user()->isMaintenance() ? '1' : '.85' }};" required>
                     <small style="color:var(--color-text-muted);font-size:.72rem;">Diisi otomatis dari kode klasifikasi</small>
                 </div>
                 <div class="edit-field-group">
                     <label class="edit-field-label">Retensi Aktif <span class="req">*</span></label>
-                    <input type="text" name="retensi_aktif" id="edit-sk-retensi-aktif" class="edit-field-input edit-retensi-auto" readonly style="background:var(--color-bg,#f8fafc);cursor:not-allowed;opacity:.85;" required>
+                    <input type="text" name="retensi_aktif" id="edit-sk-retensi-aktif" class="edit-field-input edit-retensi-auto" {{ Auth::user()->isMaintenance() ? '' : 'readonly' }} style="background:{{ Auth::user()->isMaintenance() ? 'var(--color-surface,#fff)' : 'var(--color-bg,#f8fafc)' }};cursor:{{ Auth::user()->isMaintenance() ? 'text' : 'not-allowed' }};opacity:{{ Auth::user()->isMaintenance() ? '1' : '.85' }};" required>
                     <small style="color:var(--color-text-muted);font-size:.72rem;">Diisi otomatis dari kode klasifikasi</small>
                 </div>
                 <div class="edit-field-group">
                     <label class="edit-field-label">Retensi Inaktif <span class="req">*</span></label>
-                    <input type="text" name="retensi_inaktif" id="edit-sk-retensi-inaktif" class="edit-field-input edit-retensi-auto" readonly style="background:var(--color-bg,#f8fafc);cursor:not-allowed;opacity:.85;" required>
+                    <input type="text" name="retensi_inaktif" id="edit-sk-retensi-inaktif" class="edit-field-input edit-retensi-auto" {{ Auth::user()->isMaintenance() ? '' : 'readonly' }} style="background:{{ Auth::user()->isMaintenance() ? 'var(--color-surface,#fff)' : 'var(--color-bg,#f8fafc)' }};cursor:{{ Auth::user()->isMaintenance() ? 'text' : 'not-allowed' }};opacity:{{ Auth::user()->isMaintenance() ? '1' : '.85' }};" required>
                     <small style="color:var(--color-text-muted);font-size:.72rem;">Diisi otomatis dari kode klasifikasi</small>
                 </div>
                 <div class="edit-field-group edit-field-full">
                     <label class="edit-field-label">Retensi Keterangan <span class="req">*</span></label>
-                    <input type="text" name="retensi_keterangan" id="edit-sk-retensi-keterangan" class="edit-field-input edit-retensi-auto" readonly style="background:var(--color-bg,#f8fafc);cursor:not-allowed;opacity:.85;" required>
+                    <input type="text" name="retensi_keterangan" id="edit-sk-retensi-keterangan" class="edit-field-input edit-retensi-auto" {{ Auth::user()->isMaintenance() ? '' : 'readonly' }} style="background:{{ Auth::user()->isMaintenance() ? 'var(--color-surface,#fff)' : 'var(--color-bg,#f8fafc)' }};cursor:{{ Auth::user()->isMaintenance() ? 'text' : 'not-allowed' }};opacity:{{ Auth::user()->isMaintenance() ? '1' : '.85' }};" required>
                     <small style="color:var(--color-text-muted);font-size:.72rem;">Diisi otomatis dari kode klasifikasi</small>
                 </div>
             </div>
@@ -521,8 +526,12 @@
 
             <div class="form-group">
                 <label for="tingkat_perkembangan" class="form-label">Tingkat Perkembangan <span class="required">*</span></label>
-                <input type="text" name="tingkat_perkembangan" id="tingkat_perkembangan"
-                       class="form-input @error('tingkat_perkembangan') input-error @enderror" value="{{ old('tingkat_perkembangan') }}" placeholder="Contoh: Asli / Fotokopi / Salinan" required>
+                <select name="tingkat_perkembangan" id="tingkat_perkembangan" class="form-input @error('tingkat_perkembangan') input-error @enderror" required>
+                    <option value="">-- Pilih Tingkat Perkembangan --</option>
+                    <option value="Asli" {{ old('tingkat_perkembangan') == 'Asli' ? 'selected' : '' }}>Asli</option>
+                    <option value="Fotokopi" {{ old('tingkat_perkembangan') == 'Fotokopi' ? 'selected' : '' }}>Fotokopi</option>
+                    <option value="Salinan" {{ old('tingkat_perkembangan') == 'Salinan' ? 'selected' : '' }}>Salinan</option>
+                </select>
                 @error('tingkat_perkembangan')<span class="error-text">{{ $message }}</span>@enderror
             </div>
         </div>
@@ -559,14 +568,14 @@
 
             <div class="form-group">
                 <label for="klasifikasi_keamanan" class="form-label">Klasifikasi Keamanan <span class="required">*</span></label>
-                <input type="text" name="klasifikasi_keamanan" id="klasifikasi_keamanan" class="form-input kode-auto @error('klasifikasi_keamanan') input-error @enderror" value="{{ old('klasifikasi_keamanan') }}" placeholder="Otomatis dari Kode Klasifikasi" readonly style="background:var(--color-bg,#f8fafc);cursor:not-allowed;opacity:.85;" required>
+                <input type="text" name="klasifikasi_keamanan" id="klasifikasi_keamanan" class="form-input kode-auto @error('klasifikasi_keamanan') input-error @enderror" value="{{ old('klasifikasi_keamanan') }}" placeholder="Otomatis dari Kode Klasifikasi" {{ Auth::user()->isMaintenance() ? '' : 'readonly' }} style="background:{{ Auth::user()->isMaintenance() ? 'var(--color-bg,#ffffff)' : 'var(--color-bg,#f8fafc)' }};cursor:{{ Auth::user()->isMaintenance() ? 'text' : 'not-allowed' }};opacity:{{ Auth::user()->isMaintenance() ? '1' : '.85' }};" required>
                 <span style="font-size:.72rem;color:var(--color-text-muted);">Diisi otomatis berdasarkan Kode Klasifikasi</span>
                 @error('klasifikasi_keamanan')<span class="error-text">{{ $message }}</span>@enderror
             </div>
 
             <div class="form-group">
                 <label for="tingkat_akses" class="form-label">Tingkat Akses <span class="required">*</span></label>
-                <input type="text" name="tingkat_akses" id="tingkat_akses" class="form-input kode-auto @error('tingkat_akses') input-error @enderror" value="{{ old('tingkat_akses') }}" placeholder="Otomatis dari Kode Klasifikasi" readonly style="background:var(--color-bg,#f8fafc);cursor:not-allowed;opacity:.85;" required>
+                <input type="text" name="tingkat_akses" id="tingkat_akses" class="form-input kode-auto @error('tingkat_akses') input-error @enderror" value="{{ old('tingkat_akses') }}" placeholder="Otomatis dari Kode Klasifikasi" {{ Auth::user()->isMaintenance() ? '' : 'readonly' }} style="background:{{ Auth::user()->isMaintenance() ? 'var(--color-bg,#ffffff)' : 'var(--color-bg,#f8fafc)' }};cursor:{{ Auth::user()->isMaintenance() ? 'text' : 'not-allowed' }};opacity:{{ Auth::user()->isMaintenance() ? '1' : '.85' }};" required>
                 <span style="font-size:.72rem;color:var(--color-text-muted);">Diisi otomatis berdasarkan Kode Klasifikasi</span>
                 @error('tingkat_akses')<span class="error-text">{{ $message }}</span>@enderror
             </div>
@@ -575,21 +584,21 @@
         <div class="form-grid form-grid-3">
             <div class="form-group">
                 <label for="retensi_aktif" class="form-label">Retensi — Aktif <span class="required">*</span></label>
-                <input type="text" name="retensi_aktif" id="retensi_aktif" class="form-input retensi-auto @error('retensi_aktif') input-error @enderror" value="{{ old('retensi_aktif') }}" placeholder="Otomatis dari Kode Klasifikasi" readonly style="background:var(--color-bg,#f8fafc);cursor:not-allowed;opacity:.85;" required>
+                <input type="text" name="retensi_aktif" id="retensi_aktif" class="form-input retensi-auto @error('retensi_aktif') input-error @enderror" value="{{ old('retensi_aktif') }}" placeholder="Otomatis dari Kode Klasifikasi" {{ Auth::user()->isMaintenance() ? '' : 'readonly' }} style="background:{{ Auth::user()->isMaintenance() ? 'var(--color-bg,#ffffff)' : 'var(--color-bg,#f8fafc)' }};cursor:{{ Auth::user()->isMaintenance() ? 'text' : 'not-allowed' }};opacity:{{ Auth::user()->isMaintenance() ? '1' : '.85' }};" required>
                 <span class="error-text" style="font-size:.72rem;color:var(--color-text-muted);">Diisi otomatis berdasarkan Kode Klasifikasi</span>
                 @error('retensi_aktif')<span class="error-text">{{ $message }}</span>@enderror
             </div>
 
             <div class="form-group">
                 <label for="retensi_inaktif" class="form-label">Retensi — Inaktif <span class="required">*</span></label>
-                <input type="text" name="retensi_inaktif" id="retensi_inaktif" class="form-input retensi-auto @error('retensi_inaktif') input-error @enderror" value="{{ old('retensi_inaktif') }}" placeholder="Otomatis dari Kode Klasifikasi" readonly style="background:var(--color-bg,#f8fafc);cursor:not-allowed;opacity:.85;" required>
+                <input type="text" name="retensi_inaktif" id="retensi_inaktif" class="form-input retensi-auto @error('retensi_inaktif') input-error @enderror" value="{{ old('retensi_inaktif') }}" placeholder="Otomatis dari Kode Klasifikasi" {{ Auth::user()->isMaintenance() ? '' : 'readonly' }} style="background:{{ Auth::user()->isMaintenance() ? 'var(--color-bg,#ffffff)' : 'var(--color-bg,#f8fafc)' }};cursor:{{ Auth::user()->isMaintenance() ? 'text' : 'not-allowed' }};opacity:{{ Auth::user()->isMaintenance() ? '1' : '.85' }};" required>
                 <span class="error-text" style="font-size:.72rem;color:var(--color-text-muted);">Diisi otomatis berdasarkan Kode Klasifikasi</span>
                 @error('retensi_inaktif')<span class="error-text">{{ $message }}</span>@enderror
             </div>
 
             <div class="form-group">
                 <label for="retensi_keterangan" class="form-label">Retensi — Keterangan <span class="required">*</span></label>
-                <input type="text" name="retensi_keterangan" id="retensi_keterangan" class="form-input retensi-auto @error('retensi_keterangan') input-error @enderror" value="{{ old('retensi_keterangan') }}" placeholder="Otomatis dari Kode Klasifikasi" readonly style="background:var(--color-bg,#f8fafc);cursor:not-allowed;opacity:.85;" required>
+                <input type="text" name="retensi_keterangan" id="retensi_keterangan" class="form-input retensi-auto @error('retensi_keterangan') input-error @enderror" value="{{ old('retensi_keterangan') }}" placeholder="Otomatis dari Kode Klasifikasi" {{ Auth::user()->isMaintenance() ? '' : 'readonly' }} style="background:{{ Auth::user()->isMaintenance() ? 'var(--color-bg,#ffffff)' : 'var(--color-bg,#f8fafc)' }};cursor:{{ Auth::user()->isMaintenance() ? 'text' : 'not-allowed' }};opacity:{{ Auth::user()->isMaintenance() ? '1' : '.85' }};" required>
                 <span class="error-text" style="font-size:.72rem;color:var(--color-text-muted);">Diisi otomatis berdasarkan Kode Klasifikasi</span>
                 @error('retensi_keterangan')<span class="error-text">{{ $message }}</span>@enderror
             </div>
@@ -1035,13 +1044,13 @@ document.addEventListener('DOMContentLoaded', function () {
             });
         });
 
-        fetch('/surat-keluar/' + rowIndex + '/edit', {
+        fetch("{{ url('/surat-keluar') }}/" + rowIndex + "/edit", {
             headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
         })
         .then(function(r) { return r.json(); })
         .then(function(data) {
             if (data.error) { throw new Error(data.error); }
-            formEditSK.action = '/surat-keluar/' + rowIndex;
+            formEditSK.action = "{{ url('/surat-keluar') }}/" + rowIndex;
             document.getElementById('edit-sk-dbsk-index').value           = data.dbskIndex || '';
             document.getElementById('edit-sk-pdf-filename').value          = data.pdf_filename || '';
             document.getElementById('edit-sk-kode-klasifikasi').value      = data.kode_klasifikasi || '';
@@ -1053,7 +1062,16 @@ document.addEventListener('DOMContentLoaded', function () {
             document.getElementById('edit-sk-tanggal').value               = data.tanggal_surat || '';
             document.getElementById('edit-sk-uraian-arsip').value          = data.uraian_informasi_arsip || '';
             document.getElementById('edit-sk-jumlah-lembar').value         = data.jumlah_lembar || '';
-            document.getElementById('edit-sk-tingkat-perkembangan').value  = data.tingkat_perkembangan || '';
+            var tingkatVal = data.tingkat_perkembangan || '';
+            var tingkatNormalized = tingkatVal.trim().toLowerCase();
+            if (tingkatNormalized === 'asli') {
+                tingkatVal = 'Asli';
+            } else if (tingkatNormalized === 'fotokopi' || tingkatNormalized === 'foto kopi') {
+                tingkatVal = 'Fotokopi';
+            } else if (tingkatNormalized === 'salinan') {
+                tingkatVal = 'Salinan';
+            }
+            document.getElementById('edit-sk-tingkat-perkembangan').value  = tingkatVal;
             document.getElementById('edit-sk-lokasi-simpan').value         = data.lokasi_simpan || '';
             // Field auto-fill dari KODE_MAP_SK berdasarkan kode klasifikasi;
             // jika kode tidak dikenali, fallback ke nilai dari server

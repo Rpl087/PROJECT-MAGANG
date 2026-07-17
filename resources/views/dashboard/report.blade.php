@@ -327,7 +327,7 @@
 </div>
 
 {{-- ── Modal Konfirmasi Cetak ─────────────────────────────────────────────── --}}
-<div id="modal-cetak" class="modal-overlay" style="display:none;">
+<div id="modal-cetak" class="modal-overlay" role="dialog" aria-modal="true">
     <div class="modal-box" style="max-width:420px;">
         <div class="modal-icon-print">
             <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1189,13 +1189,13 @@ document.addEventListener('DOMContentLoaded', function () {
         var label     = TAB_LABELS[activeId] || 'laporan ini';
         if (modalCetakName) modalCetakName.textContent = '"' + label + '"';
         if (modalCetak) {
-            modalCetak.style.display     = 'flex';
+            modalCetak.classList.add('is-open');
             document.body.style.overflow = 'hidden';
         }
     }
 
     function closeModalCetak() {
-        if (modalCetak) modalCetak.style.display = 'none';
+        if (modalCetak) modalCetak.classList.remove('is-open');
         document.body.style.overflow = '';
     }
 
@@ -1212,7 +1212,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (e.target === modalCetak) closeModalCetak();
     });
     document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape' && modalCetak && modalCetak.style.display === 'flex') closeModalCetak();
+        if (e.key === 'Escape' && modalCetak && modalCetak.classList.contains('is-open')) closeModalCetak();
     });
 
     if (modalCetakOk) {

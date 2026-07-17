@@ -608,14 +608,26 @@
                 @forelse($menuItems as $item)
                     @if($item->isVisibleTo(Auth::user()->role))
                         @php
-                            $isActive = $item->route_name && request()->routeIs($item->route_name . '*');
-                            $hasRoute = $item->route_name && \Route::has($item->route_name);
+                            $isExternalOrPath = preg_match('/^(https?:\/\/|\/)/i', $item->route_name);
+                            $isActive = false;
+                            $linkHref = '#';
+                            $shouldRender = false;
+
+                            if ($isExternalOrPath) {
+                                $linkHref = $item->route_name;
+                                $isActive = request()->getRequestUri() === $item->route_name || request()->url() === $item->route_name;
+                                $shouldRender = true;
+                            } elseif ($item->route_name && \Route::has($item->route_name)) {
+                                $linkHref = route($item->route_name);
+                                $isActive = request()->routeIs($item->route_name . '*');
+                                $shouldRender = true;
+                            }
                         @endphp
-                        @if($hasRoute)
-                        <a href="{{ route($item->route_name) }}"
+                        @if($shouldRender)
+                        <a href="{{ $linkHref }}"
                            class="sidebar-link {{ $isActive ? 'sidebar-link-active' : '' }}"
                            @if($item->confirm_title)
-                               data-confirm-nav="{{ $item->route_name }}"
+                               data-confirm-nav="{{ $isExternalOrPath ? $item->route_name : route($item->route_name) }}"
                                data-confirm-title="{{ $item->confirm_title }}"
                                data-confirm-desc="{{ $item->confirm_desc }}"
                                data-confirm-label="{{ $item->label }}"
@@ -652,7 +664,7 @@
                         <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
                         <circle cx="12" cy="7" r="4"/>
                     </svg>
-                    <span style="text-transform:uppercase;letter-spacing:.04em;">{{ Auth::user()->name }}</span>
+                    <span style="text-transform:capitalize;letter-spacing:.04em;">{{ Auth::user()->name }}</span>
                 </div>
                 <form action="{{ route('logout') }}" method="POST" style="margin:0;">
                     @csrf
@@ -678,7 +690,7 @@
                     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
                     <circle cx="12" cy="7" r="4"/>
                 </svg>
-                <span style="text-transform:uppercase;letter-spacing:.04em;">{{ Auth::user()->name }}</span>
+                <span style="text-transform:capitalize;letter-spacing:.04em;">{{ Auth::user()->name }}</span>
             </div>
             <form action="{{ route('logout') }}" method="POST" style="margin:0;">
                 @csrf

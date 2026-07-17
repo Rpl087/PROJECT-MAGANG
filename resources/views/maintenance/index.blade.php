@@ -83,8 +83,6 @@
 .icon-opt.selected { border-color:#3b82f6;background:rgba(59,130,246,.12);color:#1d4ed8; }
 
 /* ── Modal ── */
-.modal-overlay { display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(5px);z-index:1000;align-items:center;justify-content:center;padding:16px; }
-.modal-overlay.is-open { display:flex; }
 .modal-box { background:var(--color-surface,#fff);border:1px solid var(--color-border,#e2e5ea);border-radius:16px;padding:2rem;max-width:560px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.2);max-height:90vh;overflow-y:auto; }
 .modal-box h3 { font-size:1rem;font-weight:700;margin-bottom:1.2rem;color:var(--color-text,#1e293b); }
 .modal-actions { display:flex;gap:8px;margin-top:1.2rem;justify-content:flex-end; }
@@ -219,18 +217,18 @@
                     <td>
                         <div style="display:flex;gap:6px;flex-wrap:wrap">
                             {{-- Toggle aktif/nonaktif --}}
-                            <form method="POST" action="{{ route('maintenance.menu.toggle', $item) }}" style="margin:0">
+                            <form method="POST" action="{{ route('maintenance.menu.toggle', $item) }}" id="form-toggle-{{ $item->id }}" style="margin:0">
                                 @csrf @method('PATCH')
-                                <button type="submit" class="btn-sm {{ $item->is_active ? 'btn-muted' : 'btn-success' }}">
+                                <button type="button" class="btn-sm {{ $item->is_active ? 'btn-muted' : 'btn-success' }}" onclick="confirmToggle({{ $item->id }}, '{{ $item->label }}', {{ $item->is_active ? 'true' : 'false' }})">
                                     {{ $item->is_active ? 'Nonaktifkan' : 'Aktifkan' }}
                                 </button>
                             </form>
                             {{-- Edit --}}
                             <button type="button" class="btn-sm btn-warning" onclick="openEditModal({{ $item->toJson() }})">Edit</button>
                             {{-- Hapus --}}
-                            <form method="POST" action="{{ route('maintenance.menu.destroy', $item) }}" style="margin:0" onsubmit="return confirm('Hapus menu {{ $item->label }}?')">
+                            <form method="POST" action="{{ route('maintenance.menu.destroy', $item) }}" id="form-delete-{{ $item->id }}" style="margin:0">
                                 @csrf @method('DELETE')
-                                <button type="submit" class="btn-sm btn-danger">Hapus</button>
+                                <button type="button" class="btn-sm btn-danger" onclick="confirmDelete({{ $item->id }}, '{{ $item->label }}')">Hapus</button>
                             </form>
                         </div>
                     </td>
@@ -254,8 +252,8 @@
                     <input type="text" name="label" id="edit-label" required maxlength="100">
                 </div>
                 <div class="form-group">
-                    <label>Route Name</label>
-                    <input type="text" name="route_name" id="edit-route" maxlength="100">
+                    <label>Route Name <span style="font-size:0.75rem;color:var(--color-text-muted,#94a3b8);">(Terkunci)</span></label>
+                    <input type="text" name="route_name" id="edit-route" maxlength="100" readonly style="background:var(--color-bg,#f8fafc);cursor:not-allowed;opacity:0.85;">
                 </div>
             </div>
             <div class="form-row">
@@ -302,14 +300,31 @@
         </form>
     </div>
 </div>
+
+{{-- ── Modal Konfirmasi Aksi ── --}}
+<div id="modal-action-confirm" class="modal-overlay" role="dialog" aria-modal="true">
+    <div class="modal-box" style="max-width:400px; text-align:center; padding: 2.25rem 2rem 1.75rem;">
+        <div class="modal-icon" style="width:56px; height:56px; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 1.25rem; transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);">
+            <!-- Icon will be set dynamically via Javascript -->
+        </div>
+        <h3 id="confirm-title" style="font-size:1.0625rem; font-weight:700; margin-bottom:8px; color:var(--color-text,#1e293b);">Konfirmasi Aksi</h3>
+        <p id="confirm-desc" style="font-size:0.84rem; color:var(--color-text-muted,#64748b); margin-bottom:1.5rem; line-height:1.6;"></p>
+        <div class="modal-actions" style="justify-content:center; gap: 8px;">
+            <button type="button" class="btn-sm btn-muted" id="confirm-btn-cancel">Batal</button>
+            <button type="button" class="btn-sm" id="confirm-btn-submit">Ya, Lanjutkan</button>
+        </div>
+    </div>
+</div>
 @endsection
 
 @push('scripts')
 <script>
+let activeConfirmForm = null;
+
 function openEditModal(item) {
     const modal = document.getElementById('modal-edit');
     const form  = document.getElementById('form-edit-menu');
-    form.action = '/maintenance/menu/' + item.id;
+    form.action = "{{ url('/maintenance/menu') }}/" + item.id;
     document.getElementById('edit-label').value = item.label || '';
     document.getElementById('edit-route').value = item.route_name || '';
     document.getElementById('edit-icon').value  = item.icon || 'file-text';
@@ -323,14 +338,94 @@ function openEditModal(item) {
     document.getElementById('edit-role-maintenance').checked = roles.includes('maintenance');
     modal.classList.add('is-open');
 }
+
 function closeEditModal() {
     document.getElementById('modal-edit').classList.remove('is-open');
 }
-document.getElementById('modal-edit').addEventListener('click', function(e) {
-    if (e.target === this) closeEditModal();
+
+function showActionConfirm(title, desc, btnText, btnClass, iconHtml, formElement) {
+    const modal = document.getElementById('modal-action-confirm');
+    document.getElementById('confirm-title').textContent = title;
+    document.getElementById('confirm-desc').innerHTML = desc;
+    
+    const submitBtn = document.getElementById('confirm-btn-submit');
+    submitBtn.textContent = btnText;
+    submitBtn.className = 'btn-sm ' + btnClass;
+    
+    const iconContainer = modal.querySelector('.modal-icon');
+    iconContainer.innerHTML = iconHtml;
+    
+    if (btnClass.includes('btn-danger')) {
+        iconContainer.style.background = 'rgba(239,68,68,0.12)';
+        iconContainer.style.color = '#ef4444';
+        iconContainer.style.border = '1px solid rgba(239,68,68,0.25)';
+    } else if (btnClass.includes('btn-warning')) {
+        iconContainer.style.background = 'rgba(245,158,11,0.12)';
+        iconContainer.style.color = '#d97706';
+        iconContainer.style.border = '1px solid rgba(245,158,11,0.25)';
+    } else {
+        iconContainer.style.background = 'rgba(5,150,105,0.12)';
+        iconContainer.style.color = '#047857';
+        iconContainer.style.border = '1px solid rgba(5,150,105,0.25)';
+    }
+    
+    activeConfirmForm = formElement;
+    modal.classList.add('is-open');
+}
+
+function confirmDelete(id, label) {
+    const desc = 'Apakah Anda yakin ingin menghapus menu <strong>' + label + '</strong>? Tindakan ini tidak dapat dibatalkan.';
+    const icon = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>';
+    const form = document.getElementById('form-delete-' + id);
+    showActionConfirm('Hapus Menu', desc, 'Ya, Hapus', 'btn-danger', icon, form);
+}
+
+function confirmToggle(id, label, isActive) {
+    const statusText = isActive ? 'menonaktifkan' : 'mengaktifkan';
+    const desc = 'Apakah Anda yakin ingin <strong>' + statusText + '</strong> menu <strong>' + label + '</strong>?';
+    const icon = isActive 
+        ? '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>'
+        : '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>';
+    const form = document.getElementById('form-toggle-' + id);
+    const btnClass = isActive ? 'btn-warning' : 'btn-success';
+    showActionConfirm('Ubah Status Menu', desc, isActive ? 'Ya, Nonaktifkan' : 'Ya, Aktifkan', btnClass, icon, form);
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const editModal = document.getElementById('modal-edit');
+    if (editModal) {
+        document.body.appendChild(editModal);
+    }
+    
+    const confirmModal = document.getElementById('modal-action-confirm');
+    if (confirmModal) {
+        document.body.appendChild(confirmModal);
+        
+        // Bind click events inside confirm modal
+        document.getElementById('confirm-btn-cancel').addEventListener('click', function() {
+            confirmModal.classList.remove('is-open');
+        });
+        document.getElementById('confirm-btn-submit').addEventListener('click', function() {
+            if (activeConfirmForm) {
+                activeConfirmForm.submit();
+            }
+        });
+        confirmModal.addEventListener('click', function(e) {
+            if (e.target === this) {
+                confirmModal.classList.remove('is-open');
+            }
+        });
+    }
 });
+
 document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') closeEditModal();
+    if (e.key === 'Escape') {
+        closeEditModal();
+        const confirmModal = document.getElementById('modal-action-confirm');
+        if (confirmModal) {
+            confirmModal.classList.remove('is-open');
+        }
+    }
 });
 </script>
 @endpush
