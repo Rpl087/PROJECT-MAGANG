@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Services\SheetsCache;
 use App\Services\GoogleDriveService;
 use Illuminate\Http\Request;
-use Google\Client;
 use Google\Service\Sheets;
 
 class ArsipController extends Controller
@@ -41,40 +40,7 @@ class ArsipController extends Controller
         });
     }
 
-    /**
-     * Buat instance Google Sheets service.
-     */
-    private function getSheetService(): array
-    {
-        $credPath = config('google.service_account_json');
-        if (empty($credPath)) {
-            throw new \RuntimeException('GOOGLE_SERVICE_ACCOUNT_JSON belum dikonfigurasi di .env');
-        }
-        $credFullPath = base_path($credPath);
-        if (!file_exists($credFullPath) || !is_file($credFullPath)) {
-            throw new \RuntimeException("File kredensial Google tidak ditemukan: {$credFullPath}");
-        }
-        $client = new Client();
-        $client->setAuthConfig($credFullPath);
-        $client->addScope(Sheets::SPREADSHEETS);
-        $service       = new Sheets($client);
-        $spreadsheetId = config('google.sheet_id');
-        return [$service, $spreadsheetId];
-    }
-
-    /**
-     * Dapatkan sheet ID numerik berdasarkan nama sheet.
-     */
-    private function getSheetId(Sheets $service, string $spreadsheetId, string $sheetName): ?int
-    {
-        $spreadsheet = $service->spreadsheets->get($spreadsheetId);
-        foreach ($spreadsheet->getSheets() as $sheet) {
-            if ($sheet->getProperties()->getTitle() === $sheetName) {
-                return $sheet->getProperties()->getSheetId();
-            }
-        }
-        return null;
-    }
+    // getSheetService() dan getSheetId() diwarisi dari Controller base class
 
     /**
      * Tampilkan daftar surat masuk dari Google Sheets + form input.
@@ -92,7 +58,7 @@ class ArsipController extends Controller
     {
         $rows       = [];
         $fetchError = null;
-        $isAdmin    = auth()->user()?->isAdmin() ?? false;
+        $isAdmin    = auth()->user()?->hasAdminAccess() ?? false;
 
         if ($isAdmin) {
             try {

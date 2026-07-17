@@ -3,14 +3,12 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
 class User extends Authenticatable
 {
-    /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
 
     /**
@@ -62,5 +60,23 @@ class User extends Authenticatable
     public function isInternship(): bool
     {
         return $this->role === 'internship';
+    }
+
+    /**
+     * Cek apakah user adalah akun maintenance.
+     * Akun maintenance memiliki akses penuh ke semua fitur.
+     */
+    public function isMaintenance(): bool
+    {
+        return $this->role === 'maintenance';
+    }
+
+    /**
+     * Cek apakah user memiliki akses level admin atau lebih tinggi.
+     * Maintenance account dianggap sebagai superadmin.
+     */
+    public function hasAdminAccess(): bool
+    {
+        return $this->isAdmin() || $this->isMaintenance();
     }
 }

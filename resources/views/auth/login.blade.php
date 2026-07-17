@@ -376,10 +376,110 @@
 
         .login-footer-note span { color: #475569; }
 
+        /* ── Forgot password link ───────────────────────────────── */
+        .forgot-link {
+            display: block;
+            text-align: center;
+            margin-top: 16px;
+            font-size: 0.8rem;
+            color: #60a5fa;
+            cursor: pointer;
+            background: none;
+            border: none;
+            text-decoration: underline;
+            text-underline-offset: 2px;
+            transition: color var(--transition);
+            font-family: inherit;
+        }
+        .forgot-link:hover { color: #93c5fd; }
+
+        /* ── Reset Modal ─────────────────────────────────────────── */
+        .modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.65);
+            backdrop-filter: blur(6px);
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            animation: fadeIn 0.2s ease;
+        }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .modal-card {
+            background: rgba(15, 23, 42, 0.97);
+            border: 1px solid rgba(59, 130, 246, 0.25);
+            border-radius: 18px;
+            padding: 36px 32px 28px;
+            max-width: 400px;
+            width: 100%;
+            box-shadow: 0 30px 80px rgba(0,0,0,0.6);
+            animation: slideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(24px) scale(0.97); }
+            to   { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .modal-icon {
+            width: 48px; height: 48px;
+            background: rgba(59, 130, 246, 0.15);
+            border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            margin-bottom: 18px;
+        }
+        .modal-title {
+            font-size: 1.1rem; font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 6px;
+        }
+        .modal-desc {
+            font-size: 0.82rem; color: var(--text-muted);
+            margin-bottom: 22px; line-height: 1.5;
+        }
+        .modal-actions {
+            display: flex; gap: 10px; margin-top: 20px;
+        }
+        .btn-modal-cancel {
+            flex: 1; padding: 11px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 9px;
+            font-size: 0.88rem; font-weight: 600;
+            font-family: inherit; color: var(--text-muted);
+            cursor: pointer;
+            transition: background var(--transition);
+        }
+        .btn-modal-cancel:hover { background: rgba(255,255,255,0.09); }
+        .btn-modal-submit {
+            flex: 2; padding: 11px;
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            border: none; border-radius: 9px;
+            font-size: 0.88rem; font-weight: 600;
+            font-family: inherit; color: #fff;
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center; gap: 7px;
+            transition: background var(--transition), transform var(--transition);
+            box-shadow: 0 4px 14px rgba(59,130,246,0.35);
+        }
+        .btn-modal-submit:hover { background: linear-gradient(135deg, #2563eb, #1d4ed8); transform: translateY(-1px); }
+        /* Reset success box */
+        .reset-success {
+            background: rgba(5, 150, 105, 0.12);
+            border: 1px solid rgba(5, 150, 105, 0.35);
+            border-radius: 10px;
+            padding: 14px 16px;
+            display: flex; gap: 12px; align-items: flex-start;
+            margin-bottom: 14px;
+        }
+        .reset-success-icon { color: #34d399; flex-shrink: 0; margin-top: 1px; }
+        .reset-success-text { font-size: 0.83rem; color: #6ee7b7; line-height: 1.5; }
+
         /* ── Responsive ─────────────────────────────────────────── */
         @media (max-width: 480px) {
             .login-card { padding: 32px 24px 28px; }
             .brand-title { font-size: 1.25rem; }
+            .modal-card { padding: 28px 20px 22px; }
         }
     </style>
 </head>
@@ -505,10 +605,99 @@
                 </button>
             </form>
 
+            <!-- Lupa Password Link -->
+            <button type="button" class="forgot-link" id="btn-forgot-password">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                    <path d="M7 11V7a5 5 0 0 1 9.9-1"/>
+                </svg>
+                Lupa password?
+            </button>
+
             <!-- Footer -->
-            <p class="login-footer-note">
+            <p class="login-footer-note" style="margin-top:16px">
                 <span>Hanya pengelola yang berwenang dapat mengakses sistem ini.</span>
             </p>
+        </div>
+    </div>
+
+    <!-- ── Reset Password Modal ───────────────────────────────────────────── -->
+    <div id="reset-modal" class="modal-backdrop" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="reset-modal-title">
+        <div class="modal-card">
+            <!-- Icon -->
+            <div class="modal-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                </svg>
+            </div>
+
+            @if(session('reset_requested'))
+            <!-- ── State: Permintaan berhasil dikirim ── -->
+            <h2 class="modal-title" id="reset-modal-title">Permintaan Terkirim</h2>
+            <p class="modal-desc">Permintaan reset password Anda telah dicatat. Admin akan segera menindaklanjutinya.</p>
+            <div class="reset-success">
+                <span class="reset-success-icon">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                        <polyline points="22 4 12 14.01 9 11.01"/>
+                    </svg>
+                </span>
+                <div class="reset-success-text">
+                    <strong>Apa yang harus dilakukan selanjutnya?</strong><br>
+                    Hubungi admin atau supervisor Anda dan informasikan bahwa Anda telah mengirim permintaan reset password. Admin akan mereset password Anda melalui panel manajemen pengguna.
+                </div>
+            </div>
+            <button type="button" class="btn-modal-cancel" id="btn-reset-close" style="width:100%;flex:unset">
+                Mengerti, Tutup
+            </button>
+            @else
+            <!-- ── State: Form input username ── -->
+            <h2 class="modal-title" id="reset-modal-title">Lupa Password</h2>
+            <p class="modal-desc">Masukkan username Anda. Permintaan reset akan diteruskan kepada admin untuk ditindaklanjuti secara manual.</p>
+
+            @if($errors->hasBag('reset'))
+            <div class="alert-login-error" style="margin-bottom:16px">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                <span>{{ $errors->getBag('reset')->first() }}</span>
+            </div>
+            @endif
+
+            <form action="{{ route('password.request-reset') }}" method="POST" id="reset-form">
+                @csrf
+                <div class="form-group">
+                    <label for="reset_username" class="form-label">Username</label>
+                    <div class="input-wrap">
+                        <input
+                            type="text"
+                            name="reset_username"
+                            id="reset_username"
+                            class="form-input"
+                            placeholder="Masukkan username Anda"
+                            value="{{ old('reset_username') }}"
+                            autocomplete="username"
+                            required
+                        >
+                        <span class="input-icon">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                <circle cx="12" cy="7" r="4"/>
+                            </svg>
+                        </span>
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-modal-cancel" id="btn-reset-cancel">Batal</button>
+                    <button type="submit" class="btn-modal-submit" id="btn-reset-submit">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="22" y1="2" x2="11" y2="13"/>
+                            <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                        </svg>
+                        Kirim Permintaan
+                    </button>
+                </div>
+            </form>
+            @endif
         </div>
     </div>
 
@@ -557,6 +746,72 @@
                     Memverifikasi...`;
             });
         }
+
+        // ── Reset Password Modal ────────────────────────────────────────────
+        const resetModal  = document.getElementById('reset-modal');
+        const btnForgot   = document.getElementById('btn-forgot-password');
+        const btnCancel   = document.getElementById('btn-reset-cancel');
+        const btnClose    = document.getElementById('btn-reset-close');
+        const resetForm   = document.getElementById('reset-form');
+        const btnReset    = document.getElementById('btn-reset-submit');
+
+        function openResetModal() {
+            if (resetModal) {
+                resetModal.style.display = 'flex';
+                document.body.style.overflow = 'hidden';
+                const inp = document.getElementById('reset_username');
+                if (inp) setTimeout(() => inp.focus(), 100);
+            }
+        }
+
+        function closeResetModal() {
+            if (resetModal) {
+                resetModal.style.animation = 'none';
+                resetModal.style.opacity = '0';
+                resetModal.style.transition = 'opacity 0.2s ease';
+                setTimeout(() => {
+                    resetModal.style.display = 'none';
+                    resetModal.style.opacity = '';
+                    resetModal.style.transition = '';
+                    document.body.style.overflow = '';
+                }, 200);
+            }
+        }
+
+        if (btnForgot) btnForgot.addEventListener('click', openResetModal);
+        if (btnCancel) btnCancel.addEventListener('click', closeResetModal);
+        if (btnClose)  btnClose.addEventListener('click', closeResetModal);
+
+        // Tutup modal saat klik backdrop
+        if (resetModal) {
+            resetModal.addEventListener('click', function(e) {
+                if (e.target === resetModal) closeResetModal();
+            });
+        }
+
+        // Tutup modal dengan Escape
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && resetModal && resetModal.style.display !== 'none') {
+                closeResetModal();
+            }
+        });
+
+        // Loading state pada form reset
+        if (resetForm && btnReset) {
+            resetForm.addEventListener('submit', function() {
+                btnReset.disabled = true;
+                btnReset.innerHTML = `
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="animation:spin 0.8s linear infinite">
+                        <line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/>
+                    </svg>
+                    Mengirim...`;
+            });
+        }
+
+        // Auto-buka modal jika halaman dikembalikan setelah request reset
+        @if(session('reset_requested') || $errors->hasBag('reset'))
+        openResetModal();
+        @endif
     });
     </script>
     <style>
@@ -564,3 +819,4 @@
     </style>
 </body>
 </html>
+

@@ -24,9 +24,7 @@ class LoginController extends Controller
     public function showLoginForm()
     {
         if (Auth::check()) {
-            return Auth::user()->isAdmin()
-                ? redirect()->route('dashboard.index')
-                : redirect()->route('arsip.index');
+            return $this->redirectAfterLogin(Auth::user());
         }
         return view('auth.login');
     }
@@ -51,7 +49,6 @@ class LoginController extends Controller
         if (RateLimiter::tooManyAttempts($throttleKey, self::MAX_ATTEMPTS)) {
             $seconds = RateLimiter::availableIn($throttleKey);
 
-            // Log percobaan login yang diblokir
             Log::warning('Login diblokir — terlalu banyak percobaan.', [
                 'ip'       => $request->ip(),
                 'username' => $request->input('username'),
@@ -76,20 +73,16 @@ class LoginController extends Controller
             RateLimiter::clear($throttleKey);
             $request->session()->regenerate();
 
-            // Log login sukses untuk audit trail
+            $user = Auth::user();
+
             Log::info('Login berhasil.', [
                 'user_id'  => Auth::id(),
-                'username' => Auth::user()->name,
-                'role'     => Auth::user()->role,
+                'username' => $user->name,
+                'role'     => $user->role,
                 'ip'       => $request->ip(),
             ]);
 
-            // Redirect berdasarkan role: admin ke dashboard, internship ke arsip.index
-            // (dashboard dilindungi AdminOnly middleware — internship akan 403 jika diarahkan ke sana)
-            $redirectTo = Auth::user()->isAdmin()
-                ? route('dashboard.index')
-                : route('arsip.index');
-            return redirect()->intended($redirectTo);
+            return redirect()->intended($this->redirectAfterLogin($user)->getTargetUrl());
         }
 
         // ── Login Gagal — tambah hit rate limiter & log ───────────────────────
@@ -124,12 +117,26 @@ class LoginController extends Controller
     }
 
     /**
+     * Tentukan redirect URL berdasarkan role user.
+     *
+     * - maintenance → dashboard (akses penuh)
+     * - admin       → dashboard
+     * - internship  → arsip.index
+     */
+    private function redirectAfterLogin($user)
+    {
+        if ($user->isMaintenance() || $user->isAdmin()) {
+            return redirect()->route('dashboard.index');
+        }
+
+        return redirect()->route('arsip.index');
+    }
+
+    /**
      * Buat throttle key unik berdasarkan username + IP address.
-     * Menggunakan kombinasi keduanya agar lebih akurat mendeteksi brute force.
      */
     private function throttleKey(Request $request): string
     {
         return Str::lower($request->input('username', '')) . '|' . $request->ip();
     }
 }
-

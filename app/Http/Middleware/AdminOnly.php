@@ -10,12 +10,14 @@ use Symfony\Component\HttpFoundation\Response;
 class AdminOnly
 {
     /**
-     * Izinkan akses hanya untuk user dengan role 'admin'.
+     * Izinkan akses hanya untuk user dengan role 'admin' atau 'maintenance'.
      * User 'internship' akan mendapat 403.
+     *
+     * Akun maintenance memiliki akses penuh ke semua fitur admin.
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (!Auth::check() || !Auth::user()->isAdmin()) {
+        if (!Auth::check() || !Auth::user()->hasAdminAccess()) {
             abort(403, 'Akses ditolak. Hanya admin yang dapat mengakses halaman ini.');
         }
 

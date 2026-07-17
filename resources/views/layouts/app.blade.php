@@ -480,6 +480,8 @@
         .toast { min-width: unset; max-width: 100%; }
     }
     </style>
+    {{-- ── Styles dari child views ── --}}
+    @stack('styles')
 </head>
 <body class="@hasSection('navbarOnly') navbar-only @endif">
     {{-- Inisialisasi tema sebelum render (mencegah flash of wrong theme) --}}
@@ -601,62 +603,50 @@
         <!-- Sidebar / Mobile Drawer -->
         <aside class="sidebar" id="main-sidebar" aria-label="Menu navigasi">
             <p class="sidebar-label">Menu</p>
-            <nav class="sidebar-nav">
-                @if(Auth::user()->isAdmin())
-                <a href="{{ route('dashboard.index') }}"
-                   class="sidebar-link {{ request()->routeIs('dashboard.index') ? 'sidebar-link-active' : '' }}"
-                   data-confirm-nav="dashboard"
-                   data-confirm-title="Buka Dashboard?"
-                   data-confirm-desc="Anda akan diarahkan ke halaman Dashboard. Pastikan semua perubahan sudah tersimpan sebelum berpindah."
-                   data-confirm-label="Dashboard">
-                    <span class="sidebar-link-icon">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
-                            <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
-                        </svg>
-                    </span>
-                    Dashboard
-                </a>
-                <a href="{{ route('dashboard.report') }}"
-                   class="sidebar-link {{ request()->routeIs('dashboard.report') ? 'sidebar-link-active' : '' }}"
-                   data-confirm-nav="report"
-                   data-confirm-title="Buka Report Rekap?"
-                   data-confirm-desc="Anda akan diarahkan ke halaman Report Rekap. Pastikan semua perubahan sudah tersimpan sebelum berpindah."
-                   data-confirm-label="Report Rekap">
-                    <span class="sidebar-link-icon">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
-                            <line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
-                        </svg>
-                    </span>
-                    Report Rekap
-                </a>
-                @endif
-                <a href="{{ route('arsip.index') }}"
-                   class="sidebar-link {{ request()->routeIs('arsip.*') ? 'sidebar-link-active' : '' }}">
-                    <span class="sidebar-link-icon">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/>
-                            <path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>
-                        </svg>
-                    </span>
-                    Surat Masuk
-                </a>
-                <a href="{{ route('surat-keluar.index') }}"
-                   class="sidebar-link {{ request()->routeIs('surat-keluar.*') ? 'sidebar-link-active' : '' }}">
-                    <span class="sidebar-link-icon">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <line x1="22" y1="2" x2="11" y2="13"/>
-                            <polygon points="22 2 15 22 11 13 2 9 22 2"/>
-                        </svg>
-                    </span>
-                    Surat Keluar
-                </a>
-            <!-- nav tidak perlu padding-bottom besar karena footer ada di luar sidebar -->
+            <nav class="sidebar-nav" id="sidebar-nav">
+                {{-- ── Menu Dinamis dari Database (dikelola oleh akun Maintenance) ── --}}
+                @forelse($menuItems as $item)
+                    @if($item->isVisibleTo(Auth::user()->role))
+                        @php
+                            $isActive = $item->route_name && request()->routeIs($item->route_name . '*');
+                            $hasRoute = $item->route_name && \Route::has($item->route_name);
+                        @endphp
+                        @if($hasRoute)
+                        <a href="{{ route($item->route_name) }}"
+                           class="sidebar-link {{ $isActive ? 'sidebar-link-active' : '' }}"
+                           @if($item->confirm_title)
+                               data-confirm-nav="{{ $item->route_name }}"
+                               data-confirm-title="{{ $item->confirm_title }}"
+                               data-confirm-desc="{{ $item->confirm_desc }}"
+                               data-confirm-label="{{ $item->label }}"
+                           @endif>
+                            <span class="sidebar-link-icon">
+                                @include('layouts._icon', ['icon' => $item->icon])
+                            </span>
+                            {{ $item->label }}
+                        </a>
+                        @endif
+                    @endif
+                @empty
+                    {{-- Fallback jika tabel menu kosong --}}
+                    <a href="{{ route('arsip.index') }}" class="sidebar-link {{ request()->routeIs('arsip.*') ? 'sidebar-link-active' : '' }}">
+                        <span class="sidebar-link-icon">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>
+                        </span>
+                        Surat Masuk
+                    </a>
+                @endforelse
             </nav>
 
             <!-- Drawer Footer Desktop: di dalam sidebar (disembunyikan di mobile) -->
             <div class="drawer-footer" id="drawer-footer-desktop">
+                {{-- Badge Maintenance --}}
+                @if(Auth::user()->isMaintenance())
+                <div style="margin-bottom:10px;padding:7px 10px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:8px;display:flex;align-items:center;gap:7px;font-size:.75rem;font-weight:700;color:#dc2626;letter-spacing:.04em;text-transform:uppercase">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                    Maintenance Mode
+                </div>
+                @endif
                 <div class="drawer-user-info">
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
@@ -1232,5 +1222,124 @@
 
     {{-- ── Script dari child views (modal, file upload, flatpickr, dll.) ── --}}
     @stack('scripts')
+
+    {{-- ── Realtime Menu Update via SSE ── --}}
+    {{-- Mendeteksi perubahan menu yang dilakukan oleh akun maintenance secara realtime. --}}
+    {{-- Saat ada perubahan, tampilkan notifikasi dan reload halaman setelah 5 detik. --}}
+    @auth
+    <script>
+    (function() {
+        'use strict';
+
+        var currentVersion = null;
+        var notified = false;
+        var sseUrl    = '{{ route("sse.menu-updates") }}';
+        var pollUrl   = '{{ route("api.menu-version") }}';
+
+        // ── Fungsi tampilkan notifikasi update ────────────────────────────────
+        function showUpdateNotification() {
+            if (notified) return;
+            notified = true;
+
+            var toast = document.createElement('div');
+            toast.id  = 'menu-update-toast';
+            toast.style.cssText = [
+                'position:fixed', 'top:1rem', 'left:50%', 'transform:translateX(-50%)',
+                'z-index:99999', 'background:#1e3a5f', 'border:1px solid #3b82f6',
+                'border-radius:12px', 'padding:14px 20px', 'box-shadow:0 8px 30px rgba(0,0,0,0.4)',
+                'color:#e2e8f0', 'font-size:.875rem', 'font-family:inherit',
+                'display:flex', 'align-items:center', 'gap:12px', 'max-width:420px',
+                'animation:slideDown .4s cubic-bezier(.34,1.56,.64,1) both',
+                'backdrop-filter:blur(10px)'
+            ].join(';');
+
+            toast.innerHTML = [
+                '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">',
+                '<circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>',
+                '<div><div style="font-weight:700;color:#93c5fd;margin-bottom:2px">Menu Diperbarui</div>',
+                '<div style="font-size:.82rem;color:#94a3b8">Halaman akan dimuat ulang dalam 5 detik...</div></div>',
+                '<button onclick="document.getElementById(\'menu-update-toast\').remove();" ',
+                'style="background:none;border:none;color:#64748b;cursor:pointer;padding:4px;font-size:1.1rem;line-height:1;margin-left:auto">&times;</button>'
+            ].join('');
+
+            document.body.appendChild(toast);
+
+            // Inject keyframe jika belum ada
+            if (!document.getElementById('menu-toast-style')) {
+                var s = document.createElement('style');
+                s.id  = 'menu-toast-style';
+                s.textContent = '@keyframes slideDown{from{opacity:0;transform:translateX(-50%) translateY(-20px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}';
+                document.head.appendChild(s);
+            }
+
+            // Reload setelah 5 detik
+            setTimeout(function() { location.reload(); }, 5000);
+        }
+
+        // ── Coba gunakan SSE (Server-Sent Events) ─────────────────────────────
+        function connectSSE() {
+            if (!window.EventSource) {
+                // Browser tidak mendukung SSE — fallback ke polling
+                startPolling();
+                return;
+            }
+
+            try {
+                var source = new EventSource(sseUrl);
+
+                source.addEventListener('connected', function(e) {
+                    var data = JSON.parse(e.data);
+                    currentVersion = data.version;
+                });
+
+                source.addEventListener('menu_updated', function(e) {
+                    var data = JSON.parse(e.data);
+                    if (currentVersion !== null && data.version !== currentVersion) {
+                        showUpdateNotification();
+                    }
+                    currentVersion = data.version;
+                });
+
+                source.addEventListener('reconnect', function() {
+                    source.close();
+                    setTimeout(connectSSE, 1000);
+                });
+
+                source.onerror = function() {
+                    source.close();
+                    // SSE error — fallback ke polling
+                    setTimeout(startPolling, 5000);
+                };
+            } catch(e) {
+                startPolling();
+            }
+        }
+
+        // ── Fallback: Polling setiap 15 detik ────────────────────────────────
+        function startPolling() {
+            setInterval(function() {
+                fetch(pollUrl, { credentials: 'same-origin' })
+                    .then(function(r) { return r.json(); })
+                    .then(function(data) {
+                        if (currentVersion === null) {
+                            currentVersion = data.version;
+                        } else if (data.version !== currentVersion) {
+                            currentVersion = data.version;
+                            showUpdateNotification();
+                        }
+                    })
+                    .catch(function() { /* abaikan error jaringan */ });
+            }, 15000);
+        }
+
+        // Mulai koneksi setelah halaman selesai dimuat
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', connectSSE);
+        } else {
+            connectSSE();
+        }
+    })();
+    </script>
+    @endauth
 </body>
 </html>

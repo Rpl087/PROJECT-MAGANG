@@ -189,6 +189,92 @@ IP yang terdeteksi digunakan oleh **2 middleware keamanan**:
 
 > Ganti `{IP_SERVER}` dengan IP aktual PC/laptop server (contoh: `192.168.252.85`). Jika menggunakan Mode 2 (Artisan), tambahkan `:8000` di belakang IP.
 
+
+---
+
+## 🌐 Akses Internet Publik (Cloudflare Tunnel)
+
+Selain akses intranet lokal, aplikasi ini mendukung **Dual Access Mode** — pengguna dari internet (luar kantor) dapat mengakses website menggunakan **Cloudflare Tunnel** tanpa perlu menyewa server hosting.
+
+### Perbandingan Mode Tunnel
+
+| Fitur | 🟡 Quick Tunnel | 🟢 Permanent Tunnel |
+|---|---|---|
+| **Akun Cloudflare** | Tidak perlu | Perlu (gratis) |
+| **Domain** | Tidak perlu | Perlu (domain sendiri) |
+| **URL** | Random, berubah tiap restart | **Tetap/Permanen** (contoh: `arsip.kantoranda.com`) |
+| **Script** | `start-cloudflare-quick.bat` | `start-cloudflare.bat` |
+| **Cocok untuk** | Testing cepat | Penggunaan produksi kantor |
+
+---
+
+### 🟡 Mode A: Quick Tunnel (Tanpa Akun, Tanpa Domain)
+
+Paling mudah untuk testing. URL berubah setiap kali script dijalankan ulang.
+
+```
+double-click → start-cloudflare-quick.bat
+```
+
+URL yang muncul di konsol berbentuk:
+```
+https://random-words.trycloudflare.com
+```
+
+---
+
+### 🟢 Mode B: Permanent Tunnel (URL Tetap — Direkomendasikan)
+
+#### Prasyarat
+- Akun Cloudflare gratis di [cloudflare.com](https://cloudflare.com)
+- Domain yang sudah di-manage oleh Cloudflare (bisa domain murah atau subdomain gratis dari layanan lain)
+- `cloudflared.exe` sudah ada di `C:\laragon\bin\cloudflared\` *(sudah terinstall otomatis)*
+
+#### Setup Awal (Sekali Saja)
+
+```
+double-click → setup-cloudflare.bat
+```
+
+Script ini akan:
+1. **Login ke Cloudflare** — membuka browser untuk otorisasi
+2. **Membuat tunnel** bernama `arsip-bpsdmp`
+3. **Men-generate `config.yml`** dengan template siap pakai di `%USERPROFILE%\.cloudflared\config.yml`
+4. **Panduan DNS routing** — daftarkan subdomain ke Cloudflare
+
+Setelah setup, edit baris berikut di `config.yml`:
+```yaml
+- hostname: arsip.domain-anda.com   # ← ganti dengan subdomain Anda
+  service: http://127.0.0.1:80
+```
+
+Lalu daftarkan DNS:
+```powershell
+C:\laragon\bin\cloudflared\cloudflared.exe tunnel route dns arsip-bpsdmp arsip.domain-anda.com
+```
+
+#### Penggunaan Sehari-hari
+
+```
+double-click → start-cloudflare.bat
+```
+
+Tunnel aktif selama jendela tersebut terbuka. URL permanen Anda selalu sama.
+
+---
+
+### Konfigurasi Dual Access
+
+Di file `.env`, Anda dapat mengontrol akses internet kapan saja:
+
+```dotenv
+# true  → Pengguna internet bisa mengakses (wajib login)
+# false → Aplikasi hanya bisa diakses dari dalam jaringan kantor
+INTERNET_ACCESS_ENABLED=true
+```
+
+> **Keamanan tetap terjaga:** Pengguna internet tetap **wajib login** dengan akun Admin/Internship. Session, CSRF protection, dan rate limiting login tetap aktif sepenuhnya.
+
 ---
 
 ## 🌐 Akses PDF Publik
@@ -205,6 +291,7 @@ https://domain-kamu.com/pdf/surat-keluar/{nama-file.pdf}
 - Keamanan: hanya ekstensi `.pdf` yang diizinkan, path traversal dicegah
 
 ---
+
 
 ## 🔐 Cybersecurity — Lapisan Keamanan
 

@@ -3,8 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Services\SheetsCache;
-use Google\Client;
-use Google\Service\Sheets;
 
 class DashboardController extends Controller
 {
@@ -14,26 +12,12 @@ class DashboardController extends Controller
     public function index()
     {
         try {
-            $credPath = config('google.service_account_json');
-            if (empty($credPath)) {
-                throw new \RuntimeException('GOOGLE_SERVICE_ACCOUNT_JSON belum dikonfigurasi di .env');
-            }
-
-            $credFullPath = base_path($credPath);
-            if (!file_exists($credFullPath) || !is_file($credFullPath)) {
-                throw new \RuntimeException("File kredensial Google tidak ditemukan: {$credFullPath}");
-            }
-
             // Ambil raw rows dari cache (atau fetch dari API jika cache miss)
             [$smRows, $skRows] = SheetsCache::remember(
                 SheetsCache::KEY_DASHBOARD,
                 SheetsCache::TTL_DASHBOARD,
-                function () use ($credFullPath) {
-                    $client = new Client();
-                    $client->setAuthConfig($credFullPath);
-                    $client->addScope(Sheets::SPREADSHEETS_READONLY);
-                    $service       = new Sheets($client);
-                    $spreadsheetId = config('google.sheet_id');
+                function () {
+                    [$service, $spreadsheetId] = $this->getReadonlySheetService();
 
                     // Baca sheet dbSM (Surat Masuk)
                     $smResponse = $service->spreadsheets_values->get($spreadsheetId, 'dbSM!A:R');
@@ -135,26 +119,12 @@ class DashboardController extends Controller
     public function report()
     {
         try {
-            $credPath = config('google.service_account_json');
-            if (empty($credPath)) {
-                throw new \RuntimeException('GOOGLE_SERVICE_ACCOUNT_JSON belum dikonfigurasi di .env');
-            }
-
-            $credFullPath = base_path($credPath);
-            if (!file_exists($credFullPath) || !is_file($credFullPath)) {
-                throw new \RuntimeException("File kredensial Google tidak ditemukan: {$credFullPath}");
-            }
-
             // Ambil raw rows dari cache (atau fetch dari API jika cache miss)
             [$smRows, $skRows] = SheetsCache::remember(
                 SheetsCache::KEY_REPORT,
                 SheetsCache::TTL_DASHBOARD,
-                function () use ($credFullPath) {
-                    $client = new Client();
-                    $client->setAuthConfig($credFullPath);
-                    $client->addScope(Sheets::SPREADSHEETS_READONLY);
-                    $service       = new Sheets($client);
-                    $spreadsheetId = config('google.sheet_id');
+                function () {
+                    [$service, $spreadsheetId] = $this->getReadonlySheetService();
 
                     // Baca sheet dbSM (Surat Masuk)
                     $smResponse = $service->spreadsheets_values->get($spreadsheetId, 'dbSM!A:R');

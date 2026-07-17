@@ -5,8 +5,6 @@ namespace App\Http\Controllers;
 use App\Services\SheetsCache;
 use App\Services\GoogleDriveService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
-use Google\Client;
 use Google\Service\Sheets;
 
 class SuratKeluarController extends Controller
@@ -42,41 +40,7 @@ class SuratKeluarController extends Controller
         });
     }
 
-    /**
-     * Buat instance Google Sheets service.
-     */
-    private function getSheetService(): array
-    {
-        $credPath = config('google.service_account_json');
-        if (empty($credPath)) {
-            throw new \RuntimeException('GOOGLE_SERVICE_ACCOUNT_JSON belum dikonfigurasi di .env');
-        }
-        $credFullPath = base_path($credPath);
-        if (!file_exists($credFullPath) || !is_file($credFullPath)) {
-            throw new \RuntimeException("File kredensial Google tidak ditemukan: {$credFullPath}");
-        }
-        $client = new Client();
-        $client->setAuthConfig($credFullPath);
-        $client->addScope(Sheets::SPREADSHEETS);
-        $service       = new Sheets($client);
-        $spreadsheetId = config('google.sheet_id');
-        return [$service, $spreadsheetId];
-    }
-
-    /**
-     * Dapatkan sheet ID numerik berdasarkan nama sheet.
-     */
-    private function getSheetId(Sheets $service, string $spreadsheetId, string $sheetName): ?int
-    {
-        $spreadsheet = $service->spreadsheets->get($spreadsheetId);
-        foreach ($spreadsheet->getSheets() as $sheet) {
-            $title = $sheet->getProperties()->getTitle();
-            if (trim($title) === trim($sheetName)) {
-                return $sheet->getProperties()->getSheetId();
-            }
-        }
-        return null;
-    }
+    // getSheetService() dan getSheetId() diwarisi dari Controller base class
 
     /**
      * Tampilkan daftar surat keluar dari Google Sheets + form input.
@@ -94,7 +58,7 @@ class SuratKeluarController extends Controller
     {
         $rows       = [];
         $fetchError = null;
-        $isAdmin    = auth()->user()?->isAdmin() ?? false;
+        $isAdmin    = auth()->user()?->hasAdminAccess() ?? false;
 
         if ($isAdmin) {
             try {
@@ -229,48 +193,39 @@ class SuratKeluarController extends Controller
 
     /**
      * Hapus baris surat keluar dari sheet "dbSK".
-     * - Tampilan membaca dari sheet "SURAT KELUAR"
-     * - Penghapusan dilakukan di sheet "dbSK" (sumber data asli)
-     * - Pencarian baris dilakukan berdasarkan PDF link sebagai unique identifier
+     * - Index yang dikirim dari view berasal dari iterasi dbSK langsung.
+     * - PDF link ada di kolom H (index 7) di dbSK — digunakan sebagai unique identifier.
+     * - Lookup langsung di dbSK untuk menghindari mismatch index antar sheet.
      *
-     * @param int $rowIndex  Row index (0-based) dari sheet SURAT KELUAR
+     * @param int $rowIndex  Row index (0-based array) dari dbSK
      */
     public function destroy(int $rowIndex)
     {
         try {
-            Log::info('[SK destroy] rowIndex diterima dari SURAT KELUAR: ' . $rowIndex);
-
             [$service, $spreadsheetId] = $this->getSheetService();
 
-            // ── Langkah 1: Ambil data dari SURAT KELUAR untuk mendapatkan PDF link ──
-            $skResponse = $service->spreadsheets_values->get($spreadsheetId, 'SURAT KELUAR!A:R');
-            $skRows     = $skResponse->getValues() ?? [];
-            $targetRow  = $skRows[$rowIndex] ?? null;
-
-            if ($targetRow === null) {
-                Log::warning('[SK destroy] Baris ' . $rowIndex . ' tidak ditemukan di SURAT KELUAR.');
-                return redirect()->route('surat-keluar.index')
-                    ->with('error', 'Data tidak ditemukan di sheet SURAT KELUAR.');
-            }
-
-            // PDF link ada di kolom Q (index 16) di sheet SURAT KELUAR
-            // Gunakan sebagai unique identifier untuk mencari row di dbSK
-            $pdfLink = trim($targetRow[16] ?? '');
-            Log::info('[SK destroy] PDF link yang dicari di dbSK: ' . $pdfLink);
-
-            // ── Langkah 2: Cari row yang cocok di dbSK berdasarkan PDF link ────────
-            // Struktur dbSK: A=Timestamp | B=Kode Klas | ... | H=Surat Keluar (PDF, index 7)
+            // ── Ambil data langsung dari dbSK menggunakan rowIndex ─────────────
+            // rowIndex yang dikirim dari view sudah merupakan index di dbSK
             $dbskResponse = $service->spreadsheets_values->get($spreadsheetId, 'dbSK!A:R');
             $dbskRows     = $dbskResponse->getValues() ?? [];
+            $targetRow    = $dbskRows[$rowIndex] ?? null;
+
+            if ($targetRow === null) {
+                return redirect()->route('surat-keluar.index')
+                    ->with('error', 'Data tidak ditemukan di sheet dbSK.');
+            }
+
+            // PDF link ada di kolom H (index 7) di dbSK — digunakan sebagai unique identifier
+            $pdfLink      = trim($targetRow[7] ?? '');
             $dbskRowIndex = null;
 
+            // Verifikasi: cari baris di dbSK yang cocok berdasarkan PDF link
+            // (untuk memastikan kita hapus baris yang benar)
             if (!empty($pdfLink)) {
                 foreach ($dbskRows as $i => $row) {
                     if ($i === 0) continue; // skip header
-                    // PDF link di dbSK ada di kolom H (index 7)
                     if (trim($row[7] ?? '') === $pdfLink) {
                         $dbskRowIndex = $i;
-                        Log::info('[SK destroy] Ditemukan di dbSK pada baris index: ' . $i);
                         break;
                     }
                 }
@@ -278,12 +233,11 @@ class SuratKeluarController extends Controller
 
             // Jika PDF link tidak ditemukan, batalkan — lebih aman dari hapus baris salah
             if ($dbskRowIndex === null) {
-                Log::warning('[SK destroy] Gagal: PDF link tidak ditemukan di dbSK, hapus dibatalkan.');
                 return redirect()->route('surat-keluar.index')
                     ->with('error', 'Gagal menghapus: data tidak dapat diidentifikasi secara unik di dbSK (PDF link tidak ditemukan atau kosong).');
             }
 
-            // ── Langkah 3: Hapus baris dari dbSK ──────────────────────────────────
+            // ── Hapus baris dari dbSK ──────────────────────────────────────────
             $sheetId = $this->getSheetId($service, $spreadsheetId, 'dbSK');
 
             if ($sheetId === null) {
@@ -306,7 +260,6 @@ class SuratKeluarController extends Controller
             $service->spreadsheets->batchUpdate($spreadsheetId, $body);
 
             // Hapus file lokal dari uploads/ jika PDF link adalah nama file (bukan URL Google Drive)
-            // Jika berupa URL Drive (https://...), file backup lokal tetap dipertahankan
             if ($pdfLink !== '' && !str_starts_with($pdfLink, 'http')) {
                 $localFilePath = base_path('uploads/' . $pdfLink);
                 if (file_exists($localFilePath)) {
@@ -324,6 +277,7 @@ class SuratKeluarController extends Controller
                 ->with('error', 'Gagal menghapus data: ' . $e->getMessage());
         }
     }
+
 
     /**
      * Simpan data surat keluar ke Google Spreadsheet (sheet: dbSK).
