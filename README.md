@@ -123,74 +123,74 @@ flowchart TD
     A([Mulai]) --> B[Buka Aplikasi]
     B --> C{Sudah Login?}
     C -- Tidak --> D[Tampil Halaman Login]
-    D --> E[Masukkan Username & Password]
+    D --> E["Masukkan Username & Password"]
     E --> F{Kredensial Valid?}
-    F -- Tidak --> G[Tampil Pesan Error\nKembali ke Login]
+    F -- Tidak --> G["Tampil Pesan Error\nKembali ke Login"]
     G --> D
     F -- Ya --> ROLE{Role Pengguna?}
-    ROLE -- Admin --> H[Masuk Dashboard Utama]
-    ROLE -- Internship --> J[Buka Form Surat Masuk]
-    ROLE -- Maintenance --> MAINT[Buka Panel Maintenance]
+    ROLE -- Admin --> H["Masuk Dashboard Utama"]
+    ROLE -- Internship --> J["Buka Form Surat Masuk"]
+    ROLE -- Maintenance --> MAINT["Buka Panel Maintenance"]
     C -- Ya --> ROLE
 
     H --> I{Pilih Menu}
 
-    I -- Surat Masuk --> J[Buka Form Surat Masuk]
-    J --> K[Isi 17 Field Data]
-    K --> L[Upload File PDF]
+    I -- Surat Masuk --> J["Buka Form Surat Masuk"]
+    J --> K["Isi 17 Field Data"]
+    K --> L["Upload File PDF"]
     L --> M{Validasi Form}
-    M -- Gagal --> N[Tampil Pesan Error\nForm tetap terisi]
+    M -- Gagal --> N["Tampil Pesan Error\nForm tetap terisi"]
     N --> K
-    M -- Lolos --> O[Upload PDF ke Google Drive\nBackup lokal ke uploads/]
-    O --> P[Kirim Data ke Google Sheets\nSheet: dbSM kolom A–R]
-    P --> Q[Tampil Notifikasi Berhasil]
+    M -- Lolos --> O["Upload PDF ke Google Drive\nBackup lokal ke uploads/"]
+    O --> P["Kirim Data ke Google Sheets\nSheet: dbSM kolom A–R"]
+    P --> Q["Tampil Notifikasi Berhasil"]
     Q --> H
 
-    I -- Surat Keluar --> R[Buka Form Surat Keluar]
-    R --> S[Isi 18 Field Data]
-    S --> T[Upload File PDF]
+    I -- Surat Keluar --> R["Buka Form Surat Keluar"]
+    R --> S["Isi 18 Field Data"]
+    S --> T["Upload File PDF"]
     T --> U{Validasi Form}
-    U -- Gagal --> V[Tampil Pesan Error\nForm tetap terisi]
+    U -- Gagal --> V["Tampil Pesan Error\nForm tetap terisi"]
     V --> S
-    U -- Lolos --> W[Upload PDF ke Google Drive\nBackup lokal ke uploads/]
-    W --> X[Kirim Data ke Google Sheets\nSheet: dbSK kolom A–R]
-    X --> Y[Tampil Notifikasi Berhasil]
+    U -- Lolos --> W["Upload PDF ke Google Drive\nBackup lokal ke uploads/"]
+    W --> X["Kirim Data ke Google Sheets\nSheet: dbSK kolom A–R"]
+    X --> Y["Tampil Notifikasi Berhasil"]
     Y --> H
 
-    I -- Dashboard --> DA[Tampil Statistik Bulanan & Tahunan]
-    DA --> DB[Pie Chart Kode Klasifikasi]
+    I -- Dashboard --> DA["Tampil Statistik Bulanan & Tahunan"]
+    DA --> DB["Pie Chart Kode Klasifikasi"]
     DB --> H
 
     I -- Hapus Data --> DEL{Konfirmasi Hapus?}
-    DEL -- Ya --> DELACT[Hapus baris dari Google Sheets dbSM/dbSK]
+    DEL -- Ya --> DELACT["Hapus baris dari Google Sheets dbSM/dbSK"]
     DELACT --> H
     DEL -- Tidak --> H
 
-    I -- Edit Data --> EDIT[Klik tombol Edit di tabel]
-    EDIT --> EDITFETCH[AJAX fetch data baris\n/arsip/{index}/edit → JSON]
-    EDITFETCH --> EDITMODAL[Modal Edit pre-filled\n17 field data surat]
+    I -- Edit Data --> EDIT["Klik tombol Edit di tabel"]
+    EDIT --> EDITFETCH["AJAX fetch data baris\n/arsip/{index}/edit → JSON"]
+    EDITFETCH --> EDITMODAL["Modal Edit pre-filled\n17 field data surat"]
     EDITMODAL --> EDITSUB{Submit form PUT?}
-    EDITSUB -- Ya --> EDITUPDATE[Update baris di dbSM/dbSK\nspreadsheets.values.update]
+    EDITSUB -- Ya --> EDITUPDATE["Update baris di dbSM/dbSK\nspreadsheets.values.update"]
     EDITUPDATE --> H
     EDITSUB -- Tidak/Batal --> H
 
-    I -- Rekap --> RPT[Dashboard Report]
-    RPT --> RPT2[Filter Tahun per Tab\nRekap Bulanan/Tahunan/Klasifikasi]
-    RPT2 --> RPT3[Cetak Tab / Cetak Semua]
+    I -- Rekap --> RPT["Dashboard Report"]
+    RPT --> RPT2["Filter Tahun per Tab\nRekap Bulanan/Tahunan/Klasifikasi"]
+    RPT2 --> RPT3["Cetak Tab / Cetak Semua"]
     RPT3 --> H
 
-    I -- Keluar --> Z[Logout Session]
+    I -- Keluar --> Z["Logout Session"]
     Z --> D
 
-    PUB([Pengguna Publik]) --> PURL[Akses URL PDF\n/pdf/type/filename]
+    PUB([Pengguna Publik]) --> PURL["Akses URL PDF\n/pdf/type/filename"]
     PURL --> PCHECK{File Ada?}
-    PCHECK -- Ya --> PPDF[Tampil PDF di Browser]
-    PCHECK -- Tidak --> P404[404 Not Found]
+    PCHECK -- Ya --> PPDF["Tampil PDF di Browser"]
+    PCHECK -- Tidak --> P404["404 Not Found"]
 
-    TAMU([WiFi Tamu]) --> TAMUURL[Akses /tamu]
+    TAMU([WiFi Tamu]) --> TAMUURL["Akses /tamu"]
     TAMUURL --> TAMUCHECK{IP dari subnet tamu/internal?}
-    TAMUCHECK -- Ya --> TAMUVIEW[Tampil Tabel Read-Only]
-    TAMUCHECK -- Tidak --> T403[403 Forbidden]
+    TAMUCHECK -- Ya --> TAMUVIEW["Tampil Tabel Read-Only"]
+    TAMUCHECK -- Tidak --> T403["403 Forbidden"]
 ```
 
 ---
