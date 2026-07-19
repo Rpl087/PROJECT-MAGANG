@@ -6,18 +6,21 @@ use App\Http\Controllers\Controller;
 use App\Models\PasswordResetRequest;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 
 class UserController extends Controller
 {
+    // Cache key untuk versi pending reset requests (digunakan SSE)
+    private const RESET_VERSION_KEY = 'reset_requests_version';
+
     /**
-     * Tampilkan daftar semua user (kecuali akun maintenance tidak bisa diedit).
+     * Tampilkan daftar semua user beserta permintaan reset pending.
      */
     public function index()
     {
-        $users = User::where('role', '!=', 'maintenance')
-            ->orderBy('role')
+        $users = User::orderBy('role')
             ->orderBy('name')
             ->get();
 
@@ -27,16 +30,10 @@ class UserController extends Controller
     }
 
     /**
-     * Reset password user tertentu (hanya admin/maintenance).
-     * Akun maintenance tidak bisa direset dari sini.
+     * Reset password user tertentu (hanya admin).
      */
     public function resetPassword(Request $request, User $user)
     {
-        // Proteksi: tidak boleh reset akun maintenance
-        if ($user->isMaintenance()) {
-            abort(403, 'Password akun maintenance tidak dapat diubah melalui panel ini.');
-        }
-
         $request->validate([
             'new_password' => 'required|string|min:8|max:200|confirmed',
         ], [
@@ -50,10 +47,10 @@ class UserController extends Controller
         ]);
 
         Log::info('Password user direset oleh admin.', [
-            'target_user'  => $user->name,
-            'target_role'  => $user->role,
-            'reset_by'     => auth()->user()->name,
-            'reset_by_role'=> auth()->user()->role,
+            'target_user'   => $user->name,
+            'target_role'   => $user->role,
+            'reset_by'      => auth()->user()->name,
+            'reset_by_role' => auth()->user()->role,
         ]);
 
         // Tandai permintaan reset yang ada sebagai selesai
@@ -61,6 +58,9 @@ class UserController extends Controller
             ->where('is_resolved', false)
             ->get()
             ->each(fn($req) => $req->resolve());
+
+        // Naikkan versi agar SSE admin refresh
+        $this->bumpResetVersion();
 
         return back()->with('success', "Password {$user->name} berhasil direset.");
     }
@@ -72,6 +72,83 @@ class UserController extends Controller
     {
         $resetRequest->resolve();
 
+        // Naikkan versi agar SSE admin refresh
+        $this->bumpResetVersion();
+
         return back()->with('success', 'Permintaan reset ditandai sebagai selesai.');
+    }
+
+    /**
+     * SSE Endpoint — kirim notifikasi realtime ke admin saat ada reset request baru.
+     *
+     * Admin mendengarkan endpoint ini via EventSource. Saat versi berubah
+     * (karena internship submit request), event dikirim ke browser admin.
+     */
+    public function resetRequestsSSE(Request $request)
+    {
+        // Simpan session sebelum streaming agar tidak terjadi session lock
+        $request->session()->save();
+
+        return response()->stream(function () {
+            $lastVersion = Cache::get(self::RESET_VERSION_KEY, 0);
+            $startTime   = time();
+            $maxDuration = 28; // Reconnect setiap 28 detik (sebelum proxy timeout)
+
+            // Kirim state awal beserta jumlah pending saat ini
+            $pending = PasswordResetRequest::pending()->count();
+            $this->sseEvent('connected', [
+                'version' => $lastVersion,
+                'pending' => $pending,
+            ]);
+
+            while (time() - $startTime < $maxDuration) {
+                if (connection_aborted()) break;
+
+                $currentVersion = Cache::get(self::RESET_VERSION_KEY, 0);
+
+                if ($currentVersion !== $lastVersion) {
+                    $pending = PasswordResetRequest::pending()->count();
+                    $this->sseEvent('reset_updated', [
+                        'version' => $currentVersion,
+                        'pending' => $pending,
+                    ]);
+                    $lastVersion = $currentVersion;
+                }
+
+                // Heartbeat agar koneksi tidak timeout
+                echo ": heartbeat\n\n";
+                ob_flush();
+                flush();
+
+                sleep(3);
+            }
+
+            // Signal reconnect
+            $this->sseEvent('reconnect', ['version' => $lastVersion]);
+        }, 200, [
+            'Content-Type'      => 'text/event-stream',
+            'Cache-Control'     => 'no-cache, no-store',
+            'X-Accel-Buffering' => 'no',
+            'Connection'        => 'keep-alive',
+        ]);
+    }
+
+    /**
+     * API endpoint — kembalikan versi dan jumlah pending reset saat ini (polling fallback).
+     */
+    public function resetRequestsVersion()
+    {
+        return response()->json([
+            'version' => Cache::get(self::RESET_VERSION_KEY, 0),
+            'pending' => PasswordResetRequest::pending()->count(),
+        ]);
+    }
+
+    /**
+     * Naikkan versi cache reset requests agar SSE admin mendapat notifikasi.
+     */
+    public static function bumpResetVersion(): void
+    {
+        Cache::put(self::RESET_VERSION_KEY, now()->timestamp, 3600);
     }
 }

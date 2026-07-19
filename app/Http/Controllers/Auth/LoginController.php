@@ -119,13 +119,12 @@ class LoginController extends Controller
     /**
      * Tentukan redirect URL berdasarkan role user.
      *
-     * - maintenance → dashboard (akses penuh)
-     * - admin       → dashboard
-     * - internship  → arsip.index
+     * - admin      → dashboard
+     * - internship → arsip.index
      */
     private function redirectAfterLogin($user)
     {
-        if ($user->isMaintenance() || $user->isAdmin()) {
+        if ($user->isAdmin()) {
             return redirect()->route('dashboard.index');
         }
 

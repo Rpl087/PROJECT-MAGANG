@@ -48,7 +48,6 @@
 }
 .role-admin       { background: rgba(59,130,246,.12); color: #1d4ed8; }
 .role-internship  { background: rgba(5,150,105,.12);  color: #047857; }
-.role-maintenance { background: rgba(239,68,68,.12);  color: #b91c1c; }
 
 /* ── Buttons ── */
 .btn-sm {
@@ -91,6 +90,11 @@
     border-radius: 8px; padding: 8px 12px; font-size: .82rem; color: #dc2626;
     margin-bottom: 1rem;
 }
+
+@keyframes livePulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%       { opacity: 0.4; transform: scale(1.3); }
+}
 </style>
 @endpush
 
@@ -110,6 +114,11 @@
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
         Permintaan Reset Password
         <span class="badge-count">{{ $pendingResets->count() }}</span>
+        {{-- Indikator realtime: dot berkedip menandakan SSE aktif --}}
+        <span id="reset-live-dot" title="Notifikasi realtime aktif" style="display:inline-flex;align-items:center;gap:4px;font-size:.7rem;font-weight:600;color:#10b981;text-transform:none;letter-spacing:0;margin-left:4px">
+            <span style="width:7px;height:7px;border-radius:50%;background:#10b981;display:inline-block;animation:livePulse 1.4s ease-in-out infinite"></span>
+            Live
+        </span>
     </div>
     <table class="data-table">
         <thead>
@@ -187,9 +196,6 @@
             @endforelse
         </tbody>
     </table>
-    <p style="margin-top:12px;font-size:0.78rem;color:var(--color-text-muted,#94a3b8)">
-        * Akun maintenance tidak ditampilkan dan tidak dapat diubah melalui panel ini.
-    </p>
 </div>
 
 {{-- ── Modal Reset Password ── --}}

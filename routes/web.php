@@ -5,7 +5,6 @@ use App\Http\Controllers\ArsipController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\MaintenanceController;
 use App\Http\Controllers\SuratKeluarController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
@@ -83,22 +82,22 @@ Route::get('/image/{filename}', function (string $filename) {
     ]);
 })->name('image.view')->where('filename', '.+');
 
-// ── SSE Endpoint (Realtime menu updates) ─────────────────────────────────────
-// Semua user yang login dapat terhubung ke stream ini untuk menerima notifikasi
-// realtime saat akun maintenance mengubah menu/fitur.
-Route::get('/sse/menu-updates', [MaintenanceController::class, 'menuUpdates'])
-    ->middleware('auth')
-    ->name('sse.menu-updates');
+// ── SSE Endpoint — Notifikasi Reset Password Realtime (khusus admin) ──────────
+// Admin mendengarkan endpoint ini untuk mendapat notifikasi realtime
+// saat ada internship yang submit permintaan reset password.
+Route::get('/sse/reset-requests', [UserController::class, 'resetRequestsSSE'])
+    ->middleware(['auth', \App\Http\Middleware\AdminOnly::class])
+    ->name('sse.reset-requests');
 
-// API endpoint untuk polling fallback (jika SSE tidak didukung)
-Route::get('/api/menu-version', [MaintenanceController::class, 'menuVersion'])
-    ->middleware('auth')
-    ->name('api.menu-version');
+// API endpoint polling fallback untuk admin
+Route::get('/api/reset-requests-version', [UserController::class, 'resetRequestsVersion'])
+    ->middleware(['auth', \App\Http\Middleware\AdminOnly::class])
+    ->name('api.reset-requests-version');
 
 // ── Protected Routes (wajib login) ───────────────────────────────────────────
 Route::middleware('auth')->group(function () {
 
-    // Surat Masuk — semua user login (admin, maintenance & internship)
+    // Surat Masuk — semua user login (admin & internship)
     Route::get('/', [ArsipController::class, 'index'])->name('arsip.index');
     Route::post('/arsip', [ArsipController::class, 'store'])
         ->middleware('internal_only')
@@ -111,13 +110,13 @@ Route::middleware('auth')->group(function () {
         ->name('surat-keluar.store');
 });
 
-// ── Admin-only Routes (wajib login + role admin atau maintenance) ─────────────
+// ── Admin-only Routes (wajib login + role admin) ──────────────────────────────
 Route::middleware(['auth', \App\Http\Middleware\AdminOnly::class, 'internal_only'])->group(function () {
 
-    // Dashboard (admin & maintenance)
+    // Dashboard (admin)
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard.index');
 
-    // Report Rekapan (admin & maintenance)
+    // Report Rekapan (admin)
     Route::get('/dashboard/report', [DashboardController::class, 'report'])->name('dashboard.report');
 
     // Hapus Surat Masuk
@@ -138,33 +137,15 @@ Route::middleware(['auth', \App\Http\Middleware\AdminOnly::class, 'internal_only
     // Update Surat Keluar
     Route::put('/surat-keluar/{rowIndex}', [SuratKeluarController::class, 'update'])->name('surat-keluar.update');
 
-    // ── Kelola Pengguna (admin & maintenance) ─────────────────────────────────
+    // ── Kelola Pengguna (admin) ────────────────────────────────────────────────
     Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/users', [UserController::class, 'index'])->name('users.index');
         Route::post('/users/{user}/reset-password', [UserController::class, 'resetPassword'])
-            ->middleware('block_maint_edit')
             ->name('users.reset-password');
         Route::post('/password-reset-requests/{resetRequest}/resolve', [UserController::class, 'resolveResetRequest'])
             ->name('users.resolve-reset');
     });
 });
-
-// ── Maintenance-only Routes ───────────────────────────────────────────────────
-// PENTING: Gunakan 'maintenance_only' (bukan AdminOnly) agar admin biasa tidak bisa akses
-Route::middleware(['auth', 'maintenance_only', 'internal_only'])
-    ->prefix('maintenance')
-    ->name('maintenance.')
-    ->group(function () {
-
-        // Panel maintenance
-        Route::get('/', [MaintenanceController::class, 'index'])->name('index');
-
-        // CRUD Menu Items
-        Route::post('/menu', [MaintenanceController::class, 'storeMenu'])->name('menu.store');
-        Route::put('/menu/{menuItem}', [MaintenanceController::class, 'updateMenu'])->name('menu.update');
-        Route::delete('/menu/{menuItem}', [MaintenanceController::class, 'destroyMenu'])->name('menu.destroy');
-        Route::patch('/menu/{menuItem}/toggle', [MaintenanceController::class, 'toggleMenu'])->name('menu.toggle');
-    });
 
 // ── Guest Network Routes (WiFi Tamu — read-only, tanpa login) ─────────────────
 // Hanya bisa diakses dari subnet WiFi Tamu atau Internal (via middleware GuestNetwork)

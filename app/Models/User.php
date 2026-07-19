@@ -63,20 +63,10 @@ class User extends Authenticatable
     }
 
     /**
-     * Cek apakah user adalah akun maintenance.
-     * Akun maintenance memiliki akses penuh ke semua fitur.
-     */
-    public function isMaintenance(): bool
-    {
-        return $this->role === 'maintenance';
-    }
-
-    /**
-     * Cek apakah user memiliki akses level admin atau lebih tinggi.
-     * Maintenance account dianggap sebagai superadmin.
+     * Cek apakah user memiliki akses level admin.
      */
     public function hasAdminAccess(): bool
     {
-        return $this->isAdmin() || $this->isMaintenance();
+        return $this->isAdmin();
     }
 }

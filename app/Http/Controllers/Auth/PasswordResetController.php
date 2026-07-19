@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Admin\UserController;
 use App\Models\PasswordResetRequest;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -15,7 +16,7 @@ class PasswordResetController extends Controller
      *
      * Karena sistem ini beroperasi di intranet tanpa email server,
      * reset password dilakukan secara manual oleh admin.
-     * Request ini dicatat dan admin dapat menindaklanjutinya.
+     * Request ini dicatat dan admin dapat menindaklanjutinya secara realtime.
      */
     public function requestReset(Request $request)
     {
@@ -28,10 +29,7 @@ class PasswordResetController extends Controller
         $username = trim($request->input('reset_username'));
 
         // Validasi: pastikan username benar-benar ada di database
-        // (mencegah request untuk akun yang tidak ada)
-        $userExists = User::where('name', $username)
-            ->where('role', '!=', 'maintenance') // akun maintenance tidak bisa request reset
-            ->exists();
+        $userExists = User::where('name', $username)->exists();
 
         if (!$userExists) {
             return back()->with('reset_error', 'Username tidak ditemukan atau tidak dapat mereset password.');
@@ -44,7 +42,6 @@ class PasswordResetController extends Controller
 
         if ($alreadyPending) {
             // Kembalikan pesan sukses palsu agar tidak membocorkan info
-            // (admin sudah diberitahu sebelumnya)
             return back()->with('reset_requested', true);
         }
 
@@ -53,6 +50,9 @@ class PasswordResetController extends Controller
             'username'   => $username,
             'ip_address' => $request->ip(),
         ]);
+
+        // Naikkan versi agar admin SSE mendapat notifikasi realtime
+        UserController::bumpResetVersion();
 
         // Log permintaan untuk audit trail
         Log::info('Permintaan reset password diterima.', [

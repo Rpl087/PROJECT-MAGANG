@@ -12,15 +12,13 @@ class DatabaseSeeder extends Seeder
     /**
      * Seed the application's database.
      *
-     * Catatan penting:
-     *   - Akun 'maintenance' TIDAK pernah dihapus oleh seeder ini.
-     *   - Akun admin dan internship dibuat ulang jika belum ada.
-     *   - Menu items default dibuat hanya jika tabel kosong.
+     * - Hapus semua user lama dan buat ulang akun admin & internship default.
+     * - Menu items default dibuat hanya jika tabel kosong.
      */
     public function run(): void
     {
-        // ── Hapus hanya akun non-maintenance ──────────────────────────────────
-        User::where('role', '!=', 'maintenance')->delete();
+        // ── Hapus semua user lama ─────────────────────────────────────────────
+        User::query()->delete();
 
         // ── Admin utama ───────────────────────────────────────────────────────
         User::firstOrCreate(
@@ -42,18 +40,6 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
-        // ── Akun Maintenance (statis — tidak bisa diubah via panel) ───────────
-        // Password di-manage via .env: MAINTENANCE_PASSWORD
-        User::updateOrCreate(
-            ['role' => 'maintenance'],
-            [
-                'name'     => config('app.maintenance_username', 'Maintenance_BPSDMP_26!'),
-                'email'    => 'maintenance@bpsdmp.local',
-                'password' => Hash::make(config('app.maintenance_password', 'Maintenance_BPSDMP_26!')),
-                'role'     => 'maintenance',
-            ]
-        );
-
         // ── Menu Items Default (hanya jika tabel kosong) ──────────────────────
         if (MenuItem::count() === 0) {
             $menus = [
@@ -61,7 +47,7 @@ class DatabaseSeeder extends Seeder
                     'label'         => 'Dashboard',
                     'route_name'    => 'dashboard.index',
                     'icon'          => 'grid',
-                    'visible_to'    => ['admin', 'maintenance'],
+                    'visible_to'    => ['admin'],
                     'sort_order'    => 1,
                     'is_active'     => true,
                     'confirm_title' => 'Buka Dashboard?',
@@ -71,7 +57,7 @@ class DatabaseSeeder extends Seeder
                     'label'         => 'Report Rekap',
                     'route_name'    => 'dashboard.report',
                     'icon'          => 'file-text',
-                    'visible_to'    => ['admin', 'maintenance'],
+                    'visible_to'    => ['admin'],
                     'sort_order'    => 2,
                     'is_active'     => true,
                     'confirm_title' => 'Buka Report Rekap?',
@@ -81,7 +67,7 @@ class DatabaseSeeder extends Seeder
                     'label'         => 'Surat Masuk',
                     'route_name'    => 'arsip.index',
                     'icon'          => 'inbox',
-                    'visible_to'    => ['admin', 'internship', 'maintenance'],
+                    'visible_to'    => ['admin', 'internship'],
                     'sort_order'    => 3,
                     'is_active'     => true,
                     'confirm_title' => null,
@@ -91,7 +77,7 @@ class DatabaseSeeder extends Seeder
                     'label'         => 'Surat Keluar',
                     'route_name'    => 'surat-keluar.index',
                     'icon'          => 'send',
-                    'visible_to'    => ['admin', 'internship', 'maintenance'],
+                    'visible_to'    => ['admin', 'internship'],
                     'sort_order'    => 4,
                     'is_active'     => true,
                     'confirm_title' => null,
@@ -101,18 +87,8 @@ class DatabaseSeeder extends Seeder
                     'label'         => 'Kelola Pengguna',
                     'route_name'    => 'admin.users.index',
                     'icon'          => 'users',
-                    'visible_to'    => ['admin', 'maintenance'],
+                    'visible_to'    => ['admin'],
                     'sort_order'    => 5,
-                    'is_active'     => true,
-                    'confirm_title' => null,
-                    'confirm_desc'  => null,
-                ],
-                [
-                    'label'         => 'Panel Maintenance',
-                    'route_name'    => 'maintenance.index',
-                    'icon'          => 'settings',
-                    'visible_to'    => ['maintenance'],
-                    'sort_order'    => 10,
                     'is_active'     => true,
                     'confirm_title' => null,
                     'confirm_desc'  => null,

@@ -24,7 +24,7 @@ class MenuItem extends Model
     ];
 
     protected $attributes = [
-        'visible_to' => '["admin","internship","maintenance"]',
+        'visible_to' => '["admin","internship"]',
     ];
 
     /**

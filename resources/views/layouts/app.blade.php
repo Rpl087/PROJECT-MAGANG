@@ -652,13 +652,6 @@
 
             <!-- Drawer Footer Desktop: di dalam sidebar (disembunyikan di mobile) -->
             <div class="drawer-footer" id="drawer-footer-desktop">
-                {{-- Badge Maintenance --}}
-                @if(Auth::user()->isMaintenance())
-                <div style="margin-bottom:10px;padding:7px 10px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:8px;display:flex;align-items:center;gap:7px;font-size:.75rem;font-weight:700;color:#dc2626;letter-spacing:.04em;text-transform:uppercase">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-                    Maintenance Mode
-                </div>
-                @endif
                 <div class="drawer-user-info">
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
@@ -1235,81 +1228,136 @@
     {{-- ── Script dari child views (modal, file upload, flatpickr, dll.) ── --}}
     @stack('scripts')
 
-    {{-- ── Realtime Menu Update via SSE ── --}}
-    {{-- Mendeteksi perubahan menu yang dilakukan oleh akun maintenance secara realtime. --}}
-    {{-- Saat ada perubahan, tampilkan notifikasi dan reload halaman setelah 5 detik. --}}
+    {{-- ── Realtime Password Reset Notification via SSE (khusus admin) ── --}}
+    {{-- Admin mendapat notifikasi toast realtime saat internship submit permintaan reset password. --}}
     @auth
+    @if(Auth::user()->isAdmin())
+    <style>
+    @keyframes resetToastSlide {
+        from { opacity:0; transform:translateX(-50%) translateY(-18px); }
+        to   { opacity:1; transform:translateX(-50%) translateY(0); }
+    }
+    @keyframes badgePulse {
+        0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.5); }
+        50%       { box-shadow: 0 0 0 6px rgba(239,68,68,0); }
+    }
+    #reset-badge {
+        display: none;
+        position: fixed;
+        top: 14px;
+        right: 60px;
+        z-index: 9999;
+        background: #ef4444;
+        color: #fff;
+        border-radius: 99px;
+        font-size: 0.72rem;
+        font-weight: 700;
+        padding: 3px 8px;
+        min-width: 22px;
+        text-align: center;
+        animation: badgePulse 1.6s ease-in-out infinite;
+        cursor: pointer;
+        text-decoration: none;
+        letter-spacing: .02em;
+    }
+    #reset-badge.is-visible { display: inline-block; }
+    </style>
+
+    {{-- Badge merah di header: klik menuju halaman kelola pengguna --}}
+    <a href="{{ route('admin.users.index') }}" id="reset-badge" title="Ada permintaan reset password baru"></a>
+
     <script>
     (function() {
         'use strict';
 
-        var currentVersion = null;
-        var notified = false;
-        var sseUrl    = '{{ route("sse.menu-updates") }}';
-        var pollUrl   = '{{ route("api.menu-version") }}';
+        var currentVersion  = null;
+        var currentPending  = 0;
+        var sseUrl  = '{{ route("sse.reset-requests") }}';
+        var pollUrl = '{{ route("api.reset-requests-version") }}';
 
-        // ── Fungsi tampilkan notifikasi update ────────────────────────────────
-        function showUpdateNotification() {
-            if (notified) return;
-            notified = true;
+        // ── Update badge di header ────────────────────────────────────────────
+        function updateBadge(count) {
+            var badge = document.getElementById('reset-badge');
+            if (!badge) return;
+            if (count > 0) {
+                badge.textContent = count;
+                badge.classList.add('is-visible');
+            } else {
+                badge.classList.remove('is-visible');
+            }
+        }
+
+        // ── Tampilkan toast notifikasi ────────────────────────────────────────
+        function showResetToast(pendingCount) {
+            // Hapus toast lama jika ada
+            var old = document.getElementById('reset-notify-toast');
+            if (old) old.remove();
 
             var toast = document.createElement('div');
-            toast.id  = 'menu-update-toast';
+            toast.id = 'reset-notify-toast';
             toast.style.cssText = [
                 'position:fixed', 'top:1rem', 'left:50%', 'transform:translateX(-50%)',
-                'z-index:99999', 'background:#1e3a5f', 'border:1px solid #3b82f6',
-                'border-radius:12px', 'padding:14px 20px', 'box-shadow:0 8px 30px rgba(0,0,0,0.4)',
-                'color:#e2e8f0', 'font-size:.875rem', 'font-family:inherit',
-                'display:flex', 'align-items:center', 'gap:12px', 'max-width:420px',
-                'animation:slideDown .4s cubic-bezier(.34,1.56,.64,1) both',
-                'backdrop-filter:blur(10px)'
+                'z-index:99999', 'background:#1e293b', 'border:1px solid #ef4444',
+                'border-radius:12px', 'padding:14px 18px', 'box-shadow:0 8px 30px rgba(0,0,0,0.35)',
+                'color:#f1f5f9', 'font-size:.875rem', 'font-family:inherit',
+                'display:flex', 'align-items:center', 'gap:12px', 'max-width:400px',
+                'animation:resetToastSlide .4s cubic-bezier(.34,1.56,.64,1) both',
+                'cursor:pointer'
             ].join(';');
 
             toast.innerHTML = [
-                '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">',
-                '<circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>',
-                '<div><div style="font-weight:700;color:#93c5fd;margin-bottom:2px">Menu Diperbarui</div>',
-                '<div style="font-size:.82rem;color:#94a3b8">Halaman akan dimuat ulang dalam 5 detik...</div></div>',
-                '<button onclick="document.getElementById(\'menu-update-toast\').remove();" ',
-                'style="background:none;border:none;color:#64748b;cursor:pointer;padding:4px;font-size:1.1rem;line-height:1;margin-left:auto">&times;</button>'
+                '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0">',
+                '<rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>',
+                '<div style="flex:1">',
+                '<div style="font-weight:700;color:#fca5a5;margin-bottom:2px">Permintaan Reset Password</div>',
+                '<div style="font-size:.8rem;color:#94a3b8">' + pendingCount + ' permintaan menunggu tindak lanjut</div>',
+                '</div>',
+                '<button id="reset-toast-close" style="background:none;border:none;color:#64748b;cursor:pointer;padding:4px;font-size:1.1rem;line-height:1;flex-shrink:0">&times;</button>'
             ].join('');
+
+            // Klik toast → buka halaman kelola pengguna
+            toast.addEventListener('click', function(e) {
+                if (e.target.id !== 'reset-toast-close') {
+                    window.location.href = '{{ route("admin.users.index") }}';
+                }
+            });
 
             document.body.appendChild(toast);
 
-            // Inject keyframe jika belum ada
-            if (!document.getElementById('menu-toast-style')) {
-                var s = document.createElement('style');
-                s.id  = 'menu-toast-style';
-                s.textContent = '@keyframes slideDown{from{opacity:0;transform:translateX(-50%) translateY(-20px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}';
-                document.head.appendChild(s);
-            }
+            // Tombol tutup
+            document.getElementById('reset-toast-close').addEventListener('click', function(e) {
+                e.stopPropagation();
+                toast.remove();
+            });
 
-            // Reload setelah 5 detik
-            setTimeout(function() { location.reload(); }, 5000);
+            // Auto-hilang setelah 8 detik
+            setTimeout(function() { if (toast.parentNode) toast.remove(); }, 8000);
         }
 
-        // ── Coba gunakan SSE (Server-Sent Events) ─────────────────────────────
-        function connectSSE() {
-            if (!window.EventSource) {
-                // Browser tidak mendukung SSE — fallback ke polling
-                startPolling();
-                return;
+        // ── Proses event dari SSE / polling ───────────────────────────────────
+        function handleUpdate(data) {
+            updateBadge(data.pending || 0);
+            // Tampilkan toast hanya jika ada perubahan versi (bukan inisialisasi)
+            if (currentVersion !== null && data.version !== currentVersion && data.pending > 0) {
+                showResetToast(data.pending);
             }
+            currentVersion = data.version;
+            currentPending = data.pending || 0;
+        }
+
+        // ── Koneksi SSE ───────────────────────────────────────────────────────
+        function connectSSE() {
+            if (!window.EventSource) { startPolling(); return; }
 
             try {
                 var source = new EventSource(sseUrl);
 
                 source.addEventListener('connected', function(e) {
-                    var data = JSON.parse(e.data);
-                    currentVersion = data.version;
+                    handleUpdate(JSON.parse(e.data));
                 });
 
-                source.addEventListener('menu_updated', function(e) {
-                    var data = JSON.parse(e.data);
-                    if (currentVersion !== null && data.version !== currentVersion) {
-                        showUpdateNotification();
-                    }
-                    currentVersion = data.version;
+                source.addEventListener('reset_updated', function(e) {
+                    handleUpdate(JSON.parse(e.data));
                 });
 
                 source.addEventListener('reconnect', function() {
@@ -1319,7 +1367,6 @@
 
                 source.onerror = function() {
                     source.close();
-                    // SSE error — fallback ke polling
                     setTimeout(startPolling, 5000);
                 };
             } catch(e) {
@@ -1332,19 +1379,11 @@
             setInterval(function() {
                 fetch(pollUrl, { credentials: 'same-origin' })
                     .then(function(r) { return r.json(); })
-                    .then(function(data) {
-                        if (currentVersion === null) {
-                            currentVersion = data.version;
-                        } else if (data.version !== currentVersion) {
-                            currentVersion = data.version;
-                            showUpdateNotification();
-                        }
-                    })
-                    .catch(function() { /* abaikan error jaringan */ });
+                    .then(handleUpdate)
+                    .catch(function() {});
             }, 15000);
         }
 
-        // Mulai koneksi setelah halaman selesai dimuat
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', connectSSE);
         } else {
@@ -1352,6 +1391,7 @@
         }
     })();
     </script>
+    @endif
     @endauth
 </body>
 </html>
