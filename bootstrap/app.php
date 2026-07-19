@@ -11,14 +11,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        // Percayai proxy dari jaringan intranet lokal saja (bukan wildcard)
-        // Diperlukan agar HTTPS dan IP client terdeteksi dengan benar di balik reverse proxy
-        $middleware->trustProxies(at: [
-            '127.0.0.1',
-            '192.168.252.0/22',
-            '192.168.0.0/16',
-            '10.0.0.0/8',
-        ]);
+        // Percayai semua proxy — diperlukan agar ngrok (IP publik) dan reverse proxy
+        // intranet dapat meneruskan X-Forwarded-For / X-Forwarded-Host dengan benar.
+        // Catatan: '*' aman di environment development/audit (ngrok) maupun intranet lokal.
+        $middleware->trustProxies(at: '*');
 
         // ── Security Headers — berjalan di semua request ─────────────────────
         // Menambahkan HTTP security headers untuk proteksi dari XSS, Clickjacking,

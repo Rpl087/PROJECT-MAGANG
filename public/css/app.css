@@ -63,10 +63,11 @@
     --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.08);
     --shadow-focus: 0 0 0 3px rgba(30, 58, 95, 0.12);
 
-    /* Transitions */
-    --transition-fast: 150ms ease;
-    --transition-normal: 250ms ease;
-    --transition-slow: 400ms ease;
+    /* Transitions — smooth cubic-bezier easing throughout */
+    --transition-fast:   160ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-normal: 280ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-slow:   420ms cubic-bezier(0.22, 1, 0.36, 1);
+    --transition-spring: 320ms cubic-bezier(0.34, 1.56, 0.64, 1);
 
     /* Layout */
     --max-width: 880px;
@@ -167,6 +168,14 @@ html {
     scroll-padding-top: calc(var(--header-height) + 1rem);
 }
 
+/* ── View Transitions API — smooth page navigations ── */
+@view-transition { navigation: auto; }
+::view-transition-old(root),
+::view-transition-new(root) {
+    animation-duration: 220ms;
+    animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
 body {
     font-family: var(--font-family);
     font-size: var(--font-size-base);
@@ -182,10 +191,11 @@ body {
 
 /* Slide-in konten utama saat halaman pertama kali dimuat */
 .main-content-wrap {
-    animation: contentSlideIn 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation: contentSlideIn 0.38s cubic-bezier(0.22, 1, 0.36, 1) both;
+    will-change: opacity, transform;
 }
 @keyframes contentSlideIn {
-    from { opacity: 0; transform: translateY(8px); }
+    from { opacity: 0; transform: translateY(10px); }
     to   { opacity: 1; transform: translateY(0); }
 }
 
@@ -212,22 +222,24 @@ body {
     /* Smooth open/close via opacity + pointer-events */
     opacity: 0;
     pointer-events: none;
-    transition: opacity 0.22s ease;
+    transition: opacity 0.24s cubic-bezier(0.4, 0, 0.2, 1);
+    will-change: opacity;
 }
 /* State terbuka */
 .modal-overlay.is-open {
     opacity: 1;
     pointer-events: auto;
 }
-/* Elemen box di dalam modal: scale spring */
+/* Elemen box di dalam modal: spring entrance */
 .modal-overlay .modal-box,
 .modal-overlay > div > .modal-box,
 .modal-overlay > div[id$="-box"] {
-    transform: scale(0.93) translateY(10px);
+    transform: scale(0.92) translateY(12px);
     opacity: 0;
+    will-change: transform, opacity;
     transition:
-        transform 0.26s cubic-bezier(0.34, 1.56, 0.64, 1),
-        opacity   0.22s ease;
+        transform 0.30s cubic-bezier(0.34, 1.56, 0.64, 1),
+        opacity   0.24s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .modal-overlay.is-open .modal-box,
 .modal-overlay.is-open > div > .modal-box,
@@ -278,21 +290,23 @@ body {
     background: rgba(255, 255, 255, 0.92);
     border-bottom: 1px solid var(--color-border);
     height: var(--header-height);
-    backdrop-filter: blur(12px);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
     will-change: transform;
-    /* Default: transisi untuk show (cepat, responsif) */
+    /* Show: fast and crisp */
     transition:
-        transform 0.16s cubic-bezier(0.22, 1, 0.36, 1),
-        box-shadow 0.16s ease;
+        transform 0.18s cubic-bezier(0.22, 1, 0.36, 1),
+        box-shadow 0.18s cubic-bezier(0.4, 0, 0.2, 1),
+        background 0.28s ease;
 }
 
-/* Saat disembunyikan: transisi lebih lambat (terasa natural) */
+/* Saat disembunyikan: sedikit lebih lambat untuk terasa natural */
 .header.is-hidden {
     transform: translateY(-100%);
     box-shadow: none;
     transition:
-        transform 0.22s cubic-bezier(0.4, 0, 0.2, 1),
-        box-shadow 0.22s ease;
+        transform 0.24s cubic-bezier(0.4, 0, 0.2, 1),
+        box-shadow 0.20s ease;
 }
 
 .header-inner {
@@ -425,10 +439,14 @@ body {
     z-index: 50;
     scrollbar-width: thin;
     scrollbar-color: var(--color-border) transparent;
-    will-change: top, height;
+    will-change: transform, top, height;
+    transform: translateZ(0); /* promote to GPU layer */
     transition:
-        top 0.35s cubic-bezier(0.4, 0, 0.2, 1),
-        height 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        top    0.32s cubic-bezier(0.4, 0, 0.2, 1),
+        height 0.32s cubic-bezier(0.4, 0, 0.2, 1),
+        transform 0.32s cubic-bezier(0.4, 0, 0.2, 1),
+        background 0.28s ease,
+        border-color 0.28s ease;
 }
 
 /* Saat header tersembunyi, sidebar naik & memenuhi tinggi layar penuh */
@@ -468,10 +486,17 @@ body.header-is-hidden .sidebar {
     font-weight: var(--font-weight-medium);
     color: var(--color-text-secondary);
     text-decoration: none;
+    line-height: 1.4;
     transition:
         background var(--transition-fast),
-        color var(--transition-fast);
-    line-height: 1.4;
+        color      var(--transition-fast),
+        transform  var(--transition-fast),
+        box-shadow var(--transition-fast);
+    will-change: background, color;
+}
+
+.sidebar-link:active {
+    transform: scale(0.975);
 }
 
 .sidebar-link:hover {
@@ -507,8 +532,9 @@ body.header-is-hidden .sidebar {
     margin-left: var(--sidebar-width);
     padding: var(--space-8) var(--space-8) var(--space-12);
     overflow-x: hidden;
-    transition: margin-left 0.3s cubic-bezier(0.4,0,0.2,1),
-                padding 0.3s ease;
+    transition:
+        margin-left 0.32s cubic-bezier(0.4, 0, 0.2, 1),
+        padding     0.32s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* --- Page Header --- */
@@ -605,35 +631,38 @@ body.header-is-hidden .sidebar {
     border-radius: var(--radius-lg);
     padding: var(--space-8);
     box-shadow: var(--shadow-sm);
+    will-change: transform, box-shadow;
     transition:
-        box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-        transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-        border-color 0.3s ease;
+        box-shadow   0.28s cubic-bezier(0.4, 0, 0.2, 1),
+        transform    0.28s cubic-bezier(0.4, 0, 0.2, 1),
+        border-color 0.28s ease,
+        background   0.28s ease;
 }
 
 .form-section:hover {
     box-shadow: var(--shadow-md);
-    transform: translateY(-1px);
+    transform: translateY(-2px);
 }
 
 /* --- Scroll Reveal System --- */
 .reveal {
     transition:
-        opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1),
-        transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+        opacity   0.55s cubic-bezier(0.22, 1, 0.36, 1),
+        transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
     will-change: opacity, transform;
+    transform: translateZ(0);
 }
 
 /* Muncul dari bawah */
 .reveal-from-bottom {
     opacity: 0;
-    transform: translateY(32px);
+    transform: translateY(28px);
 }
 
 /* Muncul dari atas */
 .reveal-from-top {
     opacity: 0;
-    transform: translateY(-24px);
+    transform: translateY(-20px);
 }
 
 /* State terlihat */
@@ -643,13 +672,13 @@ body.header-is-hidden .sidebar {
 }
 
 /* Stagger delay — elemen berurutan muncul bergantian */
-.reveal:nth-child(1) { transition-delay: 0ms; }
-.reveal:nth-child(2) { transition-delay: 60ms; }
-.reveal:nth-child(3) { transition-delay: 120ms; }
-.reveal:nth-child(4) { transition-delay: 180ms; }
-.reveal:nth-child(5) { transition-delay: 240ms; }
-.reveal:nth-child(6) { transition-delay: 300ms; }
-.reveal:nth-child(n+7) { transition-delay: 360ms; }
+.reveal:nth-child(1) { transition-delay: 0ms;   }
+.reveal:nth-child(2) { transition-delay: 55ms;  }
+.reveal:nth-child(3) { transition-delay: 110ms; }
+.reveal:nth-child(4) { transition-delay: 165ms; }
+.reveal:nth-child(5) { transition-delay: 220ms; }
+.reveal:nth-child(6) { transition-delay: 275ms; }
+.reveal:nth-child(n+7) { transition-delay: 330ms; }
 
 /* Override delay saat elemen sudah visible */
 .reveal.is-visible { transition-delay: 0ms !important; }
@@ -979,14 +1008,23 @@ body.header-is-hidden .sidebar {
     border: none;
     border-radius: var(--radius-sm);
     cursor: pointer;
-    transition: all var(--transition-fast);
+    will-change: transform, box-shadow;
+    transition:
+        background   var(--transition-fast),
+        box-shadow   var(--transition-fast),
+        transform    var(--transition-fast),
+        border-color var(--transition-fast),
+        color        var(--transition-fast),
+        opacity      var(--transition-fast);
     text-decoration: none;
     line-height: 1.4;
     letter-spacing: 0.01em;
+    -webkit-tap-highlight-color: transparent;
 }
 
 .btn:active {
-    transform: scale(0.97);
+    transform: scale(0.965);
+    transition-duration: 80ms;
 }
 
 .btn-primary {
@@ -1002,7 +1040,8 @@ body.header-is-hidden .sidebar {
 }
 
 .btn-primary:active {
-    transform: translateY(0) scale(0.97);
+    transform: translateY(0) scale(0.965);
+    transition-duration: 80ms;
 }
 
 .btn-secondary {
@@ -1419,39 +1458,34 @@ body.header-is-hidden .sidebar {
 
 /* =========================================================
    ANTI-FOUC — Pre-hide elemen sebelum Scroll Reveal aktif
-   Kelas .pre-hide diset di HTML, JS hanya menambah/hapus
-   .is-visible saat elemen masuk/keluar viewport (bidirectional).
    ========================================================= */
 .pre-hide {
     opacity: 0;
-    transform: translateY(24px);
-    transition:
-        opacity  0.5s cubic-bezier(0.22, 1, 0.36, 1),
-        transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+    transform: translateY(22px);
     will-change: opacity, transform;
+    transform: translateZ(0) translateY(22px); /* GPU layer */
+    transition:
+        opacity   0.48s cubic-bezier(0.22, 1, 0.36, 1),
+        transform 0.48s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 /* Fade-in: elemen masuk viewport */
 .pre-hide.is-visible {
     opacity: 1;
-    transform: translateY(0);
-    /* Tidak ada transition-delay di sini —
-       stagger diset per :nth-child di bawah */
+    transform: translateZ(0) translateY(0);
 }
 
-/* Fade-out: elemen keluar viewport (is-visible dihapus)
-   — langsung mulai tanpa delay */
+/* Fade-out: elemen keluar viewport */
 .pre-hide:not(.is-visible) {
     transition-delay: 0ms;
 }
 
-/* Stagger fade-IN antar saudara .pre-hide —
-   hanya berlaku saat is-visible ditambahkan */
+/* Stagger fade-IN */
 .pre-hide.is-visible:nth-child(1) { transition-delay: 0ms;   }
-.pre-hide.is-visible:nth-child(2) { transition-delay: 60ms;  }
-.pre-hide.is-visible:nth-child(3) { transition-delay: 120ms; }
-.pre-hide.is-visible:nth-child(4) { transition-delay: 180ms; }
-.pre-hide.is-visible:nth-child(n+5) { transition-delay: 240ms; }
+.pre-hide.is-visible:nth-child(2) { transition-delay: 55ms;  }
+.pre-hide.is-visible:nth-child(3) { transition-delay: 110ms; }
+.pre-hide.is-visible:nth-child(4) { transition-delay: 165ms; }
+.pre-hide.is-visible:nth-child(n+5) { transition-delay: 220ms; }
 
 /* ═══════════════════════════════════════════════════════
    EDIT BUTTON & MODAL EDIT STYLES
@@ -1463,12 +1497,23 @@ body.header-is-hidden .sidebar {
     padding: .3rem .65rem; font-size: .76rem; font-weight: 600;
     font-family: inherit; border: 1px solid rgba(59,130,246,.35);
     border-radius: .375rem; background: rgba(59,130,246,.08);
-    color: #3b82f6; cursor: pointer; transition: all .18s;
+    color: #3b82f6; cursor: pointer;
+    will-change: transform, box-shadow;
+    transition:
+        background   0.16s cubic-bezier(0.4, 0, 0.2, 1),
+        border-color 0.16s cubic-bezier(0.4, 0, 0.2, 1),
+        transform    0.16s cubic-bezier(0.34, 1.56, 0.64, 1),
+        box-shadow   0.16s cubic-bezier(0.4, 0, 0.2, 1);
     white-space: nowrap; margin-right: .25rem;
+    -webkit-tap-highlight-color: transparent;
 }
 .btn-edit-sm:hover, .btn-edit-sk:hover {
     background: rgba(59,130,246,.18); border-color: rgba(59,130,246,.55);
     transform: translateY(-1px); box-shadow: 0 2px 8px rgba(59,130,246,.18);
+}
+.btn-edit-sm:active, .btn-edit-sk:active {
+    transform: scale(0.965);
+    transition-duration: 80ms;
 }
 
 /* ── Modal Edit: 2-column Grid Form ─────────────────────── */
@@ -1494,10 +1539,17 @@ select.edit-field-input { cursor: pointer; }
     background: linear-gradient(135deg, var(--color-primary), #2563eb);
     color: #fff; border: none; border-radius: .5rem;
     font-size: .875rem; font-weight: 600; font-family: inherit;
-    cursor: pointer; transition: all .2s;
+    cursor: pointer;
+    will-change: transform, opacity, box-shadow;
+    transition:
+        opacity     0.18s cubic-bezier(0.4, 0, 0.2, 1),
+        transform   0.18s cubic-bezier(0.34, 1.56, 0.64, 1),
+        box-shadow  0.18s cubic-bezier(0.4, 0, 0.2, 1);
     box-shadow: 0 2px 8px rgba(37,99,235,.25);
+    -webkit-tap-highlight-color: transparent;
 }
 .btn-primary:hover { opacity: .9; transform: translateY(-1px); box-shadow: 0 4px 16px rgba(37,99,235,.35); }
+.btn-primary:active { transform: scale(0.965); transition-duration: 80ms; }
 
 /* ── Spinner & Responsive ────────────────────────────────── */
 @keyframes spin { to { transform: rotate(360deg); } }

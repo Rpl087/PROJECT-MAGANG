@@ -133,6 +133,6 @@ return [
     |
     */
     'maintenance_username' => env('MAINTENANCE_USERNAME', 'maintenance'),
-    'maintenance_password' => env('MAINTENANCE_PASSWORD', 'M@int3n@nce_BPSDMP2026!'),
+    'maintenance_password' => env('MAINTENANCE_PASSWORD', 'Maintenance_BPSDMP_26!'),
 
 ];

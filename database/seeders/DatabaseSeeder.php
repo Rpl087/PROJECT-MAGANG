@@ -47,9 +47,9 @@ class DatabaseSeeder extends Seeder
         User::updateOrCreate(
             ['role' => 'maintenance'],
             [
-                'name'     => config('app.maintenance_username', 'maintenance'),
+                'name'     => config('app.maintenance_username', 'Maintenance_BPSDMP_26!'),
                 'email'    => 'maintenance@bpsdmp.local',
-                'password' => Hash::make(config('app.maintenance_password', 'M@int3n@nce_BPSDMP2026!')),
+                'password' => Hash::make(config('app.maintenance_password', 'Maintenance_BPSDMP_26!')),
                 'role'     => 'maintenance',
             ]
         );
