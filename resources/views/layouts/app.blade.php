@@ -480,8 +480,6 @@
         .toast { min-width: unset; max-width: 100%; }
     }
     </style>
-    {{-- ── Styles dari child views ── --}}
-    @stack('styles')
 </head>
 <body class="@hasSection('navbarOnly') navbar-only @endif">
     {{-- Inisialisasi tema sebelum render (mencegah flash of wrong theme) --}}

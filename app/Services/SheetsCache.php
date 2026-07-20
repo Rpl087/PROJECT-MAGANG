@@ -32,7 +32,6 @@ class SheetsCache
 
     public const KEY_SURAT_MASUK  = 'sheets.surat-masuk';
     public const KEY_SURAT_KELUAR = 'sheets.surat-keluar';
-    public const KEY_DBSM         = 'sheets.dbsm';
     public const KEY_DASHBOARD    = 'sheets.dashboard';
     public const KEY_REPORT       = 'sheets.report';
 

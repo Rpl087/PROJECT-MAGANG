@@ -60,7 +60,7 @@ class UserController extends Controller
             ->each(fn($req) => $req->resolve());
 
         // Naikkan versi agar SSE admin refresh
-        $this->bumpResetVersion();
+        static::bumpResetVersion();
 
         return back()->with('success', "Password {$user->name} berhasil direset.");
     }
@@ -73,7 +73,7 @@ class UserController extends Controller
         $resetRequest->resolve();
 
         // Naikkan versi agar SSE admin refresh
-        $this->bumpResetVersion();
+        static::bumpResetVersion();
 
         return back()->with('success', 'Permintaan reset ditandai sebagai selesai.');
     }

@@ -317,27 +317,27 @@
                 </div>
                 <div class="edit-field-group">
                     <label class="edit-field-label">Klasifikasi Keamanan <span class="req">*</span></label>
-                    <input type="text" name="klasifikasi_keamanan" id="edit-sm-klas-keamanan" class="edit-field-input edit-kode-auto" 'readonly' style="background:'var(--color-bg,#f8fafc)';cursor:'not-allowed';opacity:'.85';" required>
+                    <input type="text" name="klasifikasi_keamanan" id="edit-sm-klas-keamanan" class="edit-field-input edit-kode-auto" readonly style="background:var(--color-bg,#f8fafc);cursor:not-allowed;opacity:.85;" required>
                     <small style="color:var(--color-text-muted);font-size:.72rem;">Diisi otomatis dari kode klasifikasi</small>
                 </div>
                 <div class="edit-field-group">
                     <label class="edit-field-label">Tingkat Akses <span class="req">*</span></label>
-                    <input type="text" name="tingkat_akses" id="edit-sm-tingkat-akses" class="edit-field-input edit-kode-auto" 'readonly' style="background:'var(--color-bg,#f8fafc)';cursor:'not-allowed';opacity:'.85';" required>
+                    <input type="text" name="tingkat_akses" id="edit-sm-tingkat-akses" class="edit-field-input edit-kode-auto" readonly style="background:var(--color-bg,#f8fafc);cursor:not-allowed;opacity:.85;" required>
                     <small style="color:var(--color-text-muted);font-size:.72rem;">Diisi otomatis dari kode klasifikasi</small>
                 </div>
                 <div class="edit-field-group">
                     <label class="edit-field-label">Retensi Aktif <span class="req">*</span></label>
-                    <input type="text" name="retensi_aktif" id="edit-sm-retensi-aktif" class="edit-field-input edit-retensi-auto" 'readonly' style="background:'var(--color-bg,#f8fafc)';cursor:'not-allowed';opacity:'.85';" required>
+                    <input type="text" name="retensi_aktif" id="edit-sm-retensi-aktif" class="edit-field-input edit-retensi-auto" readonly style="background:var(--color-bg,#f8fafc);cursor:not-allowed;opacity:.85;" required>
                     <small style="color:var(--color-text-muted);font-size:.72rem;">Diisi otomatis dari kode klasifikasi</small>
                 </div>
                 <div class="edit-field-group">
                     <label class="edit-field-label">Retensi Inaktif <span class="req">*</span></label>
-                    <input type="text" name="retensi_inaktif" id="edit-sm-retensi-inaktif" class="edit-field-input edit-retensi-auto" 'readonly' style="background:'var(--color-bg,#f8fafc)';cursor:'not-allowed';opacity:'.85';" required>
+                    <input type="text" name="retensi_inaktif" id="edit-sm-retensi-inaktif" class="edit-field-input edit-retensi-auto" readonly style="background:var(--color-bg,#f8fafc);cursor:not-allowed;opacity:.85;" required>
                     <small style="color:var(--color-text-muted);font-size:.72rem;">Diisi otomatis dari kode klasifikasi</small>
                 </div>
                 <div class="edit-field-group edit-field-full">
                     <label class="edit-field-label">Retensi Keterangan <span class="req">*</span></label>
-                    <input type="text" name="retensi_keterangan" id="edit-sm-retensi-keterangan" class="edit-field-input edit-retensi-auto" 'readonly' style="background:'var(--color-bg,#f8fafc)';cursor:'not-allowed';opacity:'.85';" required>
+                    <input type="text" name="retensi_keterangan" id="edit-sm-retensi-keterangan" class="edit-field-input edit-retensi-auto" readonly style="background:var(--color-bg,#f8fafc);cursor:not-allowed;opacity:.85;" required>
                     <small style="color:var(--color-text-muted);font-size:.72rem;">Diisi otomatis dari kode klasifikasi</small>
                 </div>
             </div>
@@ -560,14 +560,14 @@
 
             <div class="form-group">
                 <label for="klasifikasi_keamanan" class="form-label">Klasifikasi Keamanan <span class="required">*</span></label>
-                <input type="text" name="klasifikasi_keamanan" id="klasifikasi_keamanan" class="form-input kode-auto @error('klasifikasi_keamanan') input-error @enderror" value="{{ old('klasifikasi_keamanan') }}" placeholder="Otomatis dari Kode Klasifikasi" 'readonly' style="background:'var(--color-bg,#f8fafc)';cursor:'not-allowed';opacity:'.85';" required>
+                <input type="text" name="klasifikasi_keamanan" id="klasifikasi_keamanan" class="form-input kode-auto @error('klasifikasi_keamanan') input-error @enderror" value="{{ old('klasifikasi_keamanan') }}" placeholder="Otomatis dari Kode Klasifikasi" readonly style="background:var(--color-bg,#f8fafc);cursor:not-allowed;opacity:.85;" required>
                 <span style="font-size:.72rem;color:var(--color-text-muted);">Diisi otomatis berdasarkan Kode Klasifikasi</span>
                 @error('klasifikasi_keamanan')<span class="error-text">{{ $message }}</span>@enderror
             </div>
 
             <div class="form-group">
                 <label for="tingkat_akses" class="form-label">Tingkat Akses <span class="required">*</span></label>
-                <input type="text" name="tingkat_akses" id="tingkat_akses" class="form-input kode-auto @error('tingkat_akses') input-error @enderror" value="{{ old('tingkat_akses') }}" placeholder="Otomatis dari Kode Klasifikasi" 'readonly' style="background:'var(--color-bg,#f8fafc)';cursor:'not-allowed';opacity:'.85';" required>
+                <input type="text" name="tingkat_akses" id="tingkat_akses" class="form-input kode-auto @error('tingkat_akses') input-error @enderror" value="{{ old('tingkat_akses') }}" placeholder="Otomatis dari Kode Klasifikasi" readonly style="background:var(--color-bg,#f8fafc);cursor:not-allowed;opacity:.85;" required>
                 <span style="font-size:.72rem;color:var(--color-text-muted);">Diisi otomatis berdasarkan Kode Klasifikasi</span>
                 @error('tingkat_akses')<span class="error-text">{{ $message }}</span>@enderror
             </div>
@@ -576,21 +576,21 @@
         <div class="form-grid form-grid-3">
             <div class="form-group">
                 <label for="retensi_aktif" class="form-label">Retensi — Aktif <span class="required">*</span></label>
-                <input type="text" name="retensi_aktif" id="retensi_aktif" class="form-input retensi-auto @error('retensi_aktif') input-error @enderror" value="{{ old('retensi_aktif') }}" placeholder="Otomatis dari Kode Klasifikasi" 'readonly' style="background:'var(--color-bg,#f8fafc)';cursor:'not-allowed';opacity:'.85';" required>
+                <input type="text" name="retensi_aktif" id="retensi_aktif" class="form-input retensi-auto @error('retensi_aktif') input-error @enderror" value="{{ old('retensi_aktif') }}" placeholder="Otomatis dari Kode Klasifikasi" readonly style="background:var(--color-bg,#f8fafc);cursor:not-allowed;opacity:.85;" required>
                 <span class="error-text" style="font-size:.72rem;color:var(--color-text-muted);">Diisi otomatis berdasarkan Kode Klasifikasi</span>
                 @error('retensi_aktif')<span class="error-text">{{ $message }}</span>@enderror
             </div>
 
             <div class="form-group">
                 <label for="retensi_inaktif" class="form-label">Retensi — Inaktif <span class="required">*</span></label>
-                <input type="text" name="retensi_inaktif" id="retensi_inaktif" class="form-input retensi-auto @error('retensi_inaktif') input-error @enderror" value="{{ old('retensi_inaktif') }}" placeholder="Otomatis dari Kode Klasifikasi" 'readonly' style="background:'var(--color-bg,#f8fafc)';cursor:'not-allowed';opacity:'.85';" required>
+                <input type="text" name="retensi_inaktif" id="retensi_inaktif" class="form-input retensi-auto @error('retensi_inaktif') input-error @enderror" value="{{ old('retensi_inaktif') }}" placeholder="Otomatis dari Kode Klasifikasi" readonly style="background:var(--color-bg,#f8fafc);cursor:not-allowed;opacity:.85;" required>
                 <span class="error-text" style="font-size:.72rem;color:var(--color-text-muted);">Diisi otomatis berdasarkan Kode Klasifikasi</span>
                 @error('retensi_inaktif')<span class="error-text">{{ $message }}</span>@enderror
             </div>
 
             <div class="form-group">
                 <label for="retensi_keterangan" class="form-label">Retensi — Keterangan <span class="required">*</span></label>
-                <input type="text" name="retensi_keterangan" id="retensi_keterangan" class="form-input retensi-auto @error('retensi_keterangan') input-error @enderror" value="{{ old('retensi_keterangan') }}" placeholder="Otomatis dari Kode Klasifikasi" 'readonly' style="background:'var(--color-bg,#f8fafc)';cursor:'not-allowed';opacity:'.85';" required>
+                <input type="text" name="retensi_keterangan" id="retensi_keterangan" class="form-input retensi-auto @error('retensi_keterangan') input-error @enderror" value="{{ old('retensi_keterangan') }}" placeholder="Otomatis dari Kode Klasifikasi" readonly style="background:var(--color-bg,#f8fafc);cursor:not-allowed;opacity:.85;" required>
                 <span class="error-text" style="font-size:.72rem;color:var(--color-text-muted);">Diisi otomatis berdasarkan Kode Klasifikasi</span>
                 @error('retensi_keterangan')<span class="error-text">{{ $message }}</span>@enderror
             </div>
