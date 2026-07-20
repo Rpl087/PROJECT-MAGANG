@@ -848,6 +848,21 @@
 }
 
 @media print {
+    /* ── Hilangkan total semua scrollbar browser & track pada mode print ── */
+    ::-webkit-scrollbar,
+    ::-webkit-scrollbar-thumb,
+    ::-webkit-scrollbar-track,
+    ::-webkit-scrollbar-corner {
+        display: none !important;
+        width: 0 !important;
+        height: 0 !important;
+        background: transparent !important;
+    }
+    *, *::before, *::after {
+        scrollbar-width: none !important;
+        -ms-overflow-style: none !important;
+    }
+
     .no-print,
     .sidebar,
     .header,
@@ -863,11 +878,37 @@
     .report-section { margin-bottom: 1.5rem; }
 
     * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-    html, body { background: #fff !important; color: #111827 !important; font-size: 10pt; }
+    html, body {
+        display: block !important;
+        background: #fff !important;
+        color: #111827 !important;
+        font-size: 10pt;
+        overflow: visible !important;
+    }
+    div, div[style*="overflow"], .kode-detail-wrap, .report-card, .report-section, .layout-body, .main-content, .main-content-wrap {
+        overflow: visible !important;
+        overflow-x: visible !important;
+        overflow-y: visible !important;
+        max-height: none !important;
+    }
     html, body, .layout-body, .main-content, .main-content-wrap {
         background-image: none !important;
         box-shadow: none !important;
     }
+
+/* ── Kelas helper saat proses cetak aktif (JS preparePrint) ── */
+html.report-printing, body.report-printing {
+    display: block !important;
+    overflow: visible !important;
+}
+html.report-printing::-webkit-scrollbar,
+body.report-printing::-webkit-scrollbar,
+html.report-printing *::-webkit-scrollbar,
+body.report-printing *::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+}
     .layout-body, .main-content, .main-content-wrap, .report-section, .report-card,
     .report-table, .report-table tbody, .report-table tr, .kode-detail-table,
     .kode-detail-table tbody, .kode-detail-table tr { background: #fff !important; }
@@ -901,8 +942,8 @@
     }
     .print-header-text { flex: 1; }
     .print-title { font-size: 12pt; font-weight: 700; color: #1e3a5f; margin: 0 0 .15rem; text-transform: uppercase; letter-spacing: .04em; }
-    .print-subtitle { font-size: 9pt; color: #444; margin: 0 0 .1rem; }
-    .print-meta { font-size: 8pt; color: #666; margin: 0; }
+    .print-subtitle { font-size: 9pt; color: #161616ff; margin: 0 0 .1rem; }
+    .print-meta { font-size: 8pt; color: #ff0000b0; margin: 0; }
     .print-divider { border: none; border-top: 2px solid #1e3a5f; margin: .6rem 0 1rem; }
 
     .report-card {
@@ -964,7 +1005,7 @@
     .count-sm { background: #dde8ff !important; color: #1e3a5f !important; padding: .1rem .35rem !important; border-radius: 3px !important; font-size: 8pt !important; border: none !important; }
     .count-sk { background: #d1fae5 !important; color: #065f46 !important; padding: .1rem .35rem !important; border-radius: 3px !important; font-size: 8pt !important; border: none !important; }
     .count-zero { color: #aaa !important; opacity: 1 !important; }
-    .badge-month { background: #fef3c7 !important; color: #92400e !important; font-size: 7pt !important; border: none !important; }
+    .badge-month { background: #fef3c7 !important; color: #000000ff !important; font-size: 7pt !important; border: none !important; }
     .badge-kode-report { background: #e0e8f2 !important; color: #1e3a5f !important; border: 1px solid #bbb !important; }
     .td-num { text-align: right !important; }
     .th-num { text-align: right !important; }

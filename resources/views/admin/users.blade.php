@@ -63,26 +63,180 @@
 .btn-muted { background: rgba(100,116,139,.09); border-color: rgba(100,116,139,.3); color: #475569; }
 .btn-muted:hover { background: rgba(100,116,139,.16); }
 
-/* ── Reset modal ── */
-.modal-box {
+/* ── Modal Reset Password — Desain Identik dengan Modal Konfirmasi Cetak ── */
+#modal-reset.modal-overlay {
+    background: rgba(15, 23, 42, 0.50);
+    backdrop-filter: blur(10px) saturate(130%);
+    -webkit-backdrop-filter: blur(10px) saturate(130%);
+}
+[data-theme="dark"] #modal-reset.modal-overlay {
+    background: rgba(5, 8, 18, 0.72);
+    backdrop-filter: blur(12px) saturate(120%);
+    -webkit-backdrop-filter: blur(12px) saturate(120%);
+}
+
+#modal-reset .modal-box {
+    background: var(--color-surface, #ffffff);
+    border: 1px solid var(--color-border, #e2e5ea);
+    border-radius: 1.125rem;
+    padding: 2.25rem 2rem 1.75rem;
+    max-width: 420px;
+    width: 90%;
+    text-align: center;
+    box-shadow:
+        0 0 0 1px rgba(37,99,235,.07),
+        0 24px 64px rgba(0,0,0,.18),
+        0 8px 20px rgba(0,0,0,.10);
+    position: relative;
+    overflow: hidden;
+}
+[data-theme="dark"] #modal-reset .modal-box {
+    background: var(--color-surface, #1a1d27);
+    border-color: var(--color-border, #2d3148);
+    box-shadow:
+        0 0 0 1px rgba(99,102,241,.12),
+        0 24px 64px rgba(0,0,0,.55),
+        0 8px 24px rgba(0,0,0,.35);
+}
+
+/* Garis gradient di atas modal */
+#modal-reset .modal-box::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #1e3a5f 0%, #2563eb 50%, #6366f1 100%);
+    border-radius: 1.125rem 1.125rem 0 0;
+}
+
+/* Icon Container bulat */
+#modal-reset .modal-icon-reset {
+    width: 62px;
+    height: 62px;
+    border-radius: 50%;
+    background: rgba(37, 99, 235, .1);
+    border: 1.5px solid rgba(37, 99, 235, .2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.25rem;
+    color: #2563eb;
+    transition: transform .3s cubic-bezier(.34,1.56,.64,1), background .2s;
+}
+#modal-reset .modal-box:hover .modal-icon-reset {
+    transform: scale(1.1);
+    background: rgba(37,99,235,.15);
+}
+[data-theme="dark"] #modal-reset .modal-icon-reset {
+    background: rgba(99, 102, 241, .12);
+    border-color: rgba(99, 102, 241, .25);
+    color: #818cf8;
+}
+
+/* Judul & Deskripsi */
+#modal-reset .modal-title-reset {
+    font-size: 1.0625rem;
+    font-weight: 700;
+    color: var(--color-text, #1e293b);
+    margin: 0 0 .5rem;
+    letter-spacing: -.01em;
+    text-align: center;
+}
+#modal-reset .modal-desc-reset {
+    font-size: .875rem;
+    color: var(--color-text-secondary, #64748b);
+    margin: 0 0 1.5rem;
+    line-height: 1.65;
+    text-align: center;
+}
+#modal-reset .modal-desc-reset strong {
+    color: var(--color-text, #1e293b);
+    font-weight: 600;
+}
+
+/* Form Input */
+#modal-reset .modal-form-group {
+    margin-bottom: 1.1rem;
+    text-align: left;
+}
+#modal-reset .modal-form-group label {
+    display: block;
+    font-size: .78rem;
+    font-weight: 600;
+    margin-bottom: 6px;
+    color: var(--color-text-secondary, #64748b);
+    text-transform: uppercase;
+    letter-spacing: .04em;
+}
+#modal-reset .modal-form-group input {
+    width: 100%;
+    padding: .65rem .85rem;
+    border-radius: .5rem;
+    font-size: .875rem;
+    font-family: inherit;
+    border: 1px solid var(--color-border, #e2e5ea);
     background: var(--color-surface, #fff);
-    border: 1px solid var(--color-border, #e2e5ea);
-    border-radius: 16px; padding: 2rem; max-width: 420px; width: 100%;
-    box-shadow: 0 20px 60px rgba(0,0,0,.2);
-    transition: transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.22s ease;
+    color: var(--color-text, #1e293b);
+    outline: none;
+    transition: border-color .2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow .2s cubic-bezier(0.4, 0, 0.2, 1);
+    box-sizing: border-box;
 }
-.modal-box h3 { font-size: 1rem; font-weight: 700; margin-bottom: 6px; color: var(--color-text, #1e293b); }
-.modal-box p  { font-size: .84rem; color: var(--color-text-muted, #64748b); margin-bottom: 1.2rem; }
-.modal-form-group { margin-bottom: 1rem; }
-.modal-form-group label { display: block; font-size: .78rem; font-weight: 600; margin-bottom: 5px; color: var(--color-text-muted, #64748b); text-transform: uppercase; letter-spacing: .04em; }
-.modal-form-group input {
-    width: 100%; padding: 10px 12px; border-radius: 8px; font-size: .9rem; font-family: inherit;
-    border: 1px solid var(--color-border, #e2e5ea);
-    background: var(--color-surface, #fff); color: var(--color-text, #1e293b);
-    outline: none; transition: border-color .2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow .2s cubic-bezier(0.4, 0, 0.2, 1), background-color .2s ease;
+#modal-reset .modal-form-group input:focus {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3.5px rgba(37,99,235,.18);
 }
-.modal-form-group input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3.5px rgba(59,130,246,.18); background: var(--color-surface, #fff); }
-.modal-actions { display: flex; gap: 8px; margin-top: 1.2rem; justify-content: flex-end; }
+
+/* Tombol Aksi */
+#modal-reset .modal-actions-reset {
+    display: flex;
+    gap: .75rem;
+    justify-content: center;
+    margin-top: 1.5rem;
+}
+
+#modal-reset-cancel {
+    padding: .58rem 1.4rem;
+    border-radius: .5rem;
+    font-size: .875rem;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all .18s ease;
+    background: transparent;
+    color: var(--color-text-muted, #94a3b8);
+    border: 1.5px solid var(--color-border, #e2e5ea);
+}
+#modal-reset-cancel:hover {
+    background: var(--color-primary-light, #e8edf4);
+    color: var(--color-text, #1e293b);
+    border-color: var(--color-border-focus, #94a3b8);
+}
+[data-theme="dark"] #modal-reset-cancel:hover {
+    color: var(--color-text, #e2e8f0);
+}
+
+#modal-reset-confirm {
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+    padding: .58rem 1.4rem;
+    border-radius: .5rem;
+    font-size: .875rem;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all .18s cubic-bezier(.4,0,.2,1);
+    background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%);
+    color: #fff;
+    border: none;
+    box-shadow: 0 3px 12px rgba(37,99,235,.3);
+}
+#modal-reset-confirm:hover {
+    opacity: .92;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(37,99,235,.45);
+}
+#modal-reset-confirm:active { transform: translateY(0); }
 
 /* ── Pending alert ── */
 .pending-badge {
@@ -110,7 +264,7 @@
 
 {{-- ── Permintaan Reset Password Pending ── --}}
 @if($pendingResets->count() > 0)
-<div class="section-card" style="border-color:rgba(239,68,68,.3);">
+<div class="section-card" style="border-color:rgba(220, 38, 38, 0.7);box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.12);">
     <div class="section-title" style="color:#dc2626;">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
         Permintaan Reset Password
@@ -202,11 +356,17 @@
 {{-- ── Modal Reset Password ── --}}
 <div id="modal-reset" class="modal-overlay" role="dialog" aria-modal="true">
     <div class="modal-box">
-        <h3>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2.5" style="vertical-align:middle;margin-right:6px"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-            Reset Password
-        </h3>
-        <p>Set password baru untuk pengguna <strong id="reset-username-label">-</strong>. Password lama akan langsung tidak berlaku.</p>
+        <div class="modal-icon-reset">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+        </div>
+        <h4 class="modal-title-reset">Reset Password</h4>
+        <p class="modal-desc-reset">
+            Set password baru untuk pengguna <strong id="reset-username-label">-</strong>.<br>
+            Password lama akan langsung tidak berlaku.
+        </p>
         <form id="form-reset-password" method="POST" action="">
             @csrf
             <div class="modal-form-group">
@@ -217,10 +377,12 @@
                 <label>Konfirmasi Password Baru</label>
                 <input type="password" name="new_password_confirmation" id="new_password_confirmation" required minlength="8" placeholder="Ulangi password baru">
             </div>
-            <div class="modal-actions">
-                <button type="button" class="btn-sm btn-muted" onclick="closeResetModal()">Batal</button>
-                <button type="submit" class="btn-sm btn-primary">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12l5 5L20 7"/></svg>
+            <div class="modal-actions-reset">
+                <button type="button" id="modal-reset-cancel" onclick="closeResetModal()">Batal</button>
+                <button type="submit" id="modal-reset-confirm">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M5 12l5 5L20 7"/>
+                    </svg>
                     Simpan Password
                 </button>
             </div>
@@ -231,6 +393,11 @@
 
 @push('scripts')
 <script>
+document.addEventListener('DOMContentLoaded', function() {
+    const modal = document.getElementById('modal-reset');
+    if (modal) document.body.appendChild(modal);
+});
+
 function openResetModal(userId, username) {
     const modal  = document.getElementById('modal-reset');
     const form   = document.getElementById('form-reset-password');
@@ -240,10 +407,15 @@ function openResetModal(userId, username) {
     document.getElementById('new_password').value = '';
     document.getElementById('new_password_confirmation').value = '';
     modal.classList.add('is-open');
-    document.getElementById('new_password').focus();
+    document.body.style.overflow = 'hidden';
+    setTimeout(function() {
+        document.getElementById('new_password').focus();
+    }, 100);
 }
 function closeResetModal() {
-    document.getElementById('modal-reset').classList.remove('is-open');
+    const modal = document.getElementById('modal-reset');
+    if (modal) modal.classList.remove('is-open');
+    document.body.style.overflow = '';
 }
 document.getElementById('modal-reset').addEventListener('click', function(e) {
     if (e.target === this) closeResetModal();
