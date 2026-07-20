@@ -67,18 +67,18 @@ graph LR
     Tamu["Tamu WiFi (read-only)"]
 
     subgraph Sistem["Sistem Pengarsipan BPSDMP"]
-        UC1("Login ke Sistem")
-        UC2("Input Surat Masuk")
-        UC3("Input Surat Keluar")
-        UC4("Upload File PDF")
-        UC5("Simpan ke Google Sheets")
-        UC6("Logout")
-        UC7("Lihat Dashboard Statistik")
-        UC8("Akses PDF via URL Publik")
-        UC9("Hapus Data Surat")
-        UC10("Lihat Arsip Read-Only")
-        UC11("Edit Data Surat")
-        UC12("Rekap Laporan dan Filter Tahun")
+        UC1["Login ke Sistem"]
+        UC2["Input Surat Masuk"]
+        UC3["Input Surat Keluar"]
+        UC4["Upload File PDF"]
+        UC5["Simpan ke Google Sheets"]
+        UC6["Logout"]
+        UC7["Lihat Dashboard Statistik"]
+        UC8["Akses PDF via URL Publik"]
+        UC9["Hapus Data Surat"]
+        UC10["Lihat Arsip Read-Only"]
+        UC11["Edit Data Surat"]
+        UC12["Rekap Laporan dan Filter Tahun"]
 
         UC2 --> UC4
         UC3 --> UC4
@@ -88,7 +88,7 @@ graph LR
     end
 
     subgraph Google["Google Cloud"]
-        GS[("Google Spreadsheet dbSM / dbSK")]
+        GS["Google Spreadsheet dbSM / dbSK"]
     end
 
     Admin --> UC1
@@ -106,7 +106,7 @@ graph LR
     Public --> UC8
     Tamu --> UC10
 
-    UC1 -.->|include| VALID["Validasi Kredensial (username dan password)"]
+    UC1 -.->|include| VALID["Validasi Kredensial"]
     UC5 -.->|include| GS
 ```
 
@@ -115,77 +115,77 @@ graph LR
 ## 🔄 Flowchart Sistem
 
 ```mermaid
-flowchart TD
-    A([Mulai]) --> B[Buka Aplikasi]
-    B --> C{Sudah Login?}
-    C -- Tidak --> D[Tampil Halaman Login]
+graph TD
+    A["Mulai"] --> B["Buka Aplikasi"]
+    B --> C{"Sudah Login?"}
+    C -->|Tidak| D["Tampil Halaman Login"]
     D --> E["Masukkan Username dan Password"]
-    E --> F{Kredensial Valid?}
-    F -- Tidak --> G["Tampil Pesan Error<br/>Kembali ke Login"]
+    E --> F{"Kredensial Valid?"}
+    F -->|Tidak| G["Tampil Pesan Error"]
     G --> D
-    F -- Ya --> ROLE{Role Pengguna?}
-    ROLE -- Admin --> H["Masuk Dashboard Utama"]
-    ROLE -- Internship --> J["Buka Form Surat Masuk"]
-    C -- Ya --> ROLE
+    F -->|Ya| ROLE{"Role Pengguna?"}
+    ROLE -->|Admin| H["Masuk Dashboard Utama"]
+    ROLE -->|Internship| J["Buka Form Surat Masuk"]
+    C -->|Ya| ROLE
 
-    H --> I{Pilih Menu}
+    H --> I{"Pilih Menu"}
 
-    I -- Surat Masuk --> J
+    I -->|Surat Masuk| J
     J --> K["Isi 17 Field Data"]
     K --> L["Upload File PDF"]
-    L --> M{Validasi Form?}
-    M -- Gagal --> N["Tampil Pesan Error<br/>Form tetap terisi"]
+    L --> M{"Validasi Form"}
+    M -->|Gagal| N["Tampil Pesan Error"]
     N --> K
-    M -- Lolos --> O["Upload PDF ke Google Drive<br/>Backup lokal ke uploads"]
-    O --> P["Kirim Data ke Google Sheets<br/>Sheet: dbSM kolom A-R"]
+    M -->|Lolos| O["Upload PDF ke Google Drive"]
+    O --> P["Kirim Data ke Google Sheets dbSM"]
     P --> Q["Tampil Notifikasi Berhasil"]
     Q --> H
 
-    I -- Surat Keluar --> R["Buka Form Surat Keluar"]
+    I -->|Surat Keluar| R["Buka Form Surat Keluar"]
     R --> S["Isi 18 Field Data"]
     S --> T["Upload File PDF"]
-    T --> U{Validasi Form?}
-    U -- Gagal --> V["Tampil Pesan Error<br/>Form tetap terisi"]
+    T --> U{"Validasi Form"}
+    U -->|Gagal| V["Tampil Pesan Error"]
     V --> S
-    U -- Lolos --> W["Upload PDF ke Google Drive<br/>Backup lokal ke uploads"]
-    W --> X["Kirim Data ke Google Sheets<br/>Sheet: dbSK kolom A-R"]
+    U -->|Lolos| W["Upload PDF ke Google Drive"]
+    W --> X["Kirim Data ke Google Sheets dbSK"]
     X --> Y["Tampil Notifikasi Berhasil"]
     Y --> H
 
-    I -- Dashboard --> DA["Tampil Statistik Bulanan dan Tahunan"]
+    I -->|Dashboard| DA["Tampil Statistik Bulanan dan Tahunan"]
     DA --> DB["Pie Chart Kode Klasifikasi"]
     DB --> H
 
-    I -- Hapus Data --> DEL{Konfirmasi Hapus?}
-    DEL -- Ya --> DELACT["Hapus baris dari Google Sheets dbSM/dbSK"]
+    I -->|Hapus Data| DEL{"Konfirmasi Hapus?"}
+    DEL -->|Ya| DELACT["Hapus baris dari Google Sheets"]
     DELACT --> H
-    DEL -- Tidak --> H
+    DEL -->|Tidak| H
 
-    I -- Edit Data --> EDIT["Klik tombol Edit di tabel"]
-    EDIT --> EDITFETCH["AJAX fetch data baris<br/>/arsip/:index/edit -> JSON"]
-    EDITFETCH --> EDITMODAL["Modal Edit pre-filled<br/>17 field data surat"]
-    EDITMODAL --> EDITSUB{Submit form PUT?}
-    EDITSUB -- Ya --> EDITUPDATE["Update baris di dbSM/dbSK<br/>spreadsheets.values.update"]
+    I -->|Edit Data| EDIT["Klik tombol Edit di tabel"]
+    EDIT --> EDITFETCH["AJAX fetch data baris edit"]
+    EDITFETCH --> EDITMODAL["Modal Edit pre-filled"]
+    EDITMODAL --> EDITSUB{"Submit form PUT?"}
+    EDITSUB -->|Ya| EDITUPDATE["Update baris di Google Sheets"]
     EDITUPDATE --> H
-    EDITSUB -- Batal --> H
+    EDITSUB -->|Batal| H
 
-    I -- Rekap --> RPT["Dashboard Report"]
-    RPT --> RPT2["Filter Tahun per Tab<br/>Rekap Bulanan/Tahunan/Klasifikasi"]
-    RPT2 --> RPT3["Cetak Tab / Cetak Semua"]
+    I -->|Rekap| RPT["Dashboard Report"]
+    RPT --> RPT2["Filter Tahun per Tab"]
+    RPT2 --> RPT3["Cetak Tab atau Cetak Semua"]
     RPT3 --> H
 
-    I -- Keluar --> Z["Logout Session"]
+    I -->|Keluar| Z["Logout Session"]
     Z --> D
 
-    PUB([Pengguna Publik]) --> PURL["Akses URL PDF<br/>/pdf/type/filename"]
-    PURL --> PCHECK{File Ada?}
-    PCHECK -- Ya --> PPDF["Tampil PDF di Browser"]
-    PCHECK -- Tidak --> P404["404 Not Found"]
+    PUB["Pengguna Publik"] --> PURL["Akses URL PDF"]
+    PURL --> PCHECK{"File Ada?"}
+    PCHECK -->|Ya| PPDF["Tampil PDF di Browser"]
+    PCHECK -->|Tidak| P404["404 Not Found"]
 
-    TAMU([WiFi Tamu]) --> TAMUURL["Akses /tamu"]
-    TAMUURL --> TAMUCHECK{IP dari subnet tamu/internal?}
-    TAMUCHECK -- Ya --> TAMUVIEW["Tampil Tabel Read-Only"]
-    TAMUCHECK -- Tidak --> T403["403 Forbidden"]
+    TAMU["WiFi Tamu"] --> TAMUURL["Akses /tamu"]
+    TAMUURL --> TAMUCHECK{"IP dari subnet tamu atau internal?"}
+    TAMUCHECK -->|Ya| TAMUVIEW["Tampil Tabel Read-Only"]
+    TAMUCHECK -->|Tidak| T403["403 Forbidden"]
 ```
 
 ---
