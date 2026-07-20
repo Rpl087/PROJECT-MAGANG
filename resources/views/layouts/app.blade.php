@@ -517,8 +517,38 @@
 
             <!-- Kanan: Status + Theme Toggle -->
             <nav class="header-nav">
-                <span class="nav-indicator"></span>
-                <span class="nav-label">Sistem Pengarsipan Digital</span>
+                @php
+                    $clientIp       = request()->ip();
+                    $internalSubnet = config('network.internal_subnet', '192.168.252.0/22');
+                    $guestSubnet    = config('network.guest_subnet', '10.0.0.0/24');
+                    $isLocalhost    = in_array($clientIp, ['127.0.0.1', '::1', 'localhost']);
+
+                    $inSubnet = function($ip, $cidr) {
+                        if (!filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) return false;
+                        [$sub, $pref] = explode('/', $cidr, 2);
+                        $mask = (int)$pref === 0 ? 0 : (~0 << (32 - (int)$pref));
+                        return (ip2long($ip) & $mask) === (ip2long($sub) & $mask);
+                    };
+
+                    if ($isLocalhost) {
+                        $netLabel = 'Server / Localhost';
+                        $netBadgeClass = 'badge-net-local';
+                    } elseif ($inSubnet($clientIp, $internalSubnet)) {
+                        $netLabel = 'WiFi Internal';
+                        $netBadgeClass = 'badge-net-internal';
+                    } elseif ($inSubnet($clientIp, $guestSubnet)) {
+                        $netLabel = 'WiFi Tamu (Read-Only)';
+                        $netBadgeClass = 'badge-net-guest';
+                    } else {
+                        $netLabel = 'Sistem Pengarsipan Digital';
+                        $netBadgeClass = 'badge-net-local';
+                    }
+                @endphp
+
+                <div class="network-badge {{ $netBadgeClass }}" title="Terkoneksi dari IP: {{ $clientIp }}">
+                    <span class="net-dot"></span>
+                    <span class="net-text">{{ $netLabel }}</span>
+                </div>
 
                 {{-- ── Realtime Clock (Global) ── --}}
                 <div class="header-clock" id="header-clock" aria-label="Jam dan tanggal saat ini">

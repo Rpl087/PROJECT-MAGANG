@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schedule;
 
 /*
@@ -9,23 +10,19 @@ use Illuminate\Support\Facades\Schedule;
 | Console Routes & Scheduled Tasks
 |--------------------------------------------------------------------------
 |
-| Di bawah ini adalah jadwal tugas otomatis (cron) Laravel.
-| Menghapus file compiled views dan session temporary setiap jam 12 tengah malam (00:00).
+| Di bawah ini adalah jadwal tugas otomatis (cron/scheduler) Laravel.
+| Menghapus secara otomatis berkas temporary pada:
+|  1. storage/framework/views (Compiled Blade Views)
+|  2. storage/framework/sessions (Session files)
+|  3. storage/framework/cache/data (Cache data files & subfolders)
+|
+| Berjalan otomatis setiap hari pukul 00:00 (tengah malam).
 |
 */
 
-Schedule::call(function () {
-    // 1. Bersihkan compiled views
-    Artisan::call('view:clear');
+Schedule::command('storage:clean')
+    ->dailyAt('00:00')
+    ->name('cleanup-views-sessions-cache');
 
-    // 2. Bersihkan file sessions (kecuali .gitignore / .gitkeep)
-    $sessionPath = storage_path('framework/sessions');
-    if (File::exists($sessionPath)) {
-        foreach (File::files($sessionPath) as $file) {
-            if (!in_array($file->getFilename(), ['.gitignore', '.gitkeep'])) {
-                File::delete($file->getPathname());
-            }
-        }
-    }
-})->dailyAt('00:00')->name('cleanup-views-and-sessions');
+
 
