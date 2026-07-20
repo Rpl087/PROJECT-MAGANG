@@ -4,7 +4,7 @@
 
 @section('content')
 
-<div class="page-header pre-hide" id="report-page-header">
+<div class="page-header" id="report-page-header">
     <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:1rem;">
         <div>
             <h2 class="page-title">Report Rekapan Arsip</h2>
@@ -46,14 +46,14 @@
 </div>
 
 {{-- ── TAB NAVIGASI (hanya layar, tidak tercetak) ─────────────────────── --}}
-<div class="report-tabs no-print pre-hide">
+<div class="report-tabs no-print">
     <button class="report-tab active" data-tab="bulanan">Rekap Bulanan</button>
     <button class="report-tab" data-tab="tahunan">Rekap Tahunan</button>
     <button class="report-tab" data-tab="klasifikasi">Per Klasifikasi</button>
 </div>
 
 {{-- ── REKAP BULANAN PER TAHUN ─────────────────────────────────────────── --}}
-<div class="report-section pre-hide" id="tab-bulanan">
+<div class="report-section" id="tab-bulanan">
     {{-- Filter Tahun --}}
     <div class="report-filter-bar no-print">
         <div class="filter-group" style="display:flex;align-items:center;gap:.4rem;">
@@ -98,7 +98,7 @@
             </div>
             <div style="overflow-x:auto;">
                 <table class="report-table">
-                    <thead><tr><th class="th-no">No</th><th>Bulan</th><th class="th-num">Surat Masuk</th><th class="th-num">Surat Keluar</th><th class="th-num">Total</th><th class="th-expand no-print">Detail Kode</th></tr></thead>
+                    <thead><tr><th class="th-no">No</th><th>Bulan</th><th class="th-num">Surat Masuk</th><th class="th-num">Surat Keluar</th><th class="th-num">Total</th></tr></thead>
                     <tbody>
                         @foreach($rekap['rows'] as $i => $row)
                         @php
@@ -111,17 +111,16 @@
                             <td class="td-num">@if($row['sm_count'] > 0)<span class="count-sm">{{ $row['sm_count'] }}</span>@else<span class="count-zero">&mdash;</span>@endif</td>
                             <td class="td-num">@if($row['sk_count'] > 0)<span class="count-sk">{{ $row['sk_count'] }}</span>@else<span class="count-zero">&mdash;</span>@endif</td>
                             <td class="td-num">@if($row['total'] > 0)<strong>{{ $row['total'] }}</strong>@else<span class="count-zero">&mdash;</span>@endif</td>
-                            <td class="td-center no-print detail-code-count">@if($row['total'] > 0){{ count($monthDetails) }} kode @else<span class="count-zero">&mdash;</span>@endif</td>
                         </tr>
                         @if($row['total'] > 0)
-                        <tr class="row-kode-detail row-kode-detail-bulan" id="detail-bulan-{{ $monthKey }}"><td colspan="6" style="padding:0;"><div class="kode-detail-wrap"><table class="kode-detail-table">
+                        <tr class="row-kode-detail row-kode-detail-bulan" id="detail-bulan-{{ $monthKey }}"><td colspan="5" style="padding:0;"><div class="kode-detail-wrap"><table class="kode-detail-table">
                             <thead><tr><th>Kode Klasifikasi</th><th class="th-num">Surat Masuk</th><th class="th-num">Surat Keluar</th><th class="th-num">Total</th></tr></thead>
                             <tbody>@foreach($monthDetails as $kode => $counts)<tr><td><span class="badge-kode-report">{{ $kode }}</span></td><td class="td-num">@if($counts[0] > 0)<span class="count-sm">{{ $counts[0] }}</span>@else<span class="count-zero">&mdash;</span>@endif</td><td class="td-num">@if($counts[1] > 0)<span class="count-sk">{{ $counts[1] }}</span>@else<span class="count-zero">&mdash;</span>@endif</td><td class="td-num"><strong>{{ $counts[2] }}</strong></td></tr>@endforeach</tbody>
                         </table></div></td></tr>
                         @endif
                         @endforeach
                     </tbody>
-                    <tfoot><tr class="tfoot-total"><td colspan="2" class="tfoot-label">TOTAL TAHUN {{ $year }}</td><td class="td-num"><strong>{{ $rekap['total_sm'] }}</strong></td><td class="td-num"><strong>{{ $rekap['total_sk'] }}</strong></td><td class="td-num"><strong>{{ $rekap['total'] }}</strong></td><td class="no-print"></td></tr></tfoot>
+                    <tfoot><tr class="tfoot-total"><td colspan="2" class="tfoot-label">TOTAL TAHUN {{ $year }}</td><td class="td-num"><strong>{{ $rekap['total_sm'] }}</strong></td><td class="td-num"><strong>{{ $rekap['total_sk'] }}</strong></td><td class="td-num"><strong>{{ $rekap['total'] }}</strong></td></tr></tfoot>
                 </table>
             </div>
         </div>
@@ -130,7 +129,7 @@
 </div>
 
 {{-- ── REKAP TAHUNAN ─────────────────────────────────────────────────── --}}
-<div class="report-section pre-hide" id="tab-tahunan" style="display:none;">
+<div class="report-section" id="tab-tahunan" style="display:none;">
     {{-- Filter Tahun --}}
     <div class="report-filter-bar no-print">
         <div class="filter-group" style="display:flex;align-items:center;gap:.4rem;">
@@ -163,7 +162,6 @@
                         <th class="th-num">Surat Masuk</th>
                         <th class="th-num">Surat Keluar</th>
                         <th class="th-num">Total</th>
-                        <th class="th-expand no-print">Detail Kode</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -184,13 +182,10 @@
                         <td class="td-num"><span class="count-sm">{{ $row['sm_count'] }}</span></td>
                         <td class="td-num"><span class="count-sk">{{ $row['sk_count'] }}</span></td>
                         <td class="td-num"><strong>{{ $row['total'] }}</strong></td>
-                        <td class="td-center no-print" style="font-size:.75rem;color:var(--color-primary);">
-                            {{ count($row['kode_detail']) }} kode
-                        </td>
                     </tr>
                     {{-- Baris detail klasifikasi (tersembunyi default) --}}
                     <tr class="row-kode-detail" id="detail-{{ $row['tahun'] }}">
-                        <td colspan="6" style="padding:0;">
+                        <td colspan="5" style="padding:0;">
                             <div class="kode-detail-wrap">
                                 <table class="kode-detail-table">
                                     <thead>
@@ -222,7 +217,7 @@
                         </td>
                     </tr>
                     @empty
-                    <tr><td colspan="6" class="td-empty-row">Belum ada data</td></tr>
+                    <tr><td colspan="5" class="td-empty-row">Belum ada data</td></tr>
                     @endforelse
                 </tbody>
                 @if(count($rekapTahunan) > 0)
@@ -232,7 +227,6 @@
                         <td class="td-num"><strong>{{ collect($rekapTahunan)->sum('sm_count') }}</strong></td>
                         <td class="td-num"><strong>{{ collect($rekapTahunan)->sum('sk_count') }}</strong></td>
                         <td class="td-num"><strong>{{ collect($rekapTahunan)->sum('total') }}</strong></td>
-                        <td class="no-print"></td>
                     </tr>
                 </tfoot>
                 @endif
@@ -242,7 +236,7 @@
 </div>
 
 {{-- ── REKAP PER KLASIFIKASI ───────────────────────────────────────────── --}}
-<div class="report-section pre-hide" id="tab-klasifikasi" style="display:none;">
+<div class="report-section" id="tab-klasifikasi" style="display:none;">
     {{-- Filter Tahun --}}
     <div class="report-filter-bar no-print">
         <div class="filter-group" style="display:flex;align-items:center;gap:.4rem;">
@@ -933,14 +927,31 @@
     .report-filter-bar { display: none !important; }
 
     .report-table { width: 100% !important; border-collapse: collapse !important; font-size: 9pt !important; }
+    .report-table th,
+    .report-table td,
+    .report-table tr,
+    .report-table,
+    .report-card,
+    .report-card-header,
+    .kode-detail-table th,
+    .kode-detail-table td {
+        border-left: none !important;
+        border-right: none !important;
+    }
     .report-table th {
         background: #eef2ff !important; color: #1e3a5f !important;
         font-size: 8pt !important; padding: .35rem .6rem !important;
-        border: 1px solid #cbd5e1 !important;
+        border-top: 1px solid #cbd5e1 !important;
+        border-bottom: 1px solid #cbd5e1 !important;
+        border-left: none !important;
+        border-right: none !important;
     }
     .report-table td {
         color: #000 !important;
-        border: 1px solid #ccc !important;
+        border-top: 1px solid #e2e8f0 !important;
+        border-bottom: 1px solid #e2e8f0 !important;
+        border-left: none !important;
+        border-right: none !important;
         padding: .3rem .6rem !important;
         font-size: 9pt !important;
     }

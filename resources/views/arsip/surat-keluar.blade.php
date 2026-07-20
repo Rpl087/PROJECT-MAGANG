@@ -264,11 +264,27 @@
             <div class="edit-modal-grid">
                 <div class="edit-field-group">
                     <label class="edit-field-label">Kode Klasifikasi <span class="req">*</span></label>
-                    <input type="text" name="kode_klasifikasi" id="edit-sk-kode-klasifikasi" class="edit-field-input" maxlength="10" style="text-transform:uppercase;" required>
+                    <select name="kode_klasifikasi" id="edit-sk-kode-klasifikasi" class="edit-field-input" required>
+                        <option value="">-- Pilih Kode Klasifikasi --</option>
+                        <option value="PR">PR</option>
+                        <option value="KP">KP</option>
+                        <option value="OT">OT</option>
+                        <option value="KU">KU</option>
+                        <option value="HK">HK</option>
+                        <option value="UM">UM</option>
+                        <option value="PL">PL</option>
+                        <option value="UP">UP</option>
+                        <option value="HM">HM</option>
+                        <option value="PW">PW</option>
+                        <option value="LT">LT</option>
+                        <option value="DL">DL</option>
+                        <option value="DT">DT</option>
+                        <option value="KI">KI</option>
+                    </select>
                 </div>
                 <div class="edit-field-group">
                     <label class="edit-field-label">Kode Surat <span class="req">*</span></label>
-                    <input type="text" name="kode_surat" id="edit-sk-kode-surat" class="edit-field-input" required>
+                    <input type="text" name="kode_surat" id="edit-sk-kode-surat" class="edit-field-input" pattern="[0-9.]*" oninput="this.value=this.value.replace(/[^0-9.]/g,'').replace(/\.{2,}/g,'.');" placeholder="Contoh: 02.02" required>
                 </div>
                 <div class="edit-field-group edit-field-full">
                     <label class="edit-field-label">Uraian Informasi Berkas <span class="req">*</span></label>
@@ -377,12 +393,25 @@
         <div class="form-grid form-grid-3">
             <div class="form-group">
                 <label for="kode_klasifikasi" class="form-label">Kode Klasifikasi <span class="required">*</span></label>
-                <input type="text" name="kode_klasifikasi" id="kode_klasifikasi"
-                       class="form-input @error('kode_klasifikasi') input-error @enderror"
-                       value="{{ old('kode_klasifikasi') }}"
-                       placeholder="Contoh: PR" maxlength="2"
-                       style="letter-spacing:.1em;"
-                       autocomplete="off" required>
+                <select name="kode_klasifikasi" id="kode_klasifikasi"
+                        class="form-input form-select @error('kode_klasifikasi') input-error @enderror"
+                        required>
+                    <option value="">-- Pilih Kode Klasifikasi --</option>
+                    <option value="PR" {{ old('kode_klasifikasi') == 'PR' ? 'selected' : '' }}>PR</option>
+                    <option value="KP" {{ old('kode_klasifikasi') == 'KP' ? 'selected' : '' }}>KP</option>
+                    <option value="OT" {{ old('kode_klasifikasi') == 'OT' ? 'selected' : '' }}>OT</option>
+                    <option value="KU" {{ old('kode_klasifikasi') == 'KU' ? 'selected' : '' }}>KU</option>
+                    <option value="HK" {{ old('kode_klasifikasi') == 'HK' ? 'selected' : '' }}>HK</option>
+                    <option value="UM" {{ old('kode_klasifikasi') == 'UM' ? 'selected' : '' }}>UM</option>
+                    <option value="PL" {{ old('kode_klasifikasi') == 'PL' ? 'selected' : '' }}>PL</option>
+                    <option value="UP" {{ old('kode_klasifikasi') == 'UP' ? 'selected' : '' }}>UP</option>
+                    <option value="HM" {{ old('kode_klasifikasi') == 'HM' ? 'selected' : '' }}>HM</option>
+                    <option value="PW" {{ old('kode_klasifikasi') == 'PW' ? 'selected' : '' }}>PW</option>
+                    <option value="LT" {{ old('kode_klasifikasi') == 'LT' ? 'selected' : '' }}>LT</option>
+                    <option value="DL" {{ old('kode_klasifikasi') == 'DL' ? 'selected' : '' }}>DL</option>
+                    <option value="DT" {{ old('kode_klasifikasi') == 'DT' ? 'selected' : '' }}>DT</option>
+                    <option value="KI" {{ old('kode_klasifikasi') == 'KI' ? 'selected' : '' }}>KI</option>
+                </select>
                 @error('kode_klasifikasi')
                     <span class="error-text">{{ $message }}</span>
                 @enderror
@@ -392,7 +421,7 @@
                 <label for="kode_surat" class="form-label">Kode Surat <span class="required">*</span></label>
                 <input type="text" name="kode_surat" id="kode_surat"
                        class="form-input @error('kode_surat') input-error @enderror"
-                       value="{{ old('kode_surat') }}" placeholder='Contoh: 02.02' required>
+                       value="{{ old('kode_surat') }}" placeholder="Contoh: 02.02" pattern="[0-9.]*" oninput="this.value=this.value.replace(/[^0-9.]/g,'').replace(/\.{2,}/g,'.');" autocomplete="off" required>
                 @error('kode_surat')
                     <span class="error-text">{{ $message }}</span>
                 @enderror
@@ -496,7 +525,7 @@
                 <input type="number" name="kurun_waktu" id="kurun_waktu"
                        class="form-input @error('kurun_waktu') input-error @enderror"
                        value="{{ old('kurun_waktu') }}"
-                       placeholder="Contoh: 2024"
+                       placeholder="Contoh: 2026"
                        min="1900" max="2100" required>
                 @error('kurun_waktu')<span class="error-text">{{ $message }}</span>@enderror
             </div>
@@ -614,7 +643,7 @@
             </svg>
             Reset
         </button>
-        <button type="submit" class="btn btn-primary" id="btn-submit">
+        <button type="submit" class="btn btn-primary btn-save-green" id="btn-submit">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <line x1="22" y1="2" x2="11" y2="13"/>
                 <polygon points="22 2 15 22 11 13 2 9 22 2"/>
@@ -983,6 +1012,20 @@ document.addEventListener('DOMContentLoaded', function () {
         applyFilter();
     });
 
+    // ── Kode Surat: kunci hanya angka & titik ──────────────────────────────────
+    ['kode_surat', 'edit-sk-kode-surat'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (!el) return;
+        el.addEventListener('input', function() {
+            var v = this.value.replace(/[^0-9.]/g, '').replace(/\.{2,}/g, '.');
+            if (this.value !== v) this.value = v;
+        });
+        el.addEventListener('keydown', function(e) {
+            if (e.ctrlKey || e.metaKey || ['Backspace','Delete','ArrowLeft','ArrowRight','Tab','Enter','Home','End'].includes(e.key)) return;
+            if (!/[0-9.]/.test(e.key)) e.preventDefault();
+        });
+    });
+
     // ── Sort per Klasifikasi ─────────────────────────────────────
     const KODE_ORDER = ['PR','KP','OT','KU','HK','UM','PL','UP','HM','PW','LT','DL','DT','KI'];
     let sortDir = '';
@@ -1125,6 +1168,7 @@ document.addEventListener('DOMContentLoaded', function () {
     try {
         var fpInputSK = document.getElementById('tanggal_surat');
         if (typeof flatpickr !== 'undefined' && fpInputSK) {
+            var currYearSK = new Date().getFullYear();
             window._fpSK = flatpickr(fpInputSK, {
                 dateFormat: 'j F Y',
                 locale: {
@@ -1135,12 +1179,33 @@ document.addEventListener('DOMContentLoaded', function () {
                     },
                     firstDayOfWeek: 1
                 },
+                minDate: new Date(currYearSK, 0, 1),
+                maxDate: new Date(currYearSK, 11, 31),
                 allowInput: false,
                 disableMobile: true,
             });
             // Klik icon kalender → buka flatpickr
             var fpIconSK = document.querySelector('#tanggal-wrap-sk .date-icon');
             if (fpIconSK) fpIconSK.addEventListener('click', function() { window._fpSK.open(); });
+        }
+        var fpEditSK = document.getElementById('edit-sk-tanggal');
+        if (typeof flatpickr !== 'undefined' && fpEditSK) {
+            var currYearSK2 = new Date().getFullYear();
+            window._fpEditSK = flatpickr(fpEditSK, {
+                dateFormat: 'j F Y',
+                locale: {
+                    months: { longhand: BULAN_ID, shorthand: BULAN_ID_SHORT },
+                    weekdays: {
+                        longhand: ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'],
+                        shorthand: ['Min','Sen','Sel','Rab','Kam','Jum','Sab']
+                    },
+                    firstDayOfWeek: 1
+                },
+                minDate: new Date(currYearSK2, 0, 1),
+                maxDate: new Date(currYearSK2, 11, 31),
+                allowInput: false,
+                disableMobile: true,
+            });
         }
     } catch(e) { console.warn('Flatpickr SK error:', e); }
 

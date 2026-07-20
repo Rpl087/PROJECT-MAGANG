@@ -787,7 +787,7 @@ body.header-is-hidden .sidebar {
 .form-input:focus {
     border-color: var(--color-primary);
     box-shadow: var(--shadow-focus);
-    background: var(--color-surface);
+    background: var(--color-bg);
 }
 
 .form-textarea {
@@ -796,12 +796,24 @@ body.header-is-hidden .sidebar {
     line-height: 1.5;
 }
 
-.form-select {
-    background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%2394a3b8' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right var(--space-4) center;
-    padding-right: var(--space-10);
-    cursor: pointer;
+.form-select,
+select.form-input,
+select.edit-field-input {
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    -moz-appearance: none !important;
+    background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%2364748b' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") !important;
+    background-repeat: no-repeat !important;
+    background-position: right 0.75rem center !important;
+    background-size: 12px 8px !important;
+    padding-right: 2.25rem !important;
+    cursor: pointer !important;
+}
+
+[data-theme="dark"] .form-select,
+[data-theme="dark"] select.form-input,
+[data-theme="dark"] select.edit-field-input {
+    background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%2394a3b8' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") !important;
 }
 
 /* --- Input Error State --- */
@@ -812,6 +824,39 @@ body.header-is-hidden .sidebar {
 
 .input-error:focus {
     box-shadow: 0 0 0 3px rgba(185, 28, 28, 0.12);
+}
+
+/* ── Disable WebKit Light Aqua Blue & Match Input Background ── */
+input:-webkit-autofill,
+input:-webkit-autofill:hover, 
+input:-webkit-autofill:focus, 
+input:-webkit-autofill:active,
+textarea:-webkit-autofill,
+select:-webkit-autofill {
+    -webkit-box-shadow: 0 0 0 1000px var(--color-bg, #f8fafc) inset !important;
+    -webkit-text-fill-color: var(--color-text, #0f172a) !important;
+    caret-color: var(--color-text, #0f172a) !important;
+    transition: background-color 5000s ease-in-out 0s !important;
+}
+
+/* ── Tombol Simpan ke Arsip (Hijau) ────────────────────── */
+.btn-save-green,
+.btn-success-green {
+    background: linear-gradient(135deg, #10b981, #059669) !important;
+    border-color: #059669 !important;
+    color: #ffffff !important;
+    box-shadow: 0 2px 10px rgba(16, 185, 129, 0.32) !important;
+    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+}
+.btn-save-green:hover,
+.btn-success-green:hover {
+    background: linear-gradient(135deg, #059669, #047857) !important;
+    box-shadow: 0 4px 18px rgba(16, 185, 129, 0.45) !important;
+    transform: translateY(-1.5px) !important;
+}
+.btn-save-green:active,
+.btn-success-green:active {
+    transform: translateY(0) scale(0.98) !important;
 }
 
 .error-text {
@@ -1516,19 +1561,24 @@ body.header-is-hidden .sidebar {
     transition-duration: 80ms;
 }
 
-/* ── Modal Edit: 2-column Grid Form ─────────────────────── */
-.edit-modal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem 1rem; }
-.edit-field-group { display: flex; flex-direction: column; gap: .3rem; }
+/* ── Modal Edit: 2-column Grid Form Smooth ───────────────── */
+.edit-modal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .85rem 1.1rem; }
+.edit-field-group { display: flex; flex-direction: column; gap: .35rem; }
 .edit-field-full { grid-column: 1 / -1; }
 .edit-field-label { font-size: .78rem; font-weight: 600; color: var(--color-text-secondary); letter-spacing: .01em; }
 .edit-field-label .req { color: var(--color-required); margin-left: .15rem; }
 .edit-field-input {
-    padding: .45rem .7rem; font-size: .845rem; font-family: inherit;
-    border: 1px solid var(--color-border); border-radius: .375rem;
-    background: var(--color-bg); color: var(--color-text);
-    transition: border-color .15s, box-shadow .15s; width: 100%; box-sizing: border-box;
+    padding: .5rem .8rem; font-size: .86rem; font-family: inherit;
+    border: 1px solid var(--color-border); border-radius: .45rem;
+    background: var(--color-surface, #ffffff); color: var(--color-text);
+    transition: border-color .2s cubic-bezier(0.4,0,0.2,1), box-shadow .2s cubic-bezier(0.4,0,0.2,1), background-color .2s cubic-bezier(0.4,0,0.2,1);
+    width: 100%; box-sizing: border-box;
 }
-.edit-field-input:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,.12); }
+.edit-field-input:focus {
+    outline: none; border-color: #3b82f6;
+    box-shadow: 0 0 0 3.5px rgba(59,130,246,.18);
+    background: var(--color-surface, #ffffff);
+}
 textarea.edit-field-input { resize: vertical; min-height: 58px; }
 select.edit-field-input { cursor: pointer; }
 

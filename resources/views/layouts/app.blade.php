@@ -636,7 +636,8 @@
                         <span class="sidebar-link-icon">
                             @include('layouts._icon', ['icon' => 'users'])
                         </span>
-                        Kelola Pengguna
+                        <span>Kelola Pengguna</span>
+                        <span id="reset-badge" title="Ada permintaan reset password baru"></span>
                     </a>
                 @endif
             </nav>
@@ -1057,17 +1058,14 @@
                 var observer = new IntersectionObserver(function (entries) {
                     entries.forEach(function (entry) {
                         if (entry.isIntersecting) {
-                            // Elemen masuk viewport → fade IN
+                            // Elemen masuk viewport → fade IN dan tetap tampil
                             entry.target.classList.add('is-visible');
-                        } else {
-                            // Elemen keluar viewport → fade OUT
-                            // (animasi bisa re-trigger saat scroll balik)
-                            entry.target.classList.remove('is-visible');
+                            observer.unobserve(entry.target);
                         }
                     });
                 }, {
-                    threshold: 0.06,
-                    rootMargin: '0px 0px -40px 0px'
+                    threshold: 0.01,
+                    rootMargin: '50px 0px 0px 0px'
                 });
 
                 document.querySelectorAll('.pre-hide').forEach(function (el) {
@@ -1234,28 +1232,25 @@
     }
     #reset-badge {
         display: none;
-        position: fixed;
-        top: 14px;
-        right: 60px;
-        z-index: 9999;
         background: #ef4444;
         color: #fff;
         border-radius: 99px;
         font-size: 0.72rem;
         font-weight: 700;
-        padding: 3px 8px;
-        min-width: 22px;
-        text-align: center;
+        padding: 2px 7px;
+        min-width: 20px;
+        height: 20px;
+        line-height: 1;
+        align-items: center;
+        justify-content: center;
+        margin-left: auto;
         animation: badgePulse 1.6s ease-in-out infinite;
         cursor: pointer;
         text-decoration: none;
         letter-spacing: .02em;
     }
-    #reset-badge.is-visible { display: inline-block; }
+    #reset-badge.is-visible { display: inline-flex; }
     </style>
-
-    {{-- Badge merah di header: klik menuju halaman kelola pengguna --}}
-    <a href="{{ route('admin.users.index') }}" id="reset-badge" title="Ada permintaan reset password baru"></a>
 
     <script>
     (function() {

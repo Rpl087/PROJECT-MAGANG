@@ -69,6 +69,7 @@
     border: 1px solid var(--color-border, #e2e5ea);
     border-radius: 16px; padding: 2rem; max-width: 420px; width: 100%;
     box-shadow: 0 20px 60px rgba(0,0,0,.2);
+    transition: transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.22s ease;
 }
 .modal-box h3 { font-size: 1rem; font-weight: 700; margin-bottom: 6px; color: var(--color-text, #1e293b); }
 .modal-box p  { font-size: .84rem; color: var(--color-text-muted, #64748b); margin-bottom: 1.2rem; }
@@ -77,10 +78,10 @@
 .modal-form-group input {
     width: 100%; padding: 10px 12px; border-radius: 8px; font-size: .9rem; font-family: inherit;
     border: 1px solid var(--color-border, #e2e5ea);
-    background: var(--color-bg, #f8fafc); color: var(--color-text, #1e293b);
-    outline: none; transition: border-color .2s, box-shadow .2s;
+    background: var(--color-surface, #fff); color: var(--color-text, #1e293b);
+    outline: none; transition: border-color .2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow .2s cubic-bezier(0.4, 0, 0.2, 1), background-color .2s ease;
 }
-.modal-form-group input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,.15); }
+.modal-form-group input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3.5px rgba(59,130,246,.18); background: var(--color-surface, #fff); }
 .modal-actions { display: flex; gap: 8px; margin-top: 1.2rem; justify-content: flex-end; }
 
 /* ── Pending alert ── */
