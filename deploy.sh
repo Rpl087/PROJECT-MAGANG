@@ -8,9 +8,17 @@ set -e
 
 echo "🚀 Starting deployment..."
 
+# 0. Ensure .env exists
+if [ ! -f .env ]; then
+    echo "📋 Creating .env from .env.example..."
+    cp .env.example .env
+    php artisan key:generate || true
+    echo "⚠️ NOTE: Please edit .env with your production database & Google API credentials!"
+fi
+
 # 1. Pull latest changes
 echo "📥 Fetching latest code..."
-git pull origin master
+git pull origin master || true
 
 # 2. Install PHP dependencies
 echo "📦 Installing Composer dependencies..."
@@ -21,8 +29,9 @@ echo "🎨 Building frontend assets..."
 npm install --ignore-scripts
 npm run build
 
-# 4. Ensure directory permissions
-echo "🔒 Setting directory permissions..."
+# 4. Ensure directory permissions & folder creation
+echo "🔒 Creating required directories and setting permissions..."
+mkdir -p storage/app/public storage/framework/cache/data storage/framework/sessions storage/framework/views storage/logs bootstrap/cache uploads
 chmod -R 775 storage bootstrap/cache uploads
 chown -R www-data:www-data storage bootstrap/cache uploads || true
 
