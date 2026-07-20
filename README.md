@@ -63,8 +63,8 @@ Perangkat lain yang berada di dalam jaringan WiFi/LAN yang sama dapat mengakses 
 graph LR
     Admin(["👤 Admin"])
     Internship(["🎓 Internship"])
-    Public(["🌐 Publik\n(tanpa login)"])
-    Tamu(["👁️ Tamu WiFi\n(read-only)"])
+    Public(["🌐 Publik<br/>(tanpa login)"])
+    Tamu(["👁️ Tamu WiFi<br/>(read-only)"])
 
     subgraph Sistem ["🖥️ Sistem Pengarsipan BPSDMP"]
         UC1("🔐 Login ke Sistem")
@@ -88,7 +88,7 @@ graph LR
     end
 
     subgraph Google ["☁️ Google Cloud"]
-        GS[("📋 Google Spreadsheet\ndbSM / dbSK")]
+        GS[("📋 Google Spreadsheet<br/>dbSM / dbSK")]
     end
 
     Admin --> UC1
@@ -106,8 +106,8 @@ graph LR
     Public --> UC8
     Tamu --> UC10
 
-    UC1 -.->|"«include»"| VALID["Validasi Kredensial\n(username + password)"]
-    UC5 -.->|"«include»"| GS
+    UC1 -.->|"include"| VALID["Validasi Kredensial<br/>(username + password)"]
+    UC5 -.->|"include"| GS
 ```
 
 ---
@@ -118,74 +118,74 @@ graph LR
 flowchart TD
     A([Mulai]) --> B[Buka Aplikasi]
     B --> C{Sudah Login?}
-    C -- Tidak --> D[Tampil Halaman Login]
+    C -- "Tidak" --> D[Tampil Halaman Login]
     D --> E["Masukkan Username & Password"]
     E --> F{Kredensial Valid?}
-    F -- Tidak --> G["Tampil Pesan Error\nKembali ke Login"]
+    F -- "Tidak" --> G["Tampil Pesan Error<br/>Kembali ke Login"]
     G --> D
-    F -- Ya --> ROLE{Role Pengguna?}
-    ROLE -- Admin --> H["Masuk Dashboard Utama"]
-    ROLE -- Internship --> J["Buka Form Surat Masuk"]
-    C -- Ya --> ROLE
+    F -- "Ya" --> ROLE{Role Pengguna?}
+    ROLE -- "Admin" --> H["Masuk Dashboard Utama"]
+    ROLE -- "Internship" --> J["Buka Form Surat Masuk"]
+    C -- "Ya" --> ROLE
 
     H --> I{Pilih Menu}
 
-    I -- Surat Masuk --> J["Buka Form Surat Masuk"]
+    I -- "Surat Masuk" --> J["Buka Form Surat Masuk"]
     J --> K["Isi 17 Field Data"]
     K --> L["Upload File PDF"]
     L --> M{Validasi Form}
-    M -- Gagal --> N["Tampil Pesan Error\nForm tetap terisi"]
+    M -- "Gagal" --> N["Tampil Pesan Error<br/>Form tetap terisi"]
     N --> K
-    M -- Lolos --> O["Upload PDF ke Google Drive\nBackup lokal ke uploads/"]
-    O --> P["Kirim Data ke Google Sheets\nSheet: dbSM kolom A–R"]
+    M -- "Lolos" --> O["Upload PDF ke Google Drive<br/>Backup lokal ke uploads/"]
+    O --> P["Kirim Data ke Google Sheets<br/>Sheet: dbSM kolom A–R"]
     P --> Q["Tampil Notifikasi Berhasil"]
     Q --> H
 
-    I -- Surat Keluar --> R["Buka Form Surat Keluar"]
+    I -- "Surat Keluar" --> R["Buka Form Surat Keluar"]
     R --> S["Isi 18 Field Data"]
     S --> T["Upload File PDF"]
     T --> U{Validasi Form}
-    U -- Gagal --> V["Tampil Pesan Error\nForm tetap terisi"]
+    U -- "Gagal" --> V["Tampil Pesan Error<br/>Form tetap terisi"]
     V --> S
-    U -- Lolos --> W["Upload PDF ke Google Drive\nBackup lokal ke uploads/"]
-    W --> X["Kirim Data ke Google Sheets\nSheet: dbSK kolom A–R"]
+    U -- "Lolos" --> W["Upload PDF ke Google Drive<br/>Backup lokal ke uploads/"]
+    W --> X["Kirim Data ke Google Sheets<br/>Sheet: dbSK kolom A–R"]
     X --> Y["Tampil Notifikasi Berhasil"]
     Y --> H
 
-    I -- Dashboard --> DA["Tampil Statistik Bulanan & Tahunan"]
+    I -- "Dashboard" --> DA["Tampil Statistik Bulanan & Tahunan"]
     DA --> DB["Pie Chart Kode Klasifikasi"]
     DB --> H
 
-    I -- Hapus Data --> DEL{Konfirmasi Hapus?}
-    DEL -- Ya --> DELACT["Hapus baris dari Google Sheets dbSM/dbSK"]
+    I -- "Hapus Data" --> DEL{Konfirmasi Hapus?}
+    DEL -- "Ya" --> DELACT["Hapus baris dari Google Sheets dbSM/dbSK"]
     DELACT --> H
-    DEL -- Tidak --> H
+    DEL -- "Tidak" --> H
 
-    I -- Edit Data --> EDIT["Klik tombol Edit di tabel"]
-    EDIT --> EDITFETCH["AJAX fetch data baris\n/arsip/{index}/edit → JSON"]
-    EDITFETCH --> EDITMODAL["Modal Edit pre-filled\n17 field data surat"]
+    I -- "Edit Data" --> EDIT["Klik tombol Edit di tabel"]
+    EDIT --> EDITFETCH["AJAX fetch data baris<br/>/arsip/{index}/edit → JSON"]
+    EDITFETCH --> EDITMODAL["Modal Edit pre-filled<br/>17 field data surat"]
     EDITMODAL --> EDITSUB{Submit form PUT?}
-    EDITSUB -- Ya --> EDITUPDATE["Update baris di dbSM/dbSK\nspreadsheets.values.update"]
+    EDITSUB -- "Ya" --> EDITUPDATE["Update baris di dbSM/dbSK<br/>spreadsheets.values.update"]
     EDITUPDATE --> H
-    EDITSUB -- Tidak/Batal --> H
+    EDITSUB -- "Tidak/Batal" --> H
 
-    I -- Rekap --> RPT["Dashboard Report"]
-    RPT --> RPT2["Filter Tahun per Tab\nRekap Bulanan/Tahunan/Klasifikasi"]
+    I -- "Rekap" --> RPT["Dashboard Report"]
+    RPT --> RPT2["Filter Tahun per Tab<br/>Rekap Bulanan/Tahunan/Klasifikasi"]
     RPT2 --> RPT3["Cetak Tab / Cetak Semua"]
     RPT3 --> H
 
-    I -- Keluar --> Z["Logout Session"]
+    I -- "Keluar" --> Z["Logout Session"]
     Z --> D
 
-    PUB([Pengguna Publik]) --> PURL["Akses URL PDF\n/pdf/type/filename"]
+    PUB([Pengguna Publik]) --> PURL["Akses URL PDF<br/>/pdf/type/filename"]
     PURL --> PCHECK{File Ada?}
-    PCHECK -- Ya --> PPDF["Tampil PDF di Browser"]
-    PCHECK -- Tidak --> P404["404 Not Found"]
+    PCHECK -- "Ya" --> PPDF["Tampil PDF di Browser"]
+    PCHECK -- "Tidak" --> P404["404 Not Found"]
 
     TAMU([WiFi Tamu]) --> TAMUURL["Akses /tamu"]
     TAMUURL --> TAMUCHECK{IP dari subnet tamu/internal?}
-    TAMUCHECK -- Ya --> TAMUVIEW["Tampil Tabel Read-Only"]
-    TAMUCHECK -- Tidak --> T403["403 Forbidden"]
+    TAMUCHECK -- "Ya" --> TAMUVIEW["Tampil Tabel Read-Only"]
+    TAMUCHECK -- "Tidak" --> T403["403 Forbidden"]
 ```
 
 ---
