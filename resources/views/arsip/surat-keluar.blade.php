@@ -219,6 +219,14 @@
                     @endforelse
                 </tbody>
             </table>
+            <div class="table-collapse-bar" id="collapse-bar-sk" style="display:none;">
+                <button type="button" class="btn-toggle-collapse" id="btn-toggle-sk">
+                    <span class="btn-toggle-text">Lihat Selengkapnya</span>
+                    <svg class="btn-toggle-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="6 9 12 15 18 9"/>
+                    </svg>
+                </button>
+            </div>
         </div>{{-- /#table-content-sk --}}
     </div>
 </div>
@@ -972,8 +980,56 @@ document.addEventListener('DOMContentLoaded', function () {
     const btnReset = document.getElementById('filter-reset-sk');
     const countEl  = document.getElementById('filter-count-sk');
     const tbody    = document.getElementById('tbody-sk');
-
     const selKode  = document.getElementById('filter-kode-sk');
+    const collapseBarSK = document.getElementById('collapse-bar-sk');
+    const toggleBtnSK   = document.getElementById('btn-toggle-sk');
+    let isSKExpanded    = false;
+
+    function updateSKCollapse() {
+        if (!tbody) return;
+        const allRows = Array.from(tbody.querySelectorAll('tr[data-bulan]'));
+        const matchingRows = allRows.filter(tr => tr.dataset.matchesFilter !== 'false');
+        const limit = 5;
+
+        if (matchingRows.length > limit) {
+            if (collapseBarSK) collapseBarSK.style.display = 'flex';
+            if (!isSKExpanded) {
+                matchingRows.forEach((tr, index) => {
+                    tr.style.display = index < limit ? '' : 'none';
+                });
+                const remaining = matchingRows.length - limit;
+                if (toggleBtnSK) {
+                    toggleBtnSK.classList.remove('is-expanded');
+                    toggleBtnSK.querySelector('.btn-toggle-text').textContent = 'Lihat Selengkapnya (' + remaining + ' data lagi)';
+                }
+            } else {
+                matchingRows.forEach(tr => tr.style.display = '');
+                if (toggleBtnSK) {
+                    toggleBtnSK.classList.add('is-expanded');
+                    toggleBtnSK.querySelector('.btn-toggle-text').textContent = 'Sembunyikan Sebagian';
+                }
+            }
+        } else {
+            if (collapseBarSK) collapseBarSK.style.display = 'none';
+            matchingRows.forEach(tr => tr.style.display = '');
+        }
+
+        // Renumber visible rows
+        let no = 1;
+        allRows.forEach(tr => {
+            if (tr.style.display !== 'none') {
+                const noCell = tr.querySelector('.row-no');
+                if (noCell) noCell.textContent = no++;
+            }
+        });
+    }
+
+    if (toggleBtnSK) {
+        toggleBtnSK.addEventListener('click', function () {
+            isSKExpanded = !isSKExpanded;
+            updateSKCollapse();
+        });
+    }
 
     function applyFilter() {
         if (!tbody) return;
@@ -987,19 +1043,16 @@ document.addEventListener('DOMContentLoaded', function () {
             const rt = tr.dataset.tahun;
             const rk = (tr.dataset.kode || '').toUpperCase();
             const show = (!bulan || rb == bulan) && (!tahun || rt == tahun) && (!kode || rk === kode.toUpperCase());
-            tr.style.display = show ? '' : 'none';
+            tr.dataset.matchesFilter = show ? 'true' : 'false';
+            if (!show) tr.style.display = 'none';
             if (show) visible++;
         });
-        let no = 1;
-        rows.forEach(function (tr) {
-            if (tr.style.display !== 'none') {
-                const noCell = tr.querySelector('.row-no');
-                if (noCell) noCell.textContent = no++;
-            }
-        });
+
         if (countEl) {
             countEl.textContent = (bulan || tahun || kode) ? (visible + ' dari ' + rows.length + ' data ditampilkan') : '';
         }
+
+        updateSKCollapse();
     }
 
     if (selBulan) selBulan.addEventListener('change', applyFilter);
@@ -1011,6 +1064,9 @@ document.addEventListener('DOMContentLoaded', function () {
         if (selKode)  selKode.value  = '';
         applyFilter();
     });
+
+    // Inisialisasi collapse awal saat load
+    applyFilter();
 
     // ── Kode Surat: kunci hanya angka & titik ──────────────────────────────────
     ['kode_surat', 'edit-sk-kode-surat'].forEach(function(id) {

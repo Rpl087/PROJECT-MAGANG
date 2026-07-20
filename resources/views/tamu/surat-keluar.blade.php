@@ -346,6 +346,14 @@
                         </tbody>
                     </table>
                 </div>
+                <div class="table-collapse-bar" id="collapse-bar-sk-tamu" style="display:none;padding:.85rem 1rem;border-top:1px solid var(--border);display:flex;justify-content:center;">
+                    <button type="button" class="btn-toggle-collapse" id="btn-toggle-sk-tamu" style="display:inline-flex;align-items:center;gap:.5rem;padding:.5rem 1.25rem;border-radius:999px;font-size:.82rem;font-weight:600;font-family:inherit;cursor:pointer;background:rgba(16,185,129,0.15);color:#34d399;border:1px solid rgba(16,185,129,0.3);transition:all .2s;">
+                        <span class="btn-toggle-text">Lihat Selengkapnya</span>
+                        <svg class="btn-toggle-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transition:transform .25s;">
+                            <polyline points="6 9 12 15 18 9"/>
+                        </svg>
+                    </button>
+                </div>
             @endif
         </div>
 
@@ -356,9 +364,60 @@
     </main>
 
     <script>
-        // Pencarian real-time dengan debounce (mencegah lag pada data besar)
-        const searchInput = document.getElementById('searchInput');
-        const table       = document.getElementById('arsipTable');
+        // Pencarian real-time + Collapse logic > 5 data
+        const searchInput    = document.getElementById('searchInput');
+        const table          = document.getElementById('arsipTable');
+        const collapseBar    = document.getElementById('collapse-bar-sk-tamu');
+        const toggleBtn      = document.getElementById('btn-toggle-sk-tamu');
+        let isExpandedSKTamu = false;
+
+        function updateSKTamuCollapse() {
+            if (!table) return;
+            const tbody = table.querySelector('tbody');
+            if (!tbody) return;
+            const allRows = Array.from(tbody.querySelectorAll('tr'));
+            const matchingRows = allRows.filter(tr => tr.dataset.matchesSearch !== 'false');
+            const limit = 5;
+
+            if (matchingRows.length > limit) {
+                if (collapseBar) collapseBar.style.display = 'flex';
+                if (!isExpandedSKTamu) {
+                    matchingRows.forEach((tr, idx) => {
+                        tr.style.display = idx < limit ? '' : 'none';
+                    });
+                    const remaining = matchingRows.length - limit;
+                    if (toggleBtn) {
+                        toggleBtn.querySelector('.btn-toggle-text').textContent = 'Lihat Selengkapnya (' + remaining + ' data lagi)';
+                        toggleBtn.querySelector('.btn-toggle-icon').style.transform = 'rotate(0deg)';
+                    }
+                } else {
+                    matchingRows.forEach(tr => tr.style.display = '');
+                    if (toggleBtn) {
+                        toggleBtn.querySelector('.btn-toggle-text').textContent = 'Sembunyikan Sebagian';
+                        toggleBtn.querySelector('.btn-toggle-icon').style.transform = 'rotate(180deg)';
+                    }
+                }
+            } else {
+                if (collapseBar) collapseBar.style.display = 'none';
+                matchingRows.forEach(tr => tr.style.display = '');
+            }
+
+            let no = 1;
+            allRows.forEach(tr => {
+                if (tr.style.display !== 'none') {
+                    const noCol = tr.querySelector('.no-col');
+                    if (noCol) noCol.textContent = no++;
+                }
+            });
+        }
+
+        if (toggleBtn) {
+            toggleBtn.addEventListener('click', function() {
+                isExpandedSKTamu = !isExpandedSKTamu;
+                updateSKTamuCollapse();
+            });
+        }
+
         if (searchInput && table) {
             var searchTimer;
             searchInput.addEventListener('input', function () {
@@ -366,12 +425,21 @@
                 var self = this;
                 searchTimer = setTimeout(function () {
                     const keyword = self.value.toLowerCase().trim();
-                    table.querySelectorAll('tbody tr').forEach(function (row) {
-                        row.style.display = row.textContent.toLowerCase().includes(keyword) ? '' : 'none';
+                    const tbody   = table.querySelector('tbody');
+                    if (!tbody) return;
+                    const rows    = tbody.querySelectorAll('tr');
+                    rows.forEach(function (row) {
+                        const text = row.textContent.toLowerCase();
+                        const show = text.includes(keyword);
+                        row.dataset.matchesSearch = show ? 'true' : 'false';
+                        if (!show) row.style.display = 'none';
                     });
+                    updateSKTamuCollapse();
                 }, 120);
             });
         }
+
+        updateSKTamuCollapse();
 
         // Live clock & date (realtime)
         (function() {

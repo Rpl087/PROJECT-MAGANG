@@ -223,6 +223,14 @@
                     @endforelse
                 </tbody>
             </table>
+            <div class="table-collapse-bar" id="collapse-bar-sm" style="display:none;">
+                <button type="button" class="btn-toggle-collapse" id="btn-toggle-sm">
+                    <span class="btn-toggle-text">Lihat Selengkapnya</span>
+                    <svg class="btn-toggle-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="6 9 12 15 18 9"/>
+                    </svg>
+                </button>
+            </div>
         </div>{{-- /#table-content-sm --}}
     </div>
 </div>
@@ -963,8 +971,56 @@ document.addEventListener('DOMContentLoaded', function () {
     const btnReset  = document.getElementById('filter-reset-sm');
     const countEl   = document.getElementById('filter-count-sm');
     const tbody     = document.getElementById('tbody-sm');
+    const selKode   = document.getElementById('filter-kode-sm');
+    const collapseBarSM = document.getElementById('collapse-bar-sm');
+    const toggleBtnSM   = document.getElementById('btn-toggle-sm');
+    let isSMExpanded    = false;
 
-    const selKode  = document.getElementById('filter-kode-sm');
+    function updateSMCollapse() {
+        if (!tbody) return;
+        const allRows = Array.from(tbody.querySelectorAll('tr[data-bulan]'));
+        const matchingRows = allRows.filter(tr => tr.dataset.matchesFilter !== 'false');
+        const limit = 5;
+
+        if (matchingRows.length > limit) {
+            if (collapseBarSM) collapseBarSM.style.display = 'flex';
+            if (!isSMExpanded) {
+                matchingRows.forEach((tr, index) => {
+                    tr.style.display = index < limit ? '' : 'none';
+                });
+                const remaining = matchingRows.length - limit;
+                if (toggleBtnSM) {
+                    toggleBtnSM.classList.remove('is-expanded');
+                    toggleBtnSM.querySelector('.btn-toggle-text').textContent = 'Lihat Selengkapnya (' + remaining + ' data lagi)';
+                }
+            } else {
+                matchingRows.forEach(tr => tr.style.display = '');
+                if (toggleBtnSM) {
+                    toggleBtnSM.classList.add('is-expanded');
+                    toggleBtnSM.querySelector('.btn-toggle-text').textContent = 'Sembunyikan Sebagian';
+                }
+            }
+        } else {
+            if (collapseBarSM) collapseBarSM.style.display = 'none';
+            matchingRows.forEach(tr => tr.style.display = '');
+        }
+
+        // Renumber visible rows
+        let no = 1;
+        allRows.forEach(tr => {
+            if (tr.style.display !== 'none') {
+                const noCell = tr.querySelector('.row-no');
+                if (noCell) noCell.textContent = no++;
+            }
+        });
+    }
+
+    if (toggleBtnSM) {
+        toggleBtnSM.addEventListener('click', function () {
+            isSMExpanded = !isSMExpanded;
+            updateSMCollapse();
+        });
+    }
 
     function applyFilter() {
         if (!tbody) return;
@@ -978,21 +1034,17 @@ document.addEventListener('DOMContentLoaded', function () {
             const rt = tr.dataset.tahun;
             const rk = (tr.dataset.kode || '').toUpperCase();
             const show = (!bulan || rb == bulan) && (!tahun || rt == tahun) && (!kode || rk === kode.toUpperCase());
-            tr.style.display = show ? '' : 'none';
+            tr.dataset.matchesFilter = show ? 'true' : 'false';
+            if (!show) tr.style.display = 'none';
             if (show) visible++;
         });
-        // Renumber visible rows
-        let no = 1;
-        rows.forEach(function (tr) {
-            if (tr.style.display !== 'none') {
-                const noCell = tr.querySelector('.row-no');
-                if (noCell) noCell.textContent = no++;
-            }
-        });
+
         if (countEl) {
             const total = rows.length;
             countEl.textContent = (bulan || tahun || kode) ? (visible + ' dari ' + total + ' data ditampilkan') : '';
         }
+
+        updateSMCollapse();
     }
 
     if (selBulan) selBulan.addEventListener('change', applyFilter);
@@ -1004,6 +1056,9 @@ document.addEventListener('DOMContentLoaded', function () {
         if (selKode)  selKode.value  = '';
         applyFilter();
     });
+
+    // Inisialisasi collapse awal saat load
+    applyFilter();
 
     // ── Sort per Klasifikasi ─────────────────────────────────────
     // Urutan prioritas kode klasifikasi
