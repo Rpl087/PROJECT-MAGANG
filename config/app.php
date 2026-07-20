@@ -123,16 +123,5 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
-    /*
-    |--------------------------------------------------------------------------
-    | Maintenance Account Credentials
-    |--------------------------------------------------------------------------
-    |
-    | Akun maintenance adalah akun statis sistem yang tidak dapat diubah
-    | melalui panel admin. Ubah nilai ini di .env dan jalankan db:seed.
-    |
-    */
-    'maintenance_username' => env('MAINTENANCE_USERNAME', 'maintenance'),
-    'maintenance_password' => env('MAINTENANCE_PASSWORD', 'Maintenance_BPSDMP_26!'),
-
 ];
+

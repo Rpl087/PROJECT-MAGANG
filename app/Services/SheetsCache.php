@@ -63,7 +63,6 @@ class SheetsCache
     public static function forgetSuratMasuk(): void
     {
         Cache::forget(self::KEY_SURAT_MASUK);
-        Cache::forget(self::KEY_DBSM);
         Cache::forget(self::KEY_DASHBOARD);
         Cache::forget(self::KEY_REPORT);
     }
@@ -86,7 +85,6 @@ class SheetsCache
     {
         Cache::forget(self::KEY_SURAT_MASUK);
         Cache::forget(self::KEY_SURAT_KELUAR);
-        Cache::forget(self::KEY_DBSM);
         Cache::forget(self::KEY_DASHBOARD);
         Cache::forget(self::KEY_REPORT);
     }

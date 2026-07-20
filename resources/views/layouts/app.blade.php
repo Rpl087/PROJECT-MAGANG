@@ -602,50 +602,43 @@
         <aside class="sidebar" id="main-sidebar" aria-label="Menu navigasi">
             <p class="sidebar-label">Menu</p>
             <nav class="sidebar-nav" id="sidebar-nav">
-                {{-- ── Menu Dinamis dari Database (dikelola oleh akun Maintenance) ── --}}
-                @forelse($menuItems as $item)
-                    @if($item->isVisibleTo(Auth::user()->role))
-                        @php
-                            $isExternalOrPath = preg_match('/^(https?:\/\/|\/)/i', $item->route_name);
-                            $isActive = false;
-                            $linkHref = '#';
-                            $shouldRender = false;
-
-                            if ($isExternalOrPath) {
-                                $linkHref = $item->route_name;
-                                $isActive = request()->getRequestUri() === $item->route_name || request()->url() === $item->route_name;
-                                $shouldRender = true;
-                            } elseif ($item->route_name && \Route::has($item->route_name)) {
-                                $linkHref = route($item->route_name);
-                                $isActive = request()->routeIs($item->route_name . '*');
-                                $shouldRender = true;
-                            }
-                        @endphp
-                        @if($shouldRender)
-                        <a href="{{ $linkHref }}"
-                           class="sidebar-link {{ $isActive ? 'sidebar-link-active' : '' }}"
-                           @if($item->confirm_title)
-                               data-confirm-nav="{{ $isExternalOrPath ? $item->route_name : route($item->route_name) }}"
-                               data-confirm-title="{{ $item->confirm_title }}"
-                               data-confirm-desc="{{ $item->confirm_desc }}"
-                               data-confirm-label="{{ $item->label }}"
-                           @endif>
-                            <span class="sidebar-link-icon">
-                                @include('layouts._icon', ['icon' => $item->icon])
-                            </span>
-                            {{ $item->label }}
-                        </a>
-                        @endif
-                    @endif
-                @empty
-                    {{-- Fallback jika tabel menu kosong --}}
-                    <a href="{{ route('arsip.index') }}" class="sidebar-link {{ request()->routeIs('arsip.*') ? 'sidebar-link-active' : '' }}">
+                @if(Auth::user()?->isAdmin())
+                    <a href="{{ route('dashboard.index') }}" class="sidebar-link {{ request()->routeIs('dashboard.index') ? 'sidebar-link-active' : '' }}">
                         <span class="sidebar-link-icon">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>
+                            @include('layouts._icon', ['icon' => 'grid'])
                         </span>
-                        Surat Masuk
+                        Dashboard
                     </a>
-                @endforelse
+                    <a href="{{ route('dashboard.report') }}" class="sidebar-link {{ request()->routeIs('dashboard.report') ? 'sidebar-link-active' : '' }}">
+                        <span class="sidebar-link-icon">
+                            @include('layouts._icon', ['icon' => 'file-text'])
+                        </span>
+                        Report Rekap
+                    </a>
+                @endif
+
+                <a href="{{ route('arsip.index') }}" class="sidebar-link {{ request()->routeIs('arsip.*') ? 'sidebar-link-active' : '' }}">
+                    <span class="sidebar-link-icon">
+                        @include('layouts._icon', ['icon' => 'inbox'])
+                    </span>
+                    Surat Masuk
+                </a>
+
+                <a href="{{ route('surat-keluar.index') }}" class="sidebar-link {{ request()->routeIs('surat-keluar.*') ? 'sidebar-link-active' : '' }}">
+                    <span class="sidebar-link-icon">
+                        @include('layouts._icon', ['icon' => 'send'])
+                    </span>
+                    Surat Keluar
+                </a>
+
+                @if(Auth::user()?->isAdmin())
+                    <a href="{{ route('admin.users.index') }}" class="sidebar-link {{ request()->routeIs('admin.users.*') ? 'sidebar-link-active' : '' }}">
+                        <span class="sidebar-link-icon">
+                            @include('layouts._icon', ['icon' => 'users'])
+                        </span>
+                        Kelola Pengguna
+                    </a>
+                @endif
             </nav>
 
             <!-- Drawer Footer Desktop: di dalam sidebar (disembunyikan di mobile) -->

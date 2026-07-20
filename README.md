@@ -6,7 +6,7 @@ Aplikasi web berbasis **Laravel 13** untuk pengarsipan surat masuk dan surat kel
 
 ## 🚀 Fitur Utama
 
-- 🔐 **Autentikasi & RBAC** — Akses login aman dengan multi-role (Admin, Internship, Maintenance).
+- 🔐 **Autentikasi & RBAC** — Akses login aman dengan multi-role (Admin & Internship).
 - 📥 **Arsip Surat Masuk & Keluar** — Input data lengkap dan upload file PDF.
 - ✏️ **Edit & Hapus Data** — Pengelolaan data arsip langsung terintegrasi dengan Google Sheets.
 - 🔍 **Filter & Klasifikasi** — Filter pencarian berdasarkan kode klasifikasi surat.
@@ -63,7 +63,6 @@ Perangkat lain yang berada di dalam jaringan WiFi/LAN yang sama dapat mengakses 
 graph LR
     Admin(["👤 Admin"])
     Internship(["🎓 Internship"])
-    Maintenance(["🛠️ Maintenance"])
     Public(["🌐 Publik\n(tanpa login)"])
     Tamu(["👁️ Tamu WiFi\n(read-only)"])
 
@@ -80,7 +79,6 @@ graph LR
         UC10("👁️ Lihat Arsip Read-Only")
         UC11("✏️ Edit Data Surat")
         UC12("📋 Rekap Laporan & Filter Tahun")
-        UC13("🛠️ Kelola Menu Dinamis & Sistem")
 
         UC2 --> UC4
         UC3 --> UC4
@@ -105,8 +103,6 @@ graph LR
     Internship --> UC2
     Internship --> UC3
     Internship --> UC6
-    Maintenance --> UC1
-    Maintenance --> UC13
     Public --> UC8
     Tamu --> UC10
 
@@ -130,7 +126,6 @@ flowchart TD
     F -- Ya --> ROLE{Role Pengguna?}
     ROLE -- Admin --> H["Masuk Dashboard Utama"]
     ROLE -- Internship --> J["Buka Form Surat Masuk"]
-    ROLE -- Maintenance --> MAINT["Buka Panel Maintenance"]
     C -- Ya --> ROLE
 
     H --> I{Pilih Menu}
