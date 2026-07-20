@@ -309,7 +309,7 @@
                             @foreach($rows as $item)
                             @php $d = $item['data']; @endphp
                             <tr>
-                                <td class="no-col">{{ $d[0] ?? '-' }}</td>
+                                <td class="no-col">{{ $loop->iteration }}</td>
                                 <td class="muted">{{ $d[1] ?? '-' }}</td>
                                 <td>{{ $d[2] ?? '-' }}</td>
                                 <td class="muted">{{ $d[3] ?? '-' }}</td>
