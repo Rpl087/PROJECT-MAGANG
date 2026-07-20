@@ -1,6 +1,32 @@
 # 📂 Sistem Pengarsipan Digital Surat — BPSDMP
 
-Aplikasi web berbasis **Laravel 13** untuk pengarsipan surat masuk dan surat keluar secara digital. Data arsip disimpan langsung ke **Google Spreadsheet** via Google Sheets API, file PDF disimpan di server lokal dan dapat diakses publik melalui URL unik.
+Aplikasi web berbasis **Laravel 13** untuk pengarsipan surat masuk dan surat keluar secara digital. Data arsip disimpan langsung ke **Google Spreadsheet** via Google Sheets API, file PDF disimpan di server lokal dan Google Drive.
+
+---
+
+## ⚡ Quick Start — Jalankan Pertama Kali (Mode 1-Pintu)
+
+Setelah melakukan `git clone` pada PC server khusus, Anda **cukup menjalankan 1 berkas skrip master** tanpa perlu konfigurasi manual:
+
+1. Buka folder proyek dan klik ganda berkas:
+   ```cmd
+   setup-and-run.bat
+   ```
+   *(atau jalankan `start-all.bat`)*
+
+2. Skrip master 1-Pintu akan secara otomatis mengeksekusi alur berikut:
+   - 🔑 **UAC Elevation**: Meminta akses Administrator Windows otomatis
+   - ⚡ **Service Laragon**: Menyalakan Apache & MySQL
+   - 📝 **Environment**: Mengisi berkas `.env` & generate `APP_KEY`
+   - 🗄️ **Database**: Membuat database `arsip_bpsdmp`, menjalankan migrasi & seed
+   - 🌐 **Virtual Host**: Membuat VirtualHost Apache `kearsipan.local.conf`
+   - 📌 **Hosts File**: Mendaftarkan domain `127.0.0.1 kearsipan.local` di `hosts` Windows
+   - 🛡️ **Firewall**: Membuka Inbound Port 80 pada Windows Firewall
+   - 🧹 **Storage & Cache**: Membersihkan temporary views, sessions, & cache/data (`storage:clean`)
+
+3. Akses aplikasi melalui browser:
+   - **Akses Staff / Admin**: `http://kearsipan.local/`
+   - **Akses WiFi Tamu (Read-Only)**: `http://kearsipan.local/tamu`
 
 ---
 
@@ -11,7 +37,7 @@ Aplikasi web berbasis **Laravel 13** untuk pengarsipan surat masuk dan surat kel
 - ✏️ **Edit & Hapus Data** — Pengelolaan data arsip langsung terintegrasi dengan Google Sheets.
 - 🔍 **Filter & Klasifikasi** — Filter pencarian berdasarkan kode klasifikasi surat.
 - 📊 **Dashboard & Rekapitulasi** — Statistik data arsip bulanan, tahunan, dan per klasifikasi.
-- 🌐 **Intranet Ready** — Dapat diakses di jaringan lokal (LAN/WiFi) menggunakan domain lokal `kearsipan.local`.
+- 🌐 **Intranet Ready** — Dapat diakses di jaringan lokal (LAN/WiFi) menggunakan domain `kearsipan.local`.
 - 🔒 **Cybersecurity Layer** — Proteksi terhadap Formula Injection, CSP, Rate Limiting, dan Session Protection.
 
 ---
@@ -20,75 +46,38 @@ Aplikasi web berbasis **Laravel 13** untuk pengarsipan surat masuk dan surat kel
 
 - **Framework**: Laravel 13 (PHP 8.3+)
 - **Database**: MySQL / MariaDB (untuk autentikasi & session)
-- **Integrasi**: Google Sheets API v4 (storage utama data arsip)
-- **Frontend**: Blade + Vanilla CSS (tanpa CSS framework external)
+- **Integrasi**: Google Sheets API v4 & Google Drive API
+- **Frontend**: Blade + Vanilla CSS (Aesthetically Rich & Dark Mode)
 - **Web Server**: Apache (Laragon) — Virtual Host `kearsipan.local`
-
----
-
-## 🌐 Akses Jaringan Lokal (WiFi / Intranet)
-
-Aplikasi ini mendukung akses intranet menggunakan domain lokal **`kearsipan.local`**. 
-
-### 1. Setup Virtual Host (Server)
-Untuk mengarahkan domain lokal ke folder project, tambahkan konfigurasi Virtual Host pada server web Apache:
-```apache
-<VirtualHost *:80> 
-    DocumentRoot "C:/laragon/www/project-magang/public"
-    ServerName kearsipan.local
-    ServerAlias *.kearsipan.local
-    <Directory "C:/laragon/www/project-magang/public">
-        AllowOverride All
-        Require all granted
-    </Directory>
-</VirtualHost>
-```
-
-### 2. Resolusi Host Lokal
-Tambahkan pemetaan IP ke berkas `hosts` sistem operasi server (misal: `C:\Windows\System32\drivers\etc\hosts` pada Windows):
-```hosts
-127.0.0.1 kearsipan.local
-```
-
-### 3. Akses Perangkat Lain di WiFi
-Perangkat lain yang berada di dalam jaringan WiFi/LAN yang sama dapat mengakses aplikasi dengan:
-- **DNS Kantor**: Mengarahkan domain `kearsipan.local` ke IP LAN server via DNS server lokal pada router.
-- **Akses Langsung**: Mengakses menggunakan IP LAN Server secara langsung (contoh: `http://192.168.252.15/` atau `http://10.0.0.5/`). Laravel akan mendeteksi Host Header secara otomatis dan menyesuaikan seluruh tautan internal halaman.
 
 ---
 
 ## 👤 Use Case Diagram
 
 ```mermaid
-graph LR
-    Admin["Admin"]
-    Internship["Internship"]
-    Public["Publik (tanpa login)"]
-    Tamu["Tamu WiFi (read-only)"]
+flowchart LR
+    Admin["👨‍💼 Admin"]
+    Internship["🧑‍💻 Internship"]
+    Public["🌍 Publik"]
+    Tamu["👥 Tamu WiFi"]
 
-    subgraph Sistem["Sistem Pengarsipan BPSDMP"]
-        UC1["Login ke Sistem"]
-        UC2["Input Surat Masuk"]
-        UC3["Input Surat Keluar"]
-        UC4["Upload File PDF"]
-        UC5["Simpan ke Google Sheets"]
-        UC6["Logout"]
-        UC7["Lihat Dashboard Statistik"]
-        UC8["Akses PDF via URL Publik"]
-        UC9["Hapus Data Surat"]
-        UC10["Lihat Arsip Read-Only"]
-        UC11["Edit Data Surat"]
-        UC12["Rekap Laporan dan Filter Tahun"]
-
-        UC2 --> UC4
-        UC3 --> UC4
-        UC2 --> UC5
-        UC3 --> UC5
-        UC11 --> UC5
+    subgraph System ["🏢 Sistem Pengarsipan BPSDMP"]
+        UC1["🔑 Login Sistem"]
+        UC2["📥 Input Surat Masuk"]
+        UC3["📤 Input Surat Keluar"]
+        UC4["📄 Upload PDF"]
+        UC5["💾 Simpan Google Sheets"]
+        UC6["🚪 Logout"]
+        UC7["📊 Dashboard & Statistik"]
+        UC8["🔍 Akses PDF Publik"]
+        UC9["🗑️ Hapus Data Surat"]
+        UC10["👀 Lihat Read-Only"]
+        UC11["✏️ Edit Data Surat"]
+        UC12["🖨️ Rekap Laporan"]
     end
 
-    subgraph Google["Google Cloud"]
-        GS["Google Spreadsheet dbSM / dbSK"]
+    subgraph Cloud ["☁️ Google Cloud API"]
+        GS["📊 Google Sheets dbSM / dbSK"]
     end
 
     Admin --> UC1
@@ -99,15 +88,21 @@ graph LR
     Admin --> UC9
     Admin --> UC11
     Admin --> UC12
+
     Internship --> UC1
     Internship --> UC2
     Internship --> UC3
     Internship --> UC6
+
     Public --> UC8
     Tamu --> UC10
 
-    UC1 -.->|include| VALID["Validasi Kredensial"]
-    UC5 -.->|include| GS
+    UC2 --> UC4
+    UC3 --> UC4
+    UC2 --> UC5
+    UC3 --> UC5
+    UC11 --> UC5
+    UC5 --> GS
 ```
 
 ---
@@ -115,77 +110,45 @@ graph LR
 ## 🔄 Flowchart Sistem
 
 ```mermaid
-graph TD
-    A["Mulai"] --> B["Buka Aplikasi"]
-    B --> C{"Sudah Login?"}
-    C -->|Tidak| D["Tampil Halaman Login"]
-    D --> E["Masukkan Username dan Password"]
-    E --> F{"Kredensial Valid?"}
-    F -->|Tidak| G["Tampil Pesan Error"]
-    G --> D
-    F -->|Ya| ROLE{"Role Pengguna?"}
-    ROLE -->|Admin| H["Masuk Dashboard Utama"]
-    ROLE -->|Internship| J["Buka Form Surat Masuk"]
-    C -->|Ya| ROLE
+flowchart TD
+    Start(["🚀 Mulai"]) --> OpenApp["🌐 Buka Aplikasi"]
+    OpenApp --> CheckAuth{"🔒 Sudah Login?"}
 
-    H --> I{"Pilih Menu"}
+    CheckAuth -- Tidak --> LoginPage["🔑 Tampil Halaman Login"]
+    LoginPage --> InputCred["📝 Input Username & Password"]
+    InputCred --> ValidateCred{"⚡ Kredensial Valid?"}
+    ValidateCred -- Tidak --> ErrMsg["⚠️ Pesan Error"] --> LoginPage
+    ValidateCred -- Ya --> CheckRole{"👤 Check Role"}
 
-    I -->|Surat Masuk| J
-    J --> K["Isi 17 Field Data"]
-    K --> L["Upload File PDF"]
-    L --> M{"Validasi Form"}
-    M -->|Gagal| N["Tampil Pesan Error"]
-    N --> K
-    M -->|Lolos| O["Upload PDF ke Google Drive"]
-    O --> P["Kirim Data ke Google Sheets dbSM"]
-    P --> Q["Tampil Notifikasi Berhasil"]
-    Q --> H
+    CheckAuth -- Ya --> CheckRole
 
-    I -->|Surat Keluar| R["Buka Form Surat Keluar"]
-    R --> S["Isi 18 Field Data"]
-    S --> T["Upload File PDF"]
-    T --> U{"Validasi Form"}
-    U -->|Gagal| V["Tampil Pesan Error"]
-    V --> S
-    U -->|Lolos| W["Upload PDF ke Google Drive"]
-    W --> X["Kirim Data ke Google Sheets dbSK"]
-    X --> Y["Tampil Notifikasi Berhasil"]
-    Y --> H
+    CheckRole -- Admin --> Dashboard["📊 Dashboard Admin"]
+    CheckRole -- Internship --> SuratMasukPage["📥 Form Surat Masuk"]
 
-    I -->|Dashboard| DA["Tampil Statistik Bulanan dan Tahunan"]
-    DA --> DB["Pie Chart Kode Klasifikasi"]
-    DB --> H
+    Dashboard --> MenuOpt{"📌 Pilih Menu"}
 
-    I -->|Hapus Data| DEL{"Konfirmasi Hapus?"}
-    DEL -->|Ya| DELACT["Hapus baris dari Google Sheets"]
-    DELACT --> H
-    DEL -->|Tidak| H
+    MenuOpt -- Surat Masuk --> SuratMasukPage
+    SuratMasukPage --> FormSM["📝 Isi Field Data & Upload PDF"]
+    FormSM --> SaveSM["💾 Upload PDF & Simpan ke Sheets dbSM"]
+    SaveSM --> SuccessNotif["✅ Notifikasi Berhasil"] --> Dashboard
 
-    I -->|Edit Data| EDIT["Klik tombol Edit di tabel"]
-    EDIT --> EDITFETCH["AJAX fetch data baris edit"]
-    EDITFETCH --> EDITMODAL["Modal Edit pre-filled"]
-    EDITMODAL --> EDITSUB{"Submit form PUT?"}
-    EDITSUB -->|Ya| EDITUPDATE["Update baris di Google Sheets"]
-    EDITUPDATE --> H
-    EDITSUB -->|Batal| H
+    MenuOpt -- Surat Keluar --> SuratKeluarPage["📤 Form Surat Keluar"]
+    SuratKeluarPage --> FormSK["📝 Isi Field Data & Upload PDF"]
+    FormSK --> SaveSK["💾 Upload PDF & Simpan ke Sheets dbSK"]
+    SaveSK --> SuccessNotif
 
-    I -->|Rekap| RPT["Dashboard Report"]
-    RPT --> RPT2["Filter Tahun per Tab"]
-    RPT2 --> RPT3["Cetak Tab atau Cetak Semua"]
-    RPT3 --> H
+    MenuOpt -- Edit/Hapus --> ManageData["✏️ Edit / Hapus Data Arsip"]
+    ManageData --> UpdateSheets["🔄 Update Google Sheets"] --> Dashboard
 
-    I -->|Keluar| Z["Logout Session"]
-    Z --> D
+    MenuOpt -- Rekap Laporan --> ReportPage["🖨️ Dashboard Rekap & Print"]
+    ReportPage --> Dashboard
 
-    PUB["Pengguna Publik"] --> PURL["Akses URL PDF"]
-    PURL --> PCHECK{"File Ada?"}
-    PCHECK -->|Ya| PPDF["Tampil PDF di Browser"]
-    PCHECK -->|Tidak| P404["404 Not Found"]
+    MenuOpt -- Logout --> LogoutSession["🚪 Logout Session"] --> LoginPage
 
-    TAMU["WiFi Tamu"] --> TAMUURL["Akses /tamu"]
-    TAMUURL --> TAMUCHECK{"IP dari subnet tamu atau internal?"}
-    TAMUCHECK -->|Ya| TAMUVIEW["Tampil Tabel Read-Only"]
-    TAMUCHECK -->|Tidak| T403["403 Forbidden"]
+    subgraph GuestFlow ["👥 Akses Tamu & Publik"]
+        GuestUser["👥 WiFi Tamu"] --> GuestPage["👀 Akses /tamu Read-Only"]
+        PublicUser["🌍 Pengguna Publik"] --> ViewPDF["📄 Akses Link PDF"]
+    end
 ```
 
 ---
@@ -197,92 +160,78 @@ erDiagram
     USERS {
         int id PK
         string name
-        string email UK
+        string email
         string password
         string role
         string remember_token
-        timestamp email_verified_at
-        timestamp created_at
-        timestamp updated_at
+        datetime created_at
+        datetime updated_at
     }
 
     SESSIONS {
         string id PK
         int user_id FK
         string ip_address
-        text user_agent
-        longtext payload
+        string user_agent
+        text payload
         int last_activity
     }
 
-    GOOGLE_SHEET_dbSM {
-        string A_timestamp
-        string B_kode_klasifikasi
-        string C_kode_surat
-        string D_uraian_informasi_berkas
-        string E_kurun_waktu
-        string F_jumlah_folder
-        string G_nomor_item_arsip
-        string H_uraian_informasi_arsip
-        date   I_tanggal_surat
-        string J_jumlah_lembar
-        string K_tingkat_perkembangan
-        string L_lokasi_simpan
-        string M_klasifikasi_keamanan
-        string N_tingkat_akses
-        string O_retensi_aktif
-        string P_retensi_inaktif
-        string Q_retensi_keterangan
-        url    R_url_pdf
+    GOOGLE_SHEET_SM {
+        string timestamp
+        string kode_klasifikasi
+        string kode_surat
+        string uraian_berkas
+        string kurun_waktu
+        string jumlah_folder
+        string nomor_item
+        string uraian_arsip
+        string tanggal_surat
+        string jumlah_lembar
+        string tingkat_perkembangan
+        string lokasi_simpan
+        string klasifikasi_keamanan
+        string tingkat_akses
+        string retensi_aktif
+        string retensi_inaktif
+        string url_pdf
     }
 
-    GOOGLE_SHEET_dbSK {
-        string A_timestamp
-        string B_kode_klasifikasi
-        string C_kode_surat
-        string D_uraian_informasi_berkas
-        string E_kurun_waktu
-        string F_jumlah_folder
-        string G_nomor_item_arsip
-        url    H_url_pdf
-        string I_uraian_informasi_arsip
-        date   J_tanggal_surat
-        string K_jumlah_lembar
-        string L_tingkat_perkembangan
-        string M_lokasi_simpan
-        string N_klasifikasi_keamanan
-        string O_tingkat_akses
-        string P_retensi_aktif
-        string Q_retensi_inaktif
-        string R_retensi_keterangan
+    GOOGLE_SHEET_SK {
+        string timestamp
+        string kode_klasifikasi
+        string kode_surat
+        string uraian_berkas
+        string kurun_waktu
+        string jumlah_folder
+        string nomor_item
+        string url_pdf
+        string uraian_arsip
+        string tanggal_surat
+        string jumlah_lembar
+        string tingkat_perkembangan
+        string lokasi_simpan
+        string klasifikasi_keamanan
+        string tingkat_akses
+        string retensi_aktif
+        string retensi_inaktif
     }
 
     USERS ||--o{ SESSIONS : "memiliki"
-    USERS ||--o{ GOOGLE_SHEET_dbSM : "menginput"
-    USERS ||--o{ GOOGLE_SHEET_dbSK : "menginput"
+    USERS ||--o{ GOOGLE_SHEET_SM : "menginput"
+    USERS ||--o{ GOOGLE_SHEET_SK : "menginput"
 ```
 
 ---
 
-## ⚡ Setup Awal Aplikasi
+## 🔒 Pemeliharaan & Jadwal Otomatis (Scheduler)
 
-1. **Clone Project**: Unduh berkas proyek ke direktori server (`C:\laragon\www\project-magang`).
-2. **Install Dependensi**:
-   ```bash
-   composer install
-   ```
-3. **Konfigurasi Environment**:
-   - Salin file `.env.example` menjadi `.env`.
-   - Konfigurasikan koneksi database MySQL, ID Google Sheet, dan folder Google Drive.
-   - Buat kunci enkripsi aplikasi:
-     ```bash
-     php artisan key:generate
-     ```
-4. **Migrasi Database**:
-   ```bash
-   php artisan migrate --seed
-   ```
-5. **Storage Link**: Buat symbolic link untuk file uploads:
-   ```bash
-   php artisan storage:link
-   ```
+Aplikasi telah dilengkapi dengan **Laravel Task Scheduler** yang secara otomatis berjalan setiap pukul **00:00 (Tengah Malam)** untuk membersihkan berkas-berkas temporary pada direktori storage:
+* `storage/framework/views` (Compiled Blade Views)
+* `storage/framework/sessions` (File Session Usang)
+* `storage/framework/cache/data` (Subfolder Cache Data)
+
+Pembersihan manual juga dapat dilakukan kapan saja melalui terminal:
+```bash
+php artisan storage:clean
+```
