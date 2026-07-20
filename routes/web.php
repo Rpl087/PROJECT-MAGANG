@@ -31,19 +31,9 @@ Route::get('/pdf/{type}/{filename}', function (string $type, string $filename) {
         abort(403, 'Akses ditolak.');
     }
 
-    $fullPath = null;
+    $fullPath = base_path('uploads/' . $filename);
 
-    $backupPath = base_path('uploads/' . $filename);
-    if (file_exists($backupPath)) {
-        $fullPath = $backupPath;
-    } else {
-        $path = "arsip/{$type}/{$filename}";
-        if (Storage::disk('public')->exists($path)) {
-            $fullPath = Storage::disk('public')->path($path);
-        }
-    }
-
-    if (!$fullPath) {
+    if (!file_exists($fullPath)) {
         abort(404, 'File tidak ditemukan.');
     }
 
