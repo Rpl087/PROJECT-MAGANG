@@ -18,6 +18,9 @@ return Application::configure(basePath: dirname(__DIR__))
         // ── Security Headers — berjalan di semua request ─────────────────────
         $middleware->append(\App\Http\Middleware\SecurityHeaders::class);
 
+        // ── Update Waktu Akses Terakhir User ────────────────────────────────
+        $middleware->appendToGroup('web', \App\Http\Middleware\UpdateUserLastSeen::class);
+
         // ── Middleware Aliases ────────────────────────────────────────────────
         $middleware->alias([
             // Izinkan akses ke route tamu dari WiFi tamu atau internal

@@ -74,6 +74,7 @@ class LoginController extends Controller
             $request->session()->regenerate();
 
             $user = Auth::user();
+            $user->forceFill(['last_seen_at' => now()])->save();
 
             Log::info('Login berhasil.', [
                 'user_id'  => Auth::id(),

@@ -325,6 +325,7 @@
                 <th>Username</th>
                 <th>Email</th>
                 <th>Role</th>
+                <th>Akses Terakhir</th>
                 <th>Dibuat</th>
             </tr>
         </thead>
@@ -336,10 +337,19 @@
                 <td>
                     <span class="role-badge role-{{ $user->role }}">{{ ucfirst($user->role) }}</span>
                 </td>
+                <td style="font-size:.82rem;color:var(--color-text-muted,#64748b)">
+                    @if($user->last_seen_at)
+                        <span title="{{ $user->last_seen_at->format('d M Y H:i:s') }}">
+                            {{ $user->last_seen_at->diffForHumans() }}
+                        </span>
+                    @else
+                        <span style="color:#94a3b8;font-style:italic">Belum pernah</span>
+                    @endif
+                </td>
                 <td style="font-size:.82rem;color:var(--color-text-muted,#64748b)">{{ $user->created_at->format('d M Y') }}</td>
             </tr>
             @empty
-            <tr><td colspan="4" style="text-align:center;padding:2rem;color:var(--color-text-muted)">Tidak ada pengguna.</td></tr>
+            <tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--color-text-muted)">Tidak ada pengguna.</td></tr>
             @endforelse
         </tbody>
     </table>

@@ -30,7 +30,7 @@ class DatabaseSeeder extends Seeder
 
         // ── User Internship ───────────────────────────────────────────────────
         User::firstOrCreate(
-            ['name' => 'internship'],
+            ['name' => 'Internship'],
             [
                 'email'    => 'internship@bpsdmp.go.id',
                 'password' => Hash::make('internship_BPSDMP'),
