@@ -297,12 +297,12 @@
                     {{-- Input custom kode edit modal SM --}}
                     <input type="text" id="edit-sm-kode-klasifikasi-custom"
                            class="edit-field-input"
-                           placeholder="Kode kustom (maks. 10 karakter)"
-                           maxlength="10"
+                           placeholder="Kode kustom (2 huruf, contoh: XX)"
+                           maxlength="2"
                            autocomplete="off"
                            style="display:none;margin-top:.4rem;"
-                           oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'')">
-                    <small id="edit-sm-kode-custom-hint" style="display:none;color:var(--color-text-muted);font-size:.72rem;">Isi kode klasifikasi kustom — data retensi perlu diisi manual.</small>
+                           oninput="this.value=this.value.toUpperCase().replace(/[^A-Z]/g,'').slice(0,2)">
+                    <small id="edit-sm-kode-custom-hint" style="display:none;color:var(--color-text-muted);font-size:.72rem;">Isi kode klasifikasi kustom (2 huruf) — data retensi perlu diisi manual.</small>
                 </div>
                 <div class="edit-field-group">
                     <label class="edit-field-label">Kode Surat <span class="req">*</span></label>
@@ -440,12 +440,12 @@
                 @php $oldKodeSM = old('kode_klasifikasi'); $isCustomKodeSM = $oldKodeSM && !in_array($oldKodeSM, ['','PR','KP','OT','KU','HK','UM','PL','UP','HM','PW','LT','DL','DT','KI','__lainnya__']); @endphp
                 <input type="text" id="kode_klasifikasi_custom_sm"
                        class="form-input mt-1"
-                       placeholder="Contoh: XX (maks. 10 karakter)"
-                       maxlength="10"
+                       placeholder="Contoh: XX (2 huruf)"
+                       maxlength="2"
                        autocomplete="off"
                        value="{{ $isCustomKodeSM ? $oldKodeSM : '' }}"
                        style="{{ $isCustomKodeSM ? '' : 'display:none;' }}margin-top:.4rem;"
-                       oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'')">
+                       oninput="this.value=this.value.toUpperCase().replace(/[^A-Z]/g,'').slice(0,2)">
                 @error('kode_klasifikasi')
                     <span class="error-text">{{ $message }}</span>
                 @enderror
@@ -1316,7 +1316,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     firstDayOfWeek: 1
                 },
                 minDate: new Date(currYearSM, 0, 1),
-                maxDate: new Date(currYearSM, 11, 31),
+                maxDate: new Date(),
                 allowInput: false,
                 disableMobile: true,
             });
@@ -1338,7 +1338,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     firstDayOfWeek: 1
                 },
                 minDate: new Date(currYearSM2, 0, 1),
-                maxDate: new Date(currYearSM2, 11, 31),
+                maxDate: new Date(),
                 allowInput: false,
                 disableMobile: true,
             });
@@ -1448,25 +1448,43 @@ document.addEventListener('DOMContentLoaded', function () {
         // Inisialisasi
         handleKodeSelectSM();
     }
+    // Helper: set nilai kustom ke elemen select secara aman (membuat option baru jika belum ada)
+    function setCustomSelectValue(selectEl, customVal) {
+        if (!selectEl) return;
+        customVal = customVal.toUpperCase().trim();
+        var optExists = Array.from(selectEl.options).some(function(opt) { return opt.value === customVal; });
+        if (!optExists) {
+            var newOpt = document.createElement('option');
+            newOpt.value = customVal;
+            newOpt.textContent = customVal;
+            selectEl.appendChild(newOpt);
+        }
+        selectEl.value = customVal;
+    }
+
     if (kodeCustomSM) {
         kodeCustomSM.addEventListener('input', function() {
-            applyRetensiFromKode(this.value.toUpperCase().slice(0,2));
+            var v = this.value.toUpperCase().replace(/[^A-Z]/g,'').slice(0,2);
+            if (this.value !== v) this.value = v;
+            applyRetensiFromKode(v);
         });
     }
 
-    // Sebelum submit — ganti nilai select dengan nilai custom jika "Lainnya" dipilih
+    // Sebelum submit — ganti nilai select dengan nilai custom (2 huruf) jika "Lainnya" dipilih
     if (formSM) {
         formSM.addEventListener('submit', function(e) {
             if (kodeSelectSM && kodeSelectSM.value === '__lainnya__') {
-                var customVal = (kodeCustomSM ? kodeCustomSM.value.trim() : '');
-                if (!customVal) {
+                var customVal = (kodeCustomSM ? kodeCustomSM.value.toUpperCase().trim() : '');
+                if (!/^[A-Z]{2}$/.test(customVal)) {
                     e.preventDefault();
-                    kodeCustomSM.focus();
-                    kodeCustomSM.style.borderColor = 'var(--color-danger, #ef4444)';
-                    alert('Mohon isi kode klasifikasi kustom terlebih dahulu.');
+                    if (kodeCustomSM) {
+                        kodeCustomSM.focus();
+                        kodeCustomSM.style.borderColor = 'var(--color-danger, #ef4444)';
+                    }
+                    alert('Mohon isi kode klasifikasi kustom berupa 2 huruf kapital (contoh: XX).');
                     return;
                 }
-                kodeSelectSM.value = customVal;
+                setCustomSelectValue(kodeSelectSM, customVal);
             }
         });
     }
@@ -1512,7 +1530,9 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     if (editKodeCustomEl) {
         editKodeCustomEl.addEventListener('input', function() {
-            applyKodeMapEdit(this.value.toUpperCase().slice(0,2));
+            var v = this.value.toUpperCase().replace(/[^A-Z]/g,'').slice(0,2);
+            if (this.value !== v) this.value = v;
+            applyKodeMapEdit(v);
         });
     }
 
@@ -1521,14 +1541,14 @@ document.addEventListener('DOMContentLoaded', function () {
     if (formEditSM) {
         formEditSM.addEventListener('submit', function(e) {
             if (editKodeEl && editKodeEl.value === '__lainnya__') {
-                var customVal = (editKodeCustomEl ? editKodeCustomEl.value.trim() : '');
-                if (!customVal) {
+                var customVal = (editKodeCustomEl ? editKodeCustomEl.value.toUpperCase().trim() : '');
+                if (!/^[A-Z]{2}$/.test(customVal)) {
                     e.preventDefault();
-                    editKodeCustomEl.focus();
-                    alert('Mohon isi kode klasifikasi kustom terlebih dahulu.');
+                    if (editKodeCustomEl) editKodeCustomEl.focus();
+                    alert('Mohon isi kode klasifikasi kustom berupa 2 huruf kapital (contoh: XX).');
                     return;
                 }
-                editKodeEl.value = customVal;
+                setCustomSelectValue(editKodeEl, customVal);
             }
         });
     }

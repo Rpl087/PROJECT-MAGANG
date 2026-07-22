@@ -59,23 +59,28 @@ class GoogleDriveService
 
             // Ambil Folder ID dari config (aman saat config:cache — tidak pakai env() langsung)
             $parentFolderId = config('google.drive_folder_id');
+            if (empty($parentFolderId)) {
+                throw new \RuntimeException('GOOGLE_DRIVE_FOLDER_ID belum dikonfigurasi di .env. Service Account memerlukan ID folder tujuan yang dibagikan.');
+            }
 
             // 4. Metadata file untuk Google Drive
             $driveFileMetadata = new DriveFile([
-                'name' => $filename,
-                'parents' => $parentFolderId ? [$parentFolderId] : []
+                'name'    => $filename,
+                'parents' => [$parentFolderId]
             ]);
 
-            // 5. Kirim file ke Google Drive
+            // 5. Kirim file ke Google Drive (gunakan supportsAllDrives agar menggunakan kuota folder pemilik/Shared Drive)
             $content = file_get_contents($localFilePath);
             $driveFile = $driveService->files->create($driveFileMetadata, [
-                'data' => $content,
-                'mimeType' => 'application/pdf',
-                'uploadType' => 'multipart',
-                'fields' => 'id, webViewLink'
+                'data'                => $content,
+                'mimeType'            => 'application/pdf',
+                'uploadType'          => 'multipart',
+                'supportsAllDrives'   => true,
+                'supportsTeamDrives'  => true,
+                'fields'              => 'id, webViewLink',
             ]);
 
-            $fileId = $driveFile->id;
+            $fileId    = $driveFile->id;
             $driveLink = $driveFile->webViewLink;
 
             // 6. Set permission agar file bisa diakses oleh siapa saja yang memiliki link (anyone with link as reader)
@@ -83,7 +88,10 @@ class GoogleDriveService
                 $permission = new Permission();
                 $permission->setType('anyone');
                 $permission->setRole('reader');
-                $driveService->permissions->create($fileId, $permission);
+                $driveService->permissions->create($fileId, $permission, [
+                    'supportsAllDrives'  => true,
+                    'supportsTeamDrives' => true,
+                ]);
             } catch (\Exception $permissionEx) {
                 Log::warning('Gagal menyetel izin publik untuk file di Google Drive: ' . $permissionEx->getMessage());
             }

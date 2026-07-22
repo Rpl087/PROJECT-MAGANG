@@ -293,12 +293,12 @@
                     {{-- Input custom kode edit modal SK --}}
                     <input type="text" id="edit-sk-kode-klasifikasi-custom"
                            class="edit-field-input"
-                           placeholder="Kode kustom (maks. 10 karakter)"
-                           maxlength="10"
+                           placeholder="Kode kustom (2 huruf, contoh: XX)"
+                           maxlength="2"
                            autocomplete="off"
                            style="display:none;margin-top:.4rem;"
-                           oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'')">
-                    <small id="edit-sk-kode-custom-hint" style="display:none;color:var(--color-text-muted);font-size:.72rem;">Isi kode klasifikasi kustom — data retensi perlu diisi manual.</small>
+                           oninput="this.value=this.value.toUpperCase().replace(/[^A-Z]/g,'').slice(0,2)">
+                    <small id="edit-sk-kode-custom-hint" style="display:none;color:var(--color-text-muted);font-size:.72rem;">Isi kode klasifikasi kustom (2 huruf) — data retensi perlu diisi manual.</small>
                 </div>
                 <div class="edit-field-group">
                     <label class="edit-field-label">Kode Surat <span class="req">*</span></label>
@@ -435,12 +435,12 @@
                 @php $oldKodeSK = old('kode_klasifikasi'); $isCustomKodeSK = $oldKodeSK && !in_array($oldKodeSK, ['','PR','KP','OT','KU','HK','UM','PL','UP','HM','PW','LT','DL','DT','KI','__lainnya__']); @endphp
                 <input type="text" id="kode_klasifikasi_custom_sk"
                        class="form-input mt-1"
-                       placeholder="Contoh: XX (maks. 10 karakter)"
-                       maxlength="10"
+                       placeholder="Contoh: XX (2 huruf)"
+                       maxlength="2"
                        autocomplete="off"
                        value="{{ $isCustomKodeSK ? $oldKodeSK : '' }}"
                        style="{{ $isCustomKodeSK ? '' : 'display:none;' }}margin-top:.4rem;"
-                       oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'')">
+                       oninput="this.value=this.value.toUpperCase().replace(/[^A-Z]/g,'').slice(0,2)">
                 @error('kode_klasifikasi')
                     <span class="error-text">{{ $message }}</span>
                 @enderror
@@ -1294,7 +1294,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     firstDayOfWeek: 1
                 },
                 minDate: new Date(currYearSK, 0, 1),
-                maxDate: new Date(currYearSK, 11, 31),
+                maxDate: new Date(),
                 allowInput: false,
                 disableMobile: true,
             });
@@ -1316,7 +1316,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     firstDayOfWeek: 1
                 },
                 minDate: new Date(currYearSK2, 0, 1),
-                maxDate: new Date(currYearSK2, 11, 31),
+                maxDate: new Date(),
                 allowInput: false,
                 disableMobile: true,
             });
@@ -1344,9 +1344,25 @@ document.addEventListener('DOMContentLoaded', function () {
         kodeSelectSK.addEventListener('change', handleKodeSelectSK);
         handleKodeSelectSK();
     }
+    // Helper: set nilai kustom ke elemen select secara aman (membuat option baru jika belum ada)
+    function setCustomSelectValueSK(selectEl, customVal) {
+        if (!selectEl) return;
+        customVal = customVal.toUpperCase().trim();
+        var optExists = Array.from(selectEl.options).some(function(opt) { return opt.value === customVal; });
+        if (!optExists) {
+            var newOpt = document.createElement('option');
+            newOpt.value = customVal;
+            newOpt.textContent = customVal;
+            selectEl.appendChild(newOpt);
+        }
+        selectEl.value = customVal;
+    }
+
     if (kodeCustomSK) {
         kodeCustomSK.addEventListener('input', function() {
-            applyRetensiFromKodeSK(this.value.toUpperCase().slice(0,2));
+            var v = this.value.toUpperCase().replace(/[^A-Z]/g,'').slice(0,2);
+            if (this.value !== v) this.value = v;
+            applyRetensiFromKodeSK(v);
         });
     }
 
@@ -1354,15 +1370,17 @@ document.addEventListener('DOMContentLoaded', function () {
     if (formSK) {
         formSK.addEventListener('submit', function(e) {
             if (kodeSelectSK && kodeSelectSK.value === '__lainnya__') {
-                var customVal = (kodeCustomSK ? kodeCustomSK.value.trim() : '');
-                if (!customVal) {
+                var customVal = (kodeCustomSK ? kodeCustomSK.value.toUpperCase().trim() : '');
+                if (!/^[A-Z]{2}$/.test(customVal)) {
                     e.preventDefault();
-                    kodeCustomSK.focus();
-                    kodeCustomSK.style.borderColor = 'var(--color-danger, #ef4444)';
-                    alert('Mohon isi kode klasifikasi kustom terlebih dahulu.');
+                    if (kodeCustomSK) {
+                        kodeCustomSK.focus();
+                        kodeCustomSK.style.borderColor = 'var(--color-danger, #ef4444)';
+                    }
+                    alert('Mohon isi kode klasifikasi kustom berupa 2 huruf kapital (contoh: XX).');
                     return;
                 }
-                kodeSelectSK.value = customVal;
+                setCustomSelectValueSK(kodeSelectSK, customVal);
             }
         });
     }
@@ -1473,7 +1491,9 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     if (editKodeCustElSK) {
         editKodeCustElSK.addEventListener('input', function() {
-            applyKodeMapEditSK(this.value.toUpperCase().slice(0,2));
+            var v = this.value.toUpperCase().replace(/[^A-Z]/g,'').slice(0,2);
+            if (this.value !== v) this.value = v;
+            applyKodeMapEditSK(v);
         });
     }
 
@@ -1482,14 +1502,14 @@ document.addEventListener('DOMContentLoaded', function () {
     if (formEditSKEl) {
         formEditSKEl.addEventListener('submit', function(e) {
             if (editKodeElSK && editKodeElSK.value === '__lainnya__') {
-                var customVal = (editKodeCustElSK ? editKodeCustElSK.value.trim() : '');
-                if (!customVal) {
+                var customVal = (editKodeCustElSK ? editKodeCustElSK.value.toUpperCase().trim() : '');
+                if (!/^[A-Z]{2}$/.test(customVal)) {
                     e.preventDefault();
-                    editKodeCustElSK.focus();
-                    alert('Mohon isi kode klasifikasi kustom terlebih dahulu.');
+                    if (editKodeCustElSK) editKodeCustElSK.focus();
+                    alert('Mohon isi kode klasifikasi kustom berupa 2 huruf kapital (contoh: XX).');
                     return;
                 }
-                editKodeElSK.value = customVal;
+                setCustomSelectValueSK(editKodeElSK, customVal);
             }
         });
     }

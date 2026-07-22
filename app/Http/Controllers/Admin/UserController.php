@@ -145,6 +145,19 @@ class UserController extends Controller
     }
 
     /**
+     * Helper untuk mengirim format event SSE (Server-Sent Events).
+     */
+    private function sseEvent(string $event, array $data): void
+    {
+        echo "event: {$event}\n";
+        echo "data: " . json_encode($data) . "\n\n";
+        if (ob_get_level() > 0) {
+            ob_flush();
+        }
+        flush();
+    }
+
+    /**
      * Naikkan versi cache reset requests agar SSE admin mendapat notifikasi.
      */
     public static function bumpResetVersion(): void
