@@ -292,7 +292,17 @@
                         <option value="DL">DL</option>
                         <option value="DT">DT</option>
                         <option value="KI">KI</option>
+                        <option value="__lainnya__">Lainnya (isi manual)...</option>
                     </select>
+                    {{-- Input custom kode edit modal SM --}}
+                    <input type="text" id="edit-sm-kode-klasifikasi-custom"
+                           class="edit-field-input"
+                           placeholder="Kode kustom (maks. 10 karakter)"
+                           maxlength="10"
+                           autocomplete="off"
+                           style="display:none;margin-top:.4rem;"
+                           oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'')">
+                    <small id="edit-sm-kode-custom-hint" style="display:none;color:var(--color-text-muted);font-size:.72rem;">Isi kode klasifikasi kustom — data retensi perlu diisi manual.</small>
                 </div>
                 <div class="edit-field-group">
                     <label class="edit-field-label">Kode Surat <span class="req">*</span></label>
@@ -424,7 +434,18 @@
                     <option value="DL" {{ old('kode_klasifikasi') == 'DL' ? 'selected' : '' }}>DL</option>
                     <option value="DT" {{ old('kode_klasifikasi') == 'DT' ? 'selected' : '' }}>DT</option>
                     <option value="KI" {{ old('kode_klasifikasi') == 'KI' ? 'selected' : '' }}>KI</option>
+                    <option value="__lainnya__" {{ !in_array(old('kode_klasifikasi'), ['','PR','KP','OT','KU','HK','UM','PL','UP','HM','PW','LT','DL','DT','KI']) && old('kode_klasifikasi') ? 'selected' : '' }}>Lainnya (isi manual)...</option>
                 </select>
+                {{-- Input custom kode — tampil saat pilih "Lainnya" --}}
+                @php $oldKodeSM = old('kode_klasifikasi'); $isCustomKodeSM = $oldKodeSM && !in_array($oldKodeSM, ['','PR','KP','OT','KU','HK','UM','PL','UP','HM','PW','LT','DL','DT','KI','__lainnya__']); @endphp
+                <input type="text" id="kode_klasifikasi_custom_sm"
+                       class="form-input mt-1"
+                       placeholder="Contoh: XX (maks. 10 karakter)"
+                       maxlength="10"
+                       autocomplete="off"
+                       value="{{ $isCustomKodeSM ? $oldKodeSM : '' }}"
+                       style="{{ $isCustomKodeSM ? '' : 'display:none;' }}margin-top:.4rem;"
+                       oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'')">
                 @error('kode_klasifikasi')
                     <span class="error-text">{{ $message }}</span>
                 @enderror
@@ -1191,10 +1212,50 @@ document.addEventListener('DOMContentLoaded', function () {
             }
             document.getElementById('edit-sm-tingkat-perkembangan').value  = tingkatVal;
             document.getElementById('edit-sm-lokasi-simpan').value         = data.lokasi_simpan || '';
-            // Semua field terkunci: isi otomatis dari KODE_MAP berdasarkan kode klasifikasi
-            // Jika kode ada di map → gunakan map; jika tidak → fallback ke data server
-            var kodeForMap = (data.kode_klasifikasi || '').replace(/[^A-Za-z]/g,'').toUpperCase().slice(0,2);
+            // Isi kode klasifikasi: cek apakah ada di dropdown standar
+            var kodeRaw    = (data.kode_klasifikasi || '').trim();
+            var kodeForMap = kodeRaw.replace(/[^A-Za-z]/g,'').toUpperCase().slice(0,2);
             var mapData    = window.KODE_MAP && window.KODE_MAP[kodeForMap] ? window.KODE_MAP[kodeForMap] : null;
+            var stdKodes   = ['PR','KP','OT','KU','HK','UM','PL','UP','HM','PW','LT','DL','DT','KI'];
+            var editKodeSelEl    = document.getElementById('edit-sm-kode-klasifikasi');
+            var editKodeCustEl   = document.getElementById('edit-sm-kode-klasifikasi-custom');
+            var editKodeHintEl   = document.getElementById('edit-sm-kode-custom-hint');
+            if (editKodeSelEl) {
+                if (stdKodes.indexOf(kodeForMap) !== -1) {
+                    // Kode standar — pilih dari dropdown
+                    editKodeSelEl.value = kodeForMap;
+                    if (editKodeCustEl) { editKodeCustEl.style.display = 'none'; editKodeCustEl.value = ''; }
+                    if (editKodeHintEl) editKodeHintEl.style.display = 'none';
+                } else if (kodeRaw !== '') {
+                    // Kode kustom — pilih "Lainnya", isi custom input
+                    editKodeSelEl.value = '__lainnya__';
+                    if (editKodeCustEl) { editKodeCustEl.style.display = 'block'; editKodeCustEl.value = kodeRaw; }
+                    if (editKodeHintEl) editKodeHintEl.style.display = 'block';
+                } else {
+                    editKodeSelEl.value = '';
+                    if (editKodeCustEl) { editKodeCustEl.style.display = 'none'; editKodeCustEl.value = ''; }
+                    if (editKodeHintEl) editKodeHintEl.style.display = 'none';
+                }
+            }
+            // Semua field terkunci: isi otomatis dari KODE_MAP berdasarkan kode klasifikasi
+            // Jika kode ada di map → gunakan map; jika tidak → fallback ke data server (dan unlock)
+            var autoFillLocked = !!mapData;
+            var editAutoIds = ['edit-sm-retensi-aktif','edit-sm-retensi-inaktif','edit-sm-retensi-keterangan','edit-sm-klas-keamanan','edit-sm-tingkat-akses'];
+            editAutoIds.forEach(function(id) {
+                var el = document.getElementById(id);
+                if (!el) return;
+                if (autoFillLocked) {
+                    el.setAttribute('readonly', '');
+                    el.style.background = 'var(--color-bg,#f8fafc)';
+                    el.style.cursor = 'not-allowed';
+                    el.style.opacity = '.85';
+                } else {
+                    el.removeAttribute('readonly');
+                    el.style.background = '';
+                    el.style.cursor = '';
+                    el.style.opacity = '';
+                }
+            });
             document.getElementById('edit-sm-retensi-aktif').value         = mapData ? mapData[0] : (data.retensi_aktif       || '');
             document.getElementById('edit-sm-retensi-inaktif').value       = mapData ? mapData[1] : (data.retensi_inaktif     || '');
             document.getElementById('edit-sm-retensi-keterangan').value    = mapData ? mapData[2] : (data.retensi_keterangan  || '');
@@ -1284,24 +1345,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     } catch(e) { console.warn('Flatpickr SM error:', e); }
 
-    // ── Kode Klasifikasi: paksa uppercase & max 2 karakter ───────────────────
-    var kodeInputSM = document.getElementById('kode_klasifikasi');
-    if (kodeInputSM) {
-        kodeInputSM.addEventListener('input', function() {
-            var v = this.value.replace(/[^A-Za-z]/g, '').toUpperCase().slice(0, 2);
-            if (this.value !== v) this.value = v;
-            applyRetensiFromKode(v);
-        });
-        kodeInputSM.addEventListener('keydown', function(e) {
-            // Tolak karakter non-huruf dan tolak jika sudah 2 karakter
-            if (this.value.length >= 2 && e.key.length === 1 && !e.ctrlKey && !e.metaKey) {
-                e.preventDefault();
-            }
-        });
-        // Inisialisasi: isi retensi dari nilai awal kode (jika ada, misal dari old())
-        applyRetensiFromKode(kodeInputSM.value.toUpperCase());
-    }
-
     // ── Kode Surat: kunci hanya angka & titik ──────────────────────────────────
     ['kode_surat', 'edit-sm-kode-surat'].forEach(function(id) {
         var el = document.getElementById(id);
@@ -1315,6 +1358,7 @@ document.addEventListener('DOMContentLoaded', function () {
             if (!/[0-9.]/.test(e.key)) e.preventDefault();
         });
     });
+
     // Format per kode: [retensi_aktif, retensi_inaktif, retensi_keterangan, klas_keamanan, tingkat_akses]
     // Dijadikan global agar bisa diakses dari semua DOMContentLoaded handler
     window.RETENSI_MAP = window.KODE_MAP = {
@@ -1335,36 +1379,165 @@ document.addEventListener('DOMContentLoaded', function () {
         'KI': ['5 Tahun',  '10 Tahun', 'Permanen',  'Biasa',   'Terbatas'],
     };
 
+    // ── Helper: toggle readonly pada auto-fill fields ─────────────────────────
+    var AUTO_FILL_IDS_SM = ['retensi_aktif','retensi_inaktif','retensi_keterangan','klasifikasi_keamanan','tingkat_akses'];
+    function setAutoFillLocked(ids, locked) {
+        ids.forEach(function(id) {
+            var el = document.getElementById(id);
+            if (!el) return;
+            if (locked) {
+                el.setAttribute('readonly', '');
+                el.style.background  = 'var(--color-bg,#f8fafc)';
+                el.style.cursor      = 'not-allowed';
+                el.style.opacity     = '.85';
+            } else {
+                el.removeAttribute('readonly');
+                el.style.background  = '';
+                el.style.cursor      = '';
+                el.style.opacity     = '';
+            }
+        });
+    }
+
     // Auto-fill semua field terkunci pada form tambah surat masuk
     function applyRetensiFromKode(kode) {
-        var map  = window.KODE_MAP || {};
-        var data = map[kode] || null;
-        var fields = {
-            'retensi_aktif'         : data ? data[0] : '',
-            'retensi_inaktif'       : data ? data[1] : '',
-            'retensi_keterangan'    : data ? data[2] : '',
-            'klasifikasi_keamanan'  : data ? data[3] : '',
-            'tingkat_akses'         : data ? data[4] : '',
-        };
-        Object.keys(fields).forEach(function(id) {
-            var el = document.getElementById(id);
-            if (el) el.value = fields[id];
+        var map    = window.KODE_MAP || {};
+        var data   = map[kode] || null;
+        var locked = !!data;  // lock hanya jika kode dikenali
+        setAutoFillLocked(AUTO_FILL_IDS_SM, locked);
+        if (data) {
+            var fields = {
+                'retensi_aktif'        : data[0],
+                'retensi_inaktif'      : data[1],
+                'retensi_keterangan'   : data[2],
+                'klasifikasi_keamanan' : data[3],
+                'tingkat_akses'        : data[4],
+            };
+            Object.keys(fields).forEach(function(id) {
+                var el = document.getElementById(id);
+                if (el) el.value = fields[id];
+            });
+        } else {
+            // Kode kustom / tidak dikenali — kosongkan agar user isi manual
+            AUTO_FILL_IDS_SM.forEach(function(id) {
+                var el = document.getElementById(id);
+                if (el) el.value = '';
+            });
+        }
+    }
+
+    // ── Kode Klasifikasi: dropdown + custom input (form SM) ───────────────────
+    var kodeSelectSM = document.getElementById('kode_klasifikasi');
+    var kodeCustomSM = document.getElementById('kode_klasifikasi_custom_sm');
+    var formSM = document.getElementById('arsip-form');
+
+    function handleKodeSelectSM() {
+        if (!kodeSelectSM) return;
+        var val = kodeSelectSM.value;
+        if (val === '__lainnya__') {
+            if (kodeCustomSM) { kodeCustomSM.style.display = 'block'; kodeCustomSM.focus(); }
+            applyRetensiFromKode('');
+        } else {
+            if (kodeCustomSM) { kodeCustomSM.style.display = 'none'; kodeCustomSM.value = ''; }
+            applyRetensiFromKode(val.replace(/[^A-Za-z]/g,'').toUpperCase().slice(0,2));
+        }
+    }
+
+    if (kodeSelectSM) {
+        kodeSelectSM.addEventListener('change', handleKodeSelectSM);
+        // Inisialisasi
+        handleKodeSelectSM();
+    }
+    if (kodeCustomSM) {
+        kodeCustomSM.addEventListener('input', function() {
+            applyRetensiFromKode(this.value.toUpperCase().slice(0,2));
+        });
+    }
+
+    // Sebelum submit — ganti nilai select dengan nilai custom jika "Lainnya" dipilih
+    if (formSM) {
+        formSM.addEventListener('submit', function(e) {
+            if (kodeSelectSM && kodeSelectSM.value === '__lainnya__') {
+                var customVal = (kodeCustomSM ? kodeCustomSM.value.trim() : '');
+                if (!customVal) {
+                    e.preventDefault();
+                    kodeCustomSM.focus();
+                    kodeCustomSM.style.borderColor = 'var(--color-danger, #ef4444)';
+                    alert('Mohon isi kode klasifikasi kustom terlebih dahulu.');
+                    return;
+                }
+                kodeSelectSM.value = customVal;
+            }
         });
     }
 
     // ── Auto-fill untuk modal Edit Surat Masuk ─────────────────────────────────
-    var editKodeEl = document.getElementById('edit-sm-kode-klasifikasi');
+    var AUTO_FILL_IDS_EDIT_SM = ['edit-sm-retensi-aktif','edit-sm-retensi-inaktif','edit-sm-retensi-keterangan','edit-sm-klas-keamanan','edit-sm-tingkat-akses'];
+    function setAutoFillLockedEditSM(locked) {
+        AUTO_FILL_IDS_EDIT_SM.forEach(function(id) {
+            var el = document.getElementById(id);
+            if (!el) return;
+            if (locked) {
+                el.setAttribute('readonly', '');
+                el.style.background = 'var(--color-bg,#f8fafc)';
+                el.style.cursor     = 'not-allowed';
+                el.style.opacity    = '.85';
+            } else {
+                el.removeAttribute('readonly');
+                el.style.background = '';
+                el.style.cursor     = '';
+                el.style.opacity    = '';
+            }
+        });
+    }
+
+    var editKodeEl       = document.getElementById('edit-sm-kode-klasifikasi');
+    var editKodeCustomEl = document.getElementById('edit-sm-kode-klasifikasi-custom');
+    var editKodeHint     = document.getElementById('edit-sm-kode-custom-hint');
+
     if (editKodeEl) {
-        editKodeEl.addEventListener('input', function() {
-            var kode = this.value.replace(/[^A-Za-z]/g, '').toUpperCase().slice(0, 2);
-            if (this.value !== kode) this.value = kode;
-            applyKodeMapEdit(kode);
+        editKodeEl.addEventListener('change', function() {
+            var val = this.value;
+            if (val === '__lainnya__') {
+                if (editKodeCustomEl) { editKodeCustomEl.style.display = 'block'; editKodeCustomEl.focus(); }
+                if (editKodeHint)     editKodeHint.style.display = 'block';
+                applyKodeMapEdit('');
+            } else {
+                if (editKodeCustomEl) { editKodeCustomEl.style.display = 'none'; editKodeCustomEl.value = ''; }
+                if (editKodeHint)     editKodeHint.style.display = 'none';
+                var kode = val.replace(/[^A-Za-z]/g,'').toUpperCase().slice(0,2);
+                applyKodeMapEdit(kode);
+            }
+        });
+    }
+    if (editKodeCustomEl) {
+        editKodeCustomEl.addEventListener('input', function() {
+            applyKodeMapEdit(this.value.toUpperCase().slice(0,2));
+        });
+    }
+
+    // Sebelum submit edit SM — ganti select value dengan custom jika "Lainnya"
+    var formEditSM = document.getElementById('form-edit-sm');
+    if (formEditSM) {
+        formEditSM.addEventListener('submit', function(e) {
+            if (editKodeEl && editKodeEl.value === '__lainnya__') {
+                var customVal = (editKodeCustomEl ? editKodeCustomEl.value.trim() : '');
+                if (!customVal) {
+                    e.preventDefault();
+                    editKodeCustomEl.focus();
+                    alert('Mohon isi kode klasifikasi kustom terlebih dahulu.');
+                    return;
+                }
+                editKodeEl.value = customVal;
+            }
         });
     }
 
     function applyKodeMapEdit(kode) {
-        var map  = window.KODE_MAP || {};
-        var data = map[kode] || null;
+        var map    = window.KODE_MAP || {};
+        var data   = map[kode] || null;
+        var locked = !!data;
+        setAutoFillLockedEditSM(locked);
         var fields = {
             'edit-sm-retensi-aktif'      : data ? data[0] : null,
             'edit-sm-retensi-inaktif'    : data ? data[1] : null,
@@ -1376,6 +1549,7 @@ document.addEventListener('DOMContentLoaded', function () {
             var el  = document.getElementById(id);
             var val = fields[id];
             if (el && val !== null) el.value = val;
+            else if (el && !locked) el.value = '';
         });
     }
 })();
