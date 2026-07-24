@@ -305,6 +305,74 @@ class DashboardController extends Controller
                 }
             }
 
+            // ── Data Detail Print: Rekap Bulanan ──────────────────────────────
+            // Kumpulkan semua surat (SM + SK) dengan info lengkap, diurutkan tanggal
+            $printDetailBulanan = [];
+
+            // SM raw: col[1]=KodeKlas, col[2]=KodeSurat, col[3]=UraianBerkas, col[8]=TanggalSurat
+            foreach ($smRows as $row) {
+                $rawDate = trim($row[8] ?? '');
+                if (empty($rawDate)) continue;
+                $ts = $this->parseDate($rawDate);
+                if ($ts === false) continue;
+                $kodeKlas  = trim($row[1] ?? '');
+                $kodeSurat = trim($row[2] ?? '');
+                if (str_starts_with($kodeKlas, '#')) $kodeKlas = '';
+                $kodeGabung = $kodeKlas !== '' && $kodeSurat !== '' ? "{$kodeKlas} {$kodeSurat}" : ($kodeKlas ?: $kodeSurat);
+                $kodePrefix = preg_match('/^([A-Za-z]+)/', $kodeKlas, $km) ? strtoupper($km[1]) : 'Lainnya';
+                $printDetailBulanan[] = [
+                    'ts'      => $ts,
+                    'tahun'   => (int) date('Y', $ts),
+                    'bulan'   => (int) date('m', $ts),
+                    'kode'    => $kodeGabung,
+                    'kode_prefix' => $kodePrefix,
+                    'tanggal' => $rawDate,
+                    'uraian'  => trim($row[3] ?? '-'),
+                    'jenis'   => 'SM',
+                ];
+            }
+
+            // SK raw: col[1]=KodeKlas, col[2]=KodeSurat, col[3]=UraianBerkas, col[9]=TanggalSurat
+            foreach ($skRows as $row) {
+                $rawDate = trim($row[9] ?? '');
+                if (empty($rawDate)) continue;
+                $ts = $this->parseDate($rawDate);
+                if ($ts === false) continue;
+                $kodeKlas  = trim($row[1] ?? '');
+                $kodeSurat = trim($row[2] ?? '');
+                if (str_starts_with($kodeKlas, '#')) $kodeKlas = '';
+                $kodeGabung = $kodeKlas !== '' && $kodeSurat !== '' ? "{$kodeKlas} {$kodeSurat}" : ($kodeKlas ?: $kodeSurat);
+                $kodePrefix = preg_match('/^([A-Za-z]+)/', $kodeKlas, $km) ? strtoupper($km[1]) : 'Lainnya';
+                $printDetailBulanan[] = [
+                    'ts'      => $ts,
+                    'tahun'   => (int) date('Y', $ts),
+                    'bulan'   => (int) date('m', $ts),
+                    'kode'    => $kodeGabung,
+                    'kode_prefix' => $kodePrefix,
+                    'tanggal' => $rawDate,
+                    'uraian'  => trim($row[3] ?? '-'),
+                    'jenis'   => 'SK',
+                ];
+            }
+
+            // Urutkan berdasarkan tanggal (timestamp) ascending
+            usort($printDetailBulanan, fn($a, $b) => $a['ts'] <=> $b['ts']);
+
+            // ── Data Detail Print: Per Klasifikasi ─────────────────────────────
+            // Semua surat diurutkan berdasarkan kode klasifikasi priority lalu tanggal
+            $printDetailKlasifikasi = $printDetailBulanan; // copy sorted by date
+            usort($printDetailKlasifikasi, function ($a, $b) use ($kodePriority) {
+                $ia = array_search($a['kode_prefix'], $kodePriority);
+                $ib = array_search($b['kode_prefix'], $kodePriority);
+                $ia = $ia === false ? 999 : $ia;
+                $ib = $ib === false ? 999 : $ib;
+                if ($ia !== $ib) return $ia <=> $ib;
+                // Jika kode sama, urutkan berdasarkan kode lengkap lalu tanggal
+                $kodeCompare = strcmp($a['kode'], $b['kode']);
+                if ($kodeCompare !== 0) return $kodeCompare;
+                return $a['ts'] <=> $b['ts'];
+            });
+
             return view('dashboard.report', compact(
                 'rekapPerTahun',
                 'rekapTahunan',
@@ -315,6 +383,8 @@ class DashboardController extends Controller
                 'currentYear',
                 'currentMonth',
                 'bulanNames',
+                'printDetailBulanan',
+                'printDetailKlasifikasi',
             ));
         } catch (\Exception $e) {
             // Hapus cache yang mungkin korup

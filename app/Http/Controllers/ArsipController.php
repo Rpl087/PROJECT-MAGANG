@@ -5,54 +5,107 @@ namespace App\Http\Controllers;
 use App\Services\SheetsCache;
 use App\Services\GoogleDriveService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Google\Service\Sheets;
 
 class ArsipController extends Controller
 {
-    private const KODE_KLASIFIKASI_ORDER = [
-        'PR', 'KP', 'OT', 'KU', 'HK', 'UM', 'PL',
-        'UP', 'HM', 'PW', 'LT', 'DL', 'DT', 'KI',
-    ];
+    // KODE_KLASIFIKASI_ORDER, KODE_MAP, sortByKlasifikasi(), applyKodeMapFallback()
+    // diwarisi dari Controller base class (tidak lagi duplikat di sini).
+
+    // getSheetService(), getSheetId(), escapeFormula(), safeDeleteFile() juga dari base class.
 
     /**
-     * Urutkan baris berdasarkan prefix kode klasifikasi tanpa mengubah indeks sheet.
+     * Petakan satu baris raw dbSM (A–R, 18 kolom) ke format tampilan (0–16, 17 kolom).
+     *
+     * Mapping kolom dbSM → tampilan:
+     *   dbSM[0]  (A: Timestamp)        → [0]  Timestamp/NO
+     *   dbSM[1]  (B: Kode Klas)  +
+     *   dbSM[2]  (C: Kode Surat)       → [1]  Kode Gabungan ("KP 04.01")
+     *   dbSM[3]  (D: Uraian Berkas)    → [2]
+     *   dbSM[4]  (E: Kurun Waktu)      → [3]
+     *   dbSM[5]  (F: Jumlah Folder)    → [4]
+     *   dbSM[6]  (G: Nomor Item)       → [5]
+     *   dbSM[7]  (H: Uraian Arsip)     → [6]
+     *   dbSM[8]  (I: Tanggal Surat)    → [7]
+     *   dbSM[9]  (J: Jumlah Lembar)    → [8]
+     *   dbSM[10] (K: Tingkat Perkembangan) → [9]
+     *   dbSM[11] (L: Lokasi Simpan)    → [10]
+     *   dbSM[12] (M: Klas Keamanan)    → [11]
+     *   dbSM[13] (N: Tingkat Akses)    → [12]
+     *   dbSM[14] (O: Retensi Aktif)    → [13]
+     *   dbSM[15] (P: Retensi Inaktif)  → [14]
+     *   dbSM[16] (Q: Retensi Ket)      → [15]
+     *   dbSM[17] (R: Link Folder/PDF)  → [16]
      */
-    private function sortByKlasifikasi(array &$rows): void
+    private function mapDbsmRow(array $row): array
     {
-        $rank = array_flip(self::KODE_KLASIFIKASI_ORDER);
+        $kodeKlas  = trim($row[1] ?? '');
+        $kodeSurat = trim($row[2] ?? '');
 
-        usort($rows, function (array $a, array $b) use ($rank): int {
-            $getKode = static function (array $item): string {
-                $raw = trim((string) ($item['data'][1] ?? ''));
-                return preg_match('/^([A-Za-z]+)/', $raw, $matches)
-                    ? strtoupper($matches[1])
-                    : '';
-            };
-
-            $kodeA = $getKode($a);
-            $kodeB = $getKode($b);
-            $rankA = $rank[$kodeA] ?? PHP_INT_MAX;
-            $rankB = $rank[$kodeB] ?? PHP_INT_MAX;
-
-            return ($rankA <=> $rankB)
-                ?: ($kodeA <=> $kodeB)
-                ?: (($a['index'] ?? 0) <=> ($b['index'] ?? 0));
-        });
+        return [
+            $row[0]  ?? '',  // [0]  Timestamp
+            ($kodeKlas !== '' && $kodeSurat !== '')
+                ? "{$kodeKlas} {$kodeSurat}"
+                : ($kodeKlas ?: $kodeSurat),    // [1]  Kode Gabungan
+            $row[3]  ?? '',  // [2]  Uraian Berkas
+            $row[4]  ?? '',  // [3]  Kurun Waktu
+            $row[5]  ?? '',  // [4]  Jumlah Folder
+            $row[6]  ?? '',  // [5]  Nomor Item
+            $row[7]  ?? '',  // [6]  Uraian Arsip
+            $row[8]  ?? '',  // [7]  Tanggal Surat
+            $row[9]  ?? '',  // [8]  Jumlah Lembar
+            $row[10] ?? '',  // [9]  Tingkat Perkembangan
+            $row[11] ?? '',  // [10] Lokasi Simpan
+            $row[12] ?? '',  // [11] Klas Keamanan
+            $row[13] ?? '',  // [12] Tingkat Akses
+            $row[14] ?? '',  // [13] Retensi Aktif
+            $row[15] ?? '',  // [14] Retensi Inaktif
+            $row[16] ?? '',  // [15] Retensi Keterangan
+            $row[17] ?? '',  // [16] Link Folder/PDF
+        ];
     }
 
-    // getSheetService() dan getSheetId() diwarisi dari Controller base class
+    /**
+     * Ambil & cache data dbSM dari Google Sheets, dengan mapping kolom ke format tampilan.
+     *
+     * @return array  Array baris yang sudah di-mapping (index 0 = header row asli)
+     */
+    private function fetchAndCacheDbsm(): array
+    {
+        return SheetsCache::remember(
+            SheetsCache::KEY_SURAT_MASUK,
+            SheetsCache::TTL_TABLE,
+            function () {
+                [$service, $spreadsheetId] = $this->getSheetService();
+                $response = $service->spreadsheets_values->get($spreadsheetId, 'dbSM!A:R');
+                $dbRows   = $response->getValues() ?? [];
+
+                if (empty($dbRows)) {
+                    return [];
+                }
+
+                $mappedRows = [$dbRows[0]]; // Simpan header asli di index 0
+                foreach ($dbRows as $i => $row) {
+                    if ($i === 0) continue;
+                    $mappedRows[] = $this->mapDbsmRow($row);
+                }
+                return $mappedRows;
+            }
+        );
+    }
 
     /**
      * Tampilkan daftar surat masuk dari Google Sheets + form input.
-     * - Admin      : membaca dari sheet "SURAT MASUK" (sheet tampilan — sudah di-combine 1 baris/entri)
+     * - Admin      : membaca dari sheet "dbSM" (sumber data asli)
      * - Internship : hanya menampilkan form input (rows kosong, tanpa tabel)
      *
-     * Struktur SURAT MASUK (A–Q):
-     *   A(0)=NO | B(1)=Kode Klas | C(2)=Uraian Berkas | D(3)=Kurun Waktu
-     *   E(4)=Jumlah Folder | F(5)=Nomor Item | G(6)=Uraian Arsip
-     *   H(7)=Tanggal Surat | I(8)=Jumlah Lembar | J(9)=Tingkat Perkembangan
-     *   K(10)=Lokasi Simpan | L(11)=Klas Keamanan | M(12)=Tingkat Akses
-     *   N(13)=Retensi Aktif | O(14)=Retensi Inaktif | P(15)=Retensi Ket | Q(16)=Link Folder
+     * Struktur SURAT MASUK setelah mapping (index 0–16):
+     *   [0]=Timestamp | [1]=Kode Klas+Surat | [2]=Uraian Berkas | [3]=Kurun Waktu
+     *   [4]=Jumlah Folder | [5]=Nomor Item | [6]=Uraian Arsip
+     *   [7]=Tanggal Surat | [8]=Jumlah Lembar | [9]=Tingkat Perkembangan
+     *   [10]=Lokasi Simpan | [11]=Klas Keamanan | [12]=Tingkat Akses
+     *   [13]=Retensi Aktif | [14]=Retensi Inaktif | [15]=Retensi Ket | [16]=Link PDF
      */
     public function index(Request $request)
     {
@@ -62,49 +115,7 @@ class ArsipController extends Controller
 
         if ($isAdmin) {
             try {
-                $allRows = SheetsCache::remember(
-                    SheetsCache::KEY_SURAT_MASUK,
-                    SheetsCache::TTL_TABLE,
-                    function () {
-                        [$service, $spreadsheetId] = $this->getSheetService();
-                        $response = $service->spreadsheets_values->get($spreadsheetId, 'dbSM!A:R');
-                        $dbRows = $response->getValues() ?? [];
-
-                        $mappedRows = [];
-                        if (!empty($dbRows)) {
-                            // Header row
-                            $mappedRows[] = $dbRows[0];
-                            foreach ($dbRows as $i => $row) {
-                                if ($i === 0) continue;
-                                $mappedRow = [];
-                                $mappedRow[0]  = $row[0]  ?? ''; // A: Timestamp (NO)
-                                
-                                // Gabungkan Kode Klasifikasi & Kode Surat (misal: "KP" & "04.01" -> "KP 04.01")
-                                $kodeKlas = trim($row[1] ?? '');
-                                $kodeSurat = trim($row[2] ?? '');
-                                $mappedRow[1]  = ($kodeKlas !== '' && $kodeSurat !== '') ? "{$kodeKlas} {$kodeSurat}" : ($kodeKlas ?: $kodeSurat); // B: Kode Klasifikasi
-                                
-                                $mappedRow[2]  = $row[3]  ?? ''; // C: Uraian Berkas
-                                $mappedRow[3]  = $row[4]  ?? ''; // D: Kurun Waktu
-                                $mappedRow[4]  = $row[5]  ?? ''; // E: Jumlah Folder
-                                $mappedRow[5]  = $row[6]  ?? ''; // F: Nomor Item
-                                $mappedRow[6]  = $row[7]  ?? ''; // G: Uraian Arsip
-                                $mappedRow[7]  = $row[8]  ?? ''; // H: Tanggal Surat
-                                $mappedRow[8]  = $row[9]  ?? ''; // I: Jumlah Lembar
-                                $mappedRow[9]  = $row[10] ?? ''; // J: Tingkat Perkembangan
-                                $mappedRow[10] = $row[11] ?? ''; // K: Lokasi Simpan
-                                $mappedRow[11] = $row[12] ?? ''; // L: Klasifikasi Keamanan
-                                $mappedRow[12] = $row[13] ?? ''; // M: Tingkat Akses
-                                $mappedRow[13] = $row[14] ?? ''; // N: Retensi Aktif
-                                $mappedRow[14] = $row[15] ?? ''; // O: Retensi Inaktif
-                                $mappedRow[15] = $row[16] ?? ''; // P: Retensi Keterangan
-                                $mappedRow[16] = $row[17] ?? ''; // Q: Link Folder (PDF filename)
-                                $mappedRows[] = $mappedRow;
-                            }
-                        }
-                        return $mappedRows;
-                    }
-                );
+                $allRows = $this->fetchAndCacheDbsm();
 
                 foreach ($allRows as $i => $row) {
                     if ($i === 0) continue;
@@ -120,7 +131,7 @@ class ArsipController extends Controller
             }
         }
 
-        // Filter bulan dari request
+        // Filter bulan/tahun dari request
         $filterBulan = $request->get('bulan', '');
         $filterTahun = $request->get('tahun', '');
 
@@ -138,45 +149,7 @@ class ArsipController extends Controller
 
         try {
             // Gunakan cache yang sama dengan admin untuk efisiensi
-            $allRows = SheetsCache::remember(
-                SheetsCache::KEY_SURAT_MASUK,
-                SheetsCache::TTL_TABLE,
-                function () {
-                    [$service, $spreadsheetId] = $this->getSheetService();
-                    $response = $service->spreadsheets_values->get($spreadsheetId, 'dbSM!A:R');
-                    $dbRows = $response->getValues() ?? [];
-
-                    $mappedRows = [];
-                    if (!empty($dbRows)) {
-                        $mappedRows[] = $dbRows[0];
-                        foreach ($dbRows as $i => $row) {
-                            if ($i === 0) continue;
-                            $mappedRow = [];
-                            $mappedRow[0]  = $row[0]  ?? '';
-                            $kodeKlas = trim($row[1] ?? '');
-                            $kodeSurat = trim($row[2] ?? '');
-                            $mappedRow[1]  = ($kodeKlas !== '' && $kodeSurat !== '') ? "{$kodeKlas} {$kodeSurat}" : ($kodeKlas ?: $kodeSurat);
-                            $mappedRow[2]  = $row[3]  ?? '';
-                            $mappedRow[3]  = $row[4]  ?? '';
-                            $mappedRow[4]  = $row[5]  ?? '';
-                            $mappedRow[5]  = $row[6]  ?? '';
-                            $mappedRow[6]  = $row[7]  ?? '';
-                            $mappedRow[7]  = $row[8]  ?? '';
-                            $mappedRow[8]  = $row[9]  ?? '';
-                            $mappedRow[9]  = $row[10] ?? '';
-                            $mappedRow[10] = $row[11] ?? '';
-                            $mappedRow[11] = $row[12] ?? '';
-                            $mappedRow[12] = $row[13] ?? '';
-                            $mappedRow[13] = $row[14] ?? '';
-                            $mappedRow[14] = $row[15] ?? '';
-                            $mappedRow[15] = $row[16] ?? '';
-                            $mappedRow[16] = $row[17] ?? '';
-                            $mappedRows[] = $mappedRow;
-                        }
-                    }
-                    return $mappedRows;
-                }
-            );
+            $allRows = $this->fetchAndCacheDbsm();
 
             foreach ($allRows as $i => $row) {
                 if ($i === 0) continue;
@@ -195,11 +168,10 @@ class ArsipController extends Controller
 
     /**
      * Hapus baris surat masuk dari sheet "dbSM".
-     * - Tabel membaca dari sheet "dbSM" (sumber data asli), rowIndex adalah index di dbSM
-     * - Pencarian baris dilakukan berdasarkan PDF link (kolom R, index 17) sebagai unique identifier
-     * - Fallback ke rowIndex langsung jika PDF link tidak ditemukan
+     * - PDF link (kolom R, index 17) digunakan sebagai unique identifier.
+     * - Fallback ke rowIndex langsung jika PDF link tidak ditemukan.
      *
-     * @param int $rowIndex  Row index (1-based di sheet, 0-based di array) dari dbSM
+     * @param int $rowIndex  Row index (0-based di array) dari dbSM
      */
     public function destroy(int $rowIndex)
     {
@@ -218,7 +190,7 @@ class ArsipController extends Controller
 
             // PDF link ada di kolom R (index 17) di sheet dbSM — digunakan sebagai unique identifier
             $pdfLink      = trim($targetRow[17] ?? '');
-            $dbsmRowIndex = null; // harus ditemukan lewat lookup PDF link
+            $dbsmRowIndex = null;
 
             // Cari baris di dbSM yang cocok berdasarkan PDF link
             if (!empty($pdfLink)) {
@@ -260,12 +232,8 @@ class ArsipController extends Controller
             $service->spreadsheets->batchUpdate($spreadsheetId, $body);
 
             // Hapus file lokal dari uploads/ jika PDF link adalah nama file (bukan URL Google Drive)
-            // Jika berupa URL Drive (https://...), file backup lokal tetap dipertahankan
             if ($pdfLink !== '' && !str_starts_with($pdfLink, 'http')) {
-                $localFilePath = base_path('uploads/' . $pdfLink);
-                if (file_exists($localFilePath)) {
-                    @unlink($localFilePath);
-                }
+                $this->safeDeleteFile(base_path('uploads/' . $pdfLink));
             }
 
             // Invalidasi cache agar halaman menampilkan data terbaru
@@ -280,15 +248,14 @@ class ArsipController extends Controller
     }
 
     /**
-     * Simpan data surat masuk ke Google Spreadsheet (sheet: SURAT MASUK).
+     * Simpan data surat masuk ke Google Spreadsheet (sheet: dbSM).
      *
-     * Struktur kolom SURAT MASUK (A–Q):
-     *   A=NO | B=Kode Klasifikasi | C=Uraian Informasi Berkas | D=Kurun Waktu
-     *   E=Jumlah Folder | F=Nomor Item Arsip | G=Uraian Informasi Arsip
-     *   H=Tanggal Surat | I=Jumlah Lembar | J=Tingkat Perkembangan
-     *   K=Lokasi Simpan | L=Klasifikasi Keamanan | M=Tingkat Akses
-     *   N=Retensi "Aktif" | O=Retensi "Inaktif" | P=Retensi "Keterangan"
-     *   Q=Link Folder
+     * Struktur kolom dbSM (A–R):
+     *   A=Timestamp | B=Kode Klas | C=Kode Surat | D=Uraian Berkas
+     *   E=Kurun Waktu | F=Jumlah Folder | G=Nomor Item | H=Uraian Arsip
+     *   I=Tanggal Surat | J=Jumlah Lembar | K=Tingkat Perkembangan
+     *   L=Lokasi Simpan | M=Klas Keamanan | N=Tingkat Akses
+     *   O=Retensi Aktif | P=Retensi Inaktif | Q=Retensi Ket | R=Link Folder
      */
     public function store(Request $request)
     {
@@ -307,11 +274,11 @@ class ArsipController extends Controller
             'jumlah_lembar'           => 'required|string|max:255',
             'tingkat_perkembangan'    => 'required|string|max:255',
             'lokasi_simpan'           => 'required|string|max:255',
-            'klasifikasi_keamanan'    => 'nullable|string|max:255',  // diisi otomatis oleh JS/kodeMap
-            'tingkat_akses'           => 'nullable|string|max:255',  // diisi otomatis oleh JS/kodeMap
-            'retensi_aktif'           => 'nullable|string|max:255',  // diisi otomatis oleh JS/kodeMap
-            'retensi_inaktif'         => 'nullable|string|max:255',  // diisi otomatis oleh JS/kodeMap
-            'retensi_keterangan'      => 'nullable|string|max:1000', // diisi otomatis oleh JS/kodeMap
+            'klasifikasi_keamanan'    => 'nullable|string|max:255',
+            'tingkat_akses'           => 'nullable|string|max:255',
+            'retensi_aktif'           => 'nullable|string|max:255',
+            'retensi_inaktif'         => 'nullable|string|max:255',
+            'retensi_keterangan'      => 'nullable|string|max:1000',
             'surat_masuk'             => 'required|file|mimes:pdf|max:10240',
         ], [
             'kode_klasifikasi.required'        => 'Kode Klasifikasi wajib diisi.',
@@ -330,80 +297,44 @@ class ArsipController extends Controller
             'jumlah_lembar.required'           => 'Jumlah Lembar wajib diisi.',
             'tingkat_perkembangan.required'    => 'Tingkat Perkembangan wajib diisi.',
             'lokasi_simpan.required'           => 'Lokasi Simpan wajib diisi.',
-            // klasifikasi_keamanan, tingkat_akses, retensi_* sekarang nullable (diisi server-side)
             'surat_masuk.required'             => 'File Surat Masuk (PDF) wajib diunggah.',
         ]);
 
-        // ── Server-side kodeMap fallback (konsisten dengan SuratKeluarController) ──────────────
-        // Jika field auto-filled kosong (JS gagal atau kode tidak dikenali), isi dari kodeMap.
-        $kodeMap = [
-            //  Kode    [Aktif,       Inaktif,      Keterangan,  Keamanan,  Akses      ]
-            'PR' => ['2 Tahun',  '3 Tahun',  'Musnah',    'Biasa',   'Terbuka' ],
-            'KP' => ['5 Tahun',  '10 Tahun', 'Permanen',  'Biasa',   'Terbatas'],
-            'OT' => ['2 Tahun',  '3 Tahun',  'Musnah',    'Biasa',   'Terbuka' ],
-            'KU' => ['5 Tahun',  '10 Tahun', 'Permanen',  'Biasa',   'Terbatas'],
-            'HK' => ['5 Tahun',  '10 Tahun', 'Permanen',  'Biasa',   'Terbatas'],
-            'UM' => ['2 Tahun',  '3 Tahun',  'Musnah',    'Biasa',   'Terbuka' ],
-            'PL' => ['5 Tahun',  '10 Tahun', 'Musnah',    'Biasa',   'Terbatas'],
-            'UP' => ['5 Tahun',  '10 Tahun', 'Permanen',  'Biasa',   'Terbatas'],
-            'HM' => ['5 Tahun',  '10 Tahun', 'Permanen',  'Biasa',   'Terbatas'],
-            'PW' => ['5 Tahun',  '10 Tahun', 'Musnah',    'Biasa',   'Terbatas'],
-            'LT' => ['5 Tahun',  '10 Tahun', 'Musnah',    'Biasa',   'Terbatas'],
-            'DL' => ['2 Tahun',  '3 Tahun',  'Musnah',    'Biasa',   'Terbuka' ],
-            'DT' => ['5 Tahun',  '10 Tahun', 'Permanen',  'Biasa',   'Terbatas'],
-            'KI' => ['5 Tahun',  '10 Tahun', 'Permanen',  'Biasa',   'Terbatas'],
-        ];
-        $kodePrefix = strtoupper(preg_replace('/[^A-Za-z]/', '', $validated['kode_klasifikasi']));
-        $kodePrefix = substr($kodePrefix, 0, 2);
-        if (isset($kodeMap[$kodePrefix])) {
-            $mapRow = $kodeMap[$kodePrefix];
-            if (empty($validated['retensi_aktif']))        $validated['retensi_aktif']        = $mapRow[0];
-            if (empty($validated['retensi_inaktif']))      $validated['retensi_inaktif']      = $mapRow[1];
-            if (empty($validated['retensi_keterangan']))   $validated['retensi_keterangan']   = $mapRow[2];
-            if (empty($validated['klasifikasi_keamanan'])) $validated['klasifikasi_keamanan'] = $mapRow[3];
-            if (empty($validated['tingkat_akses']))        $validated['tingkat_akses']        = $mapRow[4];
-        }
+        // ── Server-side kodeMap fallback (dari base Controller::applyKodeMapFallback()) ──
+        $this->applyKodeMapFallback($validated);
 
         try {
             [$service, $spreadsheetId] = $this->getSheetService();
 
-            // Target: sheet dbSM (sumber data asli)
             $sheetRange = 'dbSM!A:R';
 
             // ── Upload file PDF ke Google Drive & Backup Lokal ke uploads/ ────
-            $file = $request->file('surat_masuk');
+            $file         = $request->file('surat_masuk');
             $uploadResult = GoogleDriveService::uploadAndBackup($file, $validated['kode_klasifikasi']);
-            $linkFolder = $uploadResult['driveLink']; // Gunakan link Google Drive untuk disimpan ke spreadsheet
+            $linkFolder   = $uploadResult['driveLink'];
             $storedFilePath = $uploadResult['filename'];
 
-            // Timestamp otomatis
             $timestamp = now()->format('Y-m-d H:i:s');
 
-            // ── Susun data sesuai kolom dbSM (A–R) ───────────────────────────
-            // A=Timestamp | B=Kode Klasifikasi | C=Kode Surat | D=Uraian Berkas
-            // E=Kurun Waktu | F=Jumlah Folder | G=Nomor Item | H=Uraian Arsip
-            // I=Tanggal Surat | J=Jumlah Lembar | K=Tingkat Perkembangan
-            // L=Lokasi Simpan | M=Klas Keamanan | N=Tingkat Akses
-            // O=Retensi Aktif | P=Retensi Inaktif | Q=Retensi Ket | R=Link Folder
             $values = [[
-                $timestamp,                                // A: Timestamp
-                $this->escapeFormula($validated['kode_klasifikasi']),            // B: Kode Klasifikasi
-                $this->escapeFormula($validated['kode_surat']),                  // C: Kode Surat
-                $this->escapeFormula($validated['uraian_informasi_berkas']),     // D: Uraian Informasi Berkas
-                $this->escapeFormula($validated['kurun_waktu']),                 // E: Kurun Waktu
-                $this->escapeFormula($validated['jumlah_folder']),               // F: Jumlah Folder
-                $this->escapeFormula($validated['nomor_item_arsip']),            // G: Nomor: Item Arsip
-                $this->escapeFormula($validated['uraian_informasi_arsip']),      // H: Uraian Informasi Arsip
-                $this->escapeFormula($validated['tanggal_surat']),               // I: Tanggal Surat
-                $this->escapeFormula($validated['jumlah_lembar']),               // J: Jumlah Lembar
-                $this->escapeFormula($validated['tingkat_perkembangan']),        // K: Tingkat Perkembangan
-                $this->escapeFormula($validated['lokasi_simpan']),               // L: Lokasi Simpan
-                $this->escapeFormula($validated['klasifikasi_keamanan']),        // M: Klasifikasi Keamanan
-                $this->escapeFormula($validated['tingkat_akses']),               // N: Tingkat Akses
-                $this->escapeFormula($validated['retensi_aktif']),               // O: Retensi "Aktif"
-                $this->escapeFormula($validated['retensi_inaktif']),             // P: Retensi "Inaktif"
-                $this->escapeFormula($validated['retensi_keterangan']),          // Q: Retensi "Keterangan"
-                $linkFolder,                               // R: Link Folder
+                $timestamp,
+                $this->escapeFormula($validated['kode_klasifikasi']),
+                $this->escapeFormula($validated['kode_surat']),
+                $this->escapeFormula($validated['uraian_informasi_berkas']),
+                $this->escapeFormula($validated['kurun_waktu']),
+                $this->escapeFormula($validated['jumlah_folder']),
+                $this->escapeFormula($validated['nomor_item_arsip']),
+                $this->escapeFormula($validated['uraian_informasi_arsip']),
+                $this->escapeFormula($validated['tanggal_surat']),
+                $this->escapeFormula($validated['jumlah_lembar']),
+                $this->escapeFormula($validated['tingkat_perkembangan']),
+                $this->escapeFormula($validated['lokasi_simpan']),
+                $this->escapeFormula($validated['klasifikasi_keamanan']),
+                $this->escapeFormula($validated['tingkat_akses']),
+                $this->escapeFormula($validated['retensi_aktif']),
+                $this->escapeFormula($validated['retensi_inaktif']),
+                $this->escapeFormula($validated['retensi_keterangan']),
+                $linkFolder,
             ]];
 
             $body   = new Sheets\ValueRange(['values' => $values]);
@@ -419,10 +350,7 @@ class ArsipController extends Controller
         } catch (\Exception $e) {
             // Hapus file orphan yang sudah ter-upload ke uploads/ agar tidak menumpuk
             if ($storedFilePath !== null) {
-                $orphanPath = base_path('uploads/' . $storedFilePath);
-                if (file_exists($orphanPath)) {
-                    @unlink($orphanPath);
-                }
+                $this->safeDeleteFile(base_path('uploads/' . $storedFilePath));
             }
 
             return redirect()->route('arsip.index')
@@ -431,10 +359,10 @@ class ArsipController extends Controller
     }
 
     /**
-     * Ambil data satu baris Surat Masuk dari sheet SURAT MASUK (by rowIndex)
+     * Ambil data satu baris Surat Masuk dari sheet dbSM (by rowIndex)
      * dan kembalikan sebagai JSON untuk pre-fill modal edit.
      *
-     * @param int $rowIndex  Row index (1-based di sheet, 0-based di array) dari SURAT MASUK
+     * @param int $rowIndex  Row index (0-based di array) dari dbSM
      */
     public function edit(int $rowIndex)
     {
@@ -452,25 +380,25 @@ class ArsipController extends Controller
             $pdfFilename = trim($dbsmRow[17] ?? '');
 
             return response()->json([
-                'rowIndex'               => $rowIndex,
-                'dbsmIndex'              => $rowIndex,
-                'kode_klasifikasi'       => $dbsmRow[1]  ?? '',   // B
-                'uraian_informasi_berkas'=> $dbsmRow[3]  ?? '',   // D
-                'kurun_waktu'            => $dbsmRow[4]  ?? '',   // E
-                'jumlah_folder'          => $dbsmRow[5]  ?? '',   // F
-                'nomor_item_arsip'       => $dbsmRow[6]  ?? '',   // G
-                'uraian_informasi_arsip' => $dbsmRow[7]  ?? '',   // H
-                'tanggal_surat'          => $dbsmRow[8]  ?? '',   // I
-                'jumlah_lembar'          => $dbsmRow[9]  ?? '',   // J
-                'tingkat_perkembangan'   => $dbsmRow[10] ?? '',   // K
-                'lokasi_simpan'          => $dbsmRow[11] ?? '',   // L
-                'klasifikasi_keamanan'   => $dbsmRow[12] ?? '',   // M
-                'tingkat_akses'          => $dbsmRow[13] ?? '',   // N
-                'retensi_aktif'          => $dbsmRow[14] ?? '',   // O
-                'retensi_inaktif'        => $dbsmRow[15] ?? '',   // P
-                'retensi_keterangan'     => $dbsmRow[16] ?? '',   // Q
-                'pdf_filename'           => $pdfFilename,         // R
-                'kode_surat'             => $dbsmRow[2]  ?? '',   // C
+                'rowIndex'                => $rowIndex,
+                'dbsmIndex'               => $rowIndex,
+                'kode_klasifikasi'        => $dbsmRow[1]  ?? '',   // B
+                'kode_surat'              => $dbsmRow[2]  ?? '',   // C
+                'uraian_informasi_berkas' => $dbsmRow[3]  ?? '',   // D
+                'kurun_waktu'             => $dbsmRow[4]  ?? '',   // E
+                'jumlah_folder'           => $dbsmRow[5]  ?? '',   // F
+                'nomor_item_arsip'        => $dbsmRow[6]  ?? '',   // G
+                'uraian_informasi_arsip'  => $dbsmRow[7]  ?? '',   // H
+                'tanggal_surat'           => $dbsmRow[8]  ?? '',   // I
+                'jumlah_lembar'           => $dbsmRow[9]  ?? '',   // J
+                'tingkat_perkembangan'    => $dbsmRow[10] ?? '',   // K
+                'lokasi_simpan'           => $dbsmRow[11] ?? '',   // L
+                'klasifikasi_keamanan'    => $dbsmRow[12] ?? '',   // M
+                'tingkat_akses'           => $dbsmRow[13] ?? '',   // N
+                'retensi_aktif'           => $dbsmRow[14] ?? '',   // O
+                'retensi_inaktif'         => $dbsmRow[15] ?? '',   // P
+                'retensi_keterangan'      => $dbsmRow[16] ?? '',   // Q
+                'pdf_filename'            => $pdfFilename,         // R
             ]);
         } catch (\Exception $e) {
             return response()->json(['error' => 'Gagal memuat data: ' . $e->getMessage()], 500);
@@ -482,7 +410,7 @@ class ArsipController extends Controller
      * Mencari baris di dbSM berdasarkan dbsmIndex yang dikirim dari modal edit.
      *
      * @param Request $request
-     * @param int     $rowIndex  Row index dari SURAT MASUK (untuk redirect)
+     * @param int     $rowIndex  Row index dari dbSM (untuk redirect)
      */
     public function update(Request $request, int $rowIndex)
     {
@@ -510,33 +438,30 @@ class ArsipController extends Controller
         try {
             [$service, $spreadsheetId] = $this->getSheetService();
 
-            $dbsmIndex = (int) $validated['dbsm_index'];
-
-            // Baris di Google Sheets dimulai dari 1 (row 1 = header, row 2 = data ke-1)
-            // dbsmIndex adalah 0-based array index, jadi row number = dbsmIndex + 1
+            $dbsmIndex      = (int) $validated['dbsm_index'];
+            // Baris di Google Sheets dimulai dari 1 (row 1 = header)
             $sheetRowNumber = $dbsmIndex + 1;
             // Mulai dari kolom B agar timestamp di kolom A TIDAK tertimpa
             $range = "dbSM!B{$sheetRowNumber}:R{$sheetRowNumber}";
 
             $values = [[
-                // Kolom A (Timestamp) dilewati — range dimulai dari B
-                $this->escapeFormula($validated['kode_klasifikasi']),            // B
-                $this->escapeFormula($validated['kode_surat']),                  // C
-                $this->escapeFormula($validated['uraian_informasi_berkas']),     // D
-                $this->escapeFormula($validated['kurun_waktu']),                 // E
-                $this->escapeFormula($validated['jumlah_folder']),               // F
-                $this->escapeFormula($validated['nomor_item_arsip']),            // G
-                $this->escapeFormula($validated['uraian_informasi_arsip']),      // H
-                $this->escapeFormula($validated['tanggal_surat']),               // I
-                $this->escapeFormula($validated['jumlah_lembar']),               // J
-                $this->escapeFormula($validated['tingkat_perkembangan']),        // K
-                $this->escapeFormula($validated['lokasi_simpan']),               // L
-                $this->escapeFormula($validated['klasifikasi_keamanan']),        // M
-                $this->escapeFormula($validated['tingkat_akses']),               // N
-                $this->escapeFormula($validated['retensi_aktif']),               // O
-                $this->escapeFormula($validated['retensi_inaktif']),             // P
-                $this->escapeFormula($validated['retensi_keterangan']),          // Q
-                $validated['pdf_filename'] ?? '',          // R
+                $this->escapeFormula($validated['kode_klasifikasi']),
+                $this->escapeFormula($validated['kode_surat']),
+                $this->escapeFormula($validated['uraian_informasi_berkas']),
+                $this->escapeFormula($validated['kurun_waktu']),
+                $this->escapeFormula($validated['jumlah_folder']),
+                $this->escapeFormula($validated['nomor_item_arsip']),
+                $this->escapeFormula($validated['uraian_informasi_arsip']),
+                $this->escapeFormula($validated['tanggal_surat']),
+                $this->escapeFormula($validated['jumlah_lembar']),
+                $this->escapeFormula($validated['tingkat_perkembangan']),
+                $this->escapeFormula($validated['lokasi_simpan']),
+                $this->escapeFormula($validated['klasifikasi_keamanan']),
+                $this->escapeFormula($validated['tingkat_akses']),
+                $this->escapeFormula($validated['retensi_aktif']),
+                $this->escapeFormula($validated['retensi_inaktif']),
+                $this->escapeFormula($validated['retensi_keterangan']),
+                $validated['pdf_filename'] ?? '',
             ]];
 
             $body   = new Sheets\ValueRange(['values' => $values]);

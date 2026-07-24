@@ -260,8 +260,10 @@ erDiagram
 
     PASSWORD_RESET_REQUESTS {
         int id PK
-        int user_id FK
-        string status
+        string username
+        string ip_address
+        boolean is_resolved
+        datetime resolved_at
         datetime created_at
         datetime updated_at
     }
@@ -283,6 +285,7 @@ erDiagram
         string tingkat_akses
         string retensi_aktif
         string retensi_inaktif
+        string retensi_keterangan
         string url_pdf
     }
 
@@ -304,6 +307,7 @@ erDiagram
         string tingkat_akses
         string retensi_aktif
         string retensi_inaktif
+        string retensi_keterangan
     }
 
     USERS ||--o{ SESSIONS : "memiliki"
@@ -383,18 +387,24 @@ project-magang/
 ├── app/
 │   ├── Http/
 │   │   ├── Controllers/
-│   │   │   ├── Admin/UserController.php        # Kelola pengguna & reset password
+│   │   │   ├── Admin/UserController.php        # Kelola pengguna & reset password + SSE
 │   │   │   ├── Auth/LoginController.php         # Login & logout
 │   │   │   ├── Auth/PasswordResetController.php # Permintaan reset password
 │   │   │   ├── ArsipController.php              # CRUD Surat Masuk
 │   │   │   ├── SuratKeluarController.php        # CRUD Surat Keluar
-│   │   │   └── DashboardController.php          # Dashboard & rekap laporan
+│   │   │   ├── DashboardController.php          # Dashboard & rekap laporan
+│   │   │   └── Controller.php                   # Base controller: KODE_MAP, sortByKlasifikasi, dll.
 │   │   └── Middleware/
 │   │       ├── AdminOnly.php
 │   │       ├── InternalNetworkOnly.php
 │   │       ├── GuestNetwork.php
 │   │       ├── SecurityHeaders.php
-│   │       └── UpdateUserLastSeen.php
+│   │       ├── UpdateUserLastSeen.php
+│   │       └── Concerns/
+│   │           └── ChecksIpSubnet.php           # Trait bersama: validasi IP subnet CIDR
+│   ├── Models/
+│   │   ├── User.php
+│   │   └── PasswordResetRequest.php
 │   └── Services/
 │       ├── GoogleDriveService.php               # Upload ke Google Drive
 │       └── SheetsCache.php                      # Cache data Google Sheets
@@ -402,13 +412,29 @@ project-magang/
 │   ├── migrations/                              # Skema tabel MySQL
 │   └── seeders/                                 # Data awal (user default)
 ├── routes/
-│   └── web.php                                  # Definisi semua rute
+│   ├── web.php                                  # Definisi semua rute web
+│   └── console.php                              # Task scheduler (storage:clean)
 ├── storage/app/
 │   └── google-credentials.json                  # (tidak di-commit) Service Account key
 ├── uploads/                                     # File PDF yang diupload
 ├── setup-and-run.bat                            # Skrip setup 1-Pintu (Windows)
 └── start-all.bat                                # Skrip jalankan ulang (Windows)
 ```
+
+---
+
+## 🔧 Optimalisasi & Refaktor (Changelog Teknis)
+
+Proyek ini telah menjalani audit dan optimalisasi komprehensif:
+
+| # | Perubahan | File |
+|---|---|---|
+| 1 | Konsolidasikan `KODE_KLASIFIKASI_ORDER`, `KODE_MAP`, `sortByKlasifikasi()`, `applyKodeMapFallback()` ke base `Controller.php` | `Controller.php` |
+| 2 | Ekstrak `mapDbsmRow()` & `fetchAndCacheDbsm()` → hilangkan duplikasi di `index()` & `indexGuest()` | `ArsipController.php` |
+| 3 | Ekstrak `mapDbskRow()` & `fetchAndCacheDbsk()` → hilangkan duplikasi di `index()` & `indexGuest()` | `SuratKeluarController.php` |
+| 4 | Buat `Trait ChecksIpSubnet` → hilangkan duplikasi `ipInSubnet()` di dua middleware | `Concerns/ChecksIpSubnet.php` |
+| 5 | Ganti `@unlink()` dengan `safeDeleteFile()` → tambah logging saat file gagal dihapus | `Controller.php` |
+| 6 | Tambahkan relasi `user()` BelongsTo pada `PasswordResetRequest` model | `PasswordResetRequest.php` |
 
 ---
 

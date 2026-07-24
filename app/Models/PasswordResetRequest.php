@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class PasswordResetRequest extends Model
 {
@@ -35,5 +36,14 @@ class PasswordResetRequest extends Model
             'is_resolved' => true,
             'resolved_at' => now(),
         ]);
+    }
+
+    /**
+     * Relasi: permintaan ini milik user berdasarkan username.
+     * Digunakan untuk eager loading nama user di tampilan admin.
+     */
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'username', 'name');
     }
 }

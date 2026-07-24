@@ -30,18 +30,57 @@
 </div>
 @endif
 
-{{-- ── Print Header (hanya tampil saat print) ──────────────────────────── --}}
+{{-- ── Print Header / Kop Surat (hanya tampil saat print) ──────────────── --}}
 <div class="print-header" id="print-header-wrap">
-    <div class="print-header-inner">
-        <div class="print-logo-wrap">
+
+    {{-- ── Garis atas tebal (identitas instansi) ── --}}
+    <div class="print-kop-topbar"></div>
+
+    {{-- ── KOP SURAT: Logo + Nama Instansi ── --}}
+    <div class="print-kop">
+        <div class="print-kop-logo">
             <img class="print-logo-image" src="{{ route('image.view', 'komdigi-logo.png') }}" alt="Logo Komdigi">
         </div>
-        <div class="print-header-text">
-            <h1 class="print-title">LAPORAN REKAPITULASI ARSIP SURAT</h1>
-            <p class="print-subtitle">Balai Pengembangan Sumber Daya Manusia dan Penelitian (BPSDMP)</p>
-            <p class="print-meta" id="print-meta-date">Dicetak pada: {{ now()->format('d F Y, H:i') }} WITA</p>
+        <div class="print-kop-text">
+            <div class="print-kop-ministry">KEMENTERIAN KOMUNIKASI DAN DIGITAL REPUBLIK INDONESIA</div>
+            <div class="print-kop-unit">Balai Pengembangan Sumber Daya Manusia dan Penelitian (BPSDMP)</div>
+            <div class="print-kop-address">Sistem Arsip Surat Digital &mdash; BPSDMP</div>
         </div>
     </div>
+
+    {{-- ── Garis pembatas ganda kop ── --}}
+    <div class="print-kop-divider">
+        <div class="print-kop-line-thick"></div>
+        <div class="print-kop-line-thin"></div>
+    </div>
+
+    {{-- ── Judul Dokumen ── --}}
+    <div class="print-doc-title-block">
+        <div class="print-title">LAPORAN REKAPITULASI ARSIP SURAT</div>
+        <div class="print-doc-jenis" id="print-doc-jenis">Rekap Bulanan</div>
+    </div>
+
+    {{-- ── Metadata: tanggal cetak, jenis laporan ── --}}
+    <table class="print-meta-table">
+        <tbody>
+            <tr>
+                <td class="pmt-label">Dicetak Pada</td>
+                <td class="pmt-sep">:</td>
+                <td class="pmt-val" id="print-meta-date">{{ now()->format('d F Y, H:i') }} WITA</td>
+                <td class="pmt-spacer"></td>
+                <td class="pmt-label">Jenis Laporan</td>
+                <td class="pmt-sep">:</td>
+                <td class="pmt-val" id="print-meta-jenis">Rekap Bulanan</td>
+            </tr>
+            <tr>
+                <td class="pmt-label">Sistem</td>
+                <td class="pmt-sep">:</td>
+                <td class="pmt-val" colspan="5">Sistem Arsip Surat Digital BPSDMP &mdash; <em>Digenerate Otomatis</em></td>
+            </tr>
+        </tbody>
+    </table>
+
+    {{-- ── Garis bawah pembatas header-konten ── --}}
     <div class="print-divider"></div>
 </div>
 
@@ -126,6 +165,74 @@
         </div>
         @endforeach
     @endif
+
+    {{-- ── TABEL DETAIL PRINT — Rekap Bulanan (hanya muncul saat @media print) ── --}}
+    <div class="print-only" id="print-detail-bulanan">
+        <div class="print-detail-section-title">Detail Arsip Surat &mdash; Rekap Bulanan</div>
+        @php
+            $bulanNamesPrint = [
+                1=>'Januari',2=>'Februari',3=>'Maret',4=>'April',5=>'Mei',6=>'Juni',
+                7=>'Juli',8=>'Agustus',9=>'September',10=>'Oktober',11=>'November',12=>'Desember'
+            ];
+            // Pre-group data per bulan+tahun agar header bulan bisa disisipkan
+            $groupedBulanan = [];
+            foreach ($printDetailBulanan as $det) {
+                $groupKey = $det['tahun'] . '-' . str_pad($det['bulan'], 2, '0', STR_PAD_LEFT);
+                $groupedBulanan[$groupKey][] = $det;
+            }
+            // Urutkan group key secara ascending (sudah urut karena data urut tanggal)
+            ksort($groupedBulanan);
+            $noUrut = 1;
+        @endphp
+        @if(!empty($printDetailBulanan))
+        <table class="print-detail-table" id="print-detail-table-bulanan">
+            <thead>
+                <tr>
+                    <th class="pd-no">No</th>
+                    <th class="pd-tahun">Tahun</th>
+                    <th class="pd-kode">Kode Kelas / Nomor Surat</th>
+                    <th class="pd-tgl">Tanggal</th>
+                    <th class="pd-uraian">Uraian Informasi Berkas</th>
+                    <th class="pd-jenis">Jenis</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($groupedBulanan as $groupKey => $groupRows)
+                @php
+                    $firstRow  = $groupRows[0];
+                    $tahunGrup = $firstRow['tahun'];
+                    $bulanGrup = $firstRow['bulan'];
+                    $bulanLabelGrup = strtoupper(($bulanNamesPrint[$bulanGrup] ?? '-') . ' ' . $tahunGrup);
+                @endphp
+                {{-- Baris pemisah nama bulan --}}
+                <tr class="pd-month-header pd-row-bulanan" data-print-year="{{ $tahunGrup }}">
+                    <td colspan="6" class="pd-month-label">
+                        <span class="pd-month-icon">&#9632;</span> {{ $bulanLabelGrup }}
+                    </td>
+                </tr>
+                {{-- Baris data surat dalam bulan ini --}}
+                @foreach($groupRows as $det)
+                <tr class="pd-row-bulanan" data-print-year="{{ $det['tahun'] }}">
+                    <td class="pd-no">{{ $noUrut++ }}</td>
+                    <td class="pd-tahun">{{ $det['tahun'] }}</td>
+                    <td class="pd-kode"><span class="pd-kode-badge">{{ $det['kode'] ?: '-' }}</span></td>
+                    <td class="pd-tgl">{{ $det['tanggal'] }}</td>
+                    <td class="pd-uraian">{{ $det['uraian'] }}</td>
+                    <td class="pd-jenis"><span class="pd-jenis-badge pd-jenis-{{ strtolower($det['jenis']) }}">{{ $det['jenis'] }}</span></td>
+                </tr>
+                @endforeach
+                @endforeach
+            </tbody>
+            <tfoot>
+                <tr class="pd-tfoot">
+                    <td colspan="6">Total: {{ count($printDetailBulanan) }} arsip surat</td>
+                </tr>
+            </tfoot>
+        </table>
+        @else
+        <p class="pd-empty">Belum ada data arsip surat.</p>
+        @endif
+    </div>
 </div>
 
 {{-- ── REKAP TAHUNAN ─────────────────────────────────────────────────── --}}
@@ -233,6 +340,44 @@
             </table>
         </div>
     </div>
+
+    {{-- ── TABEL DETAIL PRINT — Rekap Tahunan (hanya muncul saat @media print) ─ --}}
+    <div class="print-only" id="print-detail-tahunan">
+        <div class="print-detail-section-title">Detail Arsip Surat &mdash; Rekap Tahunan</div>
+        @if(!empty($printDetailBulanan))
+        <table class="print-detail-table" id="print-detail-table-tahunan">
+            <thead>
+                <tr>
+                    <th class="pd-no">No</th>
+                    <th class="pd-tahun">Tahun</th>
+                    <th class="pd-kode">Kode Kelas / Nomor Surat</th>
+                    <th class="pd-tgl">Tanggal</th>
+                    <th class="pd-uraian">Uraian Informasi Berkas</th>
+                    <th class="pd-jenis">Jenis</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($printDetailBulanan as $i => $det)
+                <tr class="pd-row-tahunan" data-print-year="{{ $det['tahun'] }}">
+                    <td class="pd-no">{{ $i + 1 }}</td>
+                    <td class="pd-tahun">{{ $det['tahun'] }}</td>
+                    <td class="pd-kode"><span class="pd-kode-badge">{{ $det['kode'] ?: '-' }}</span></td>
+                    <td class="pd-tgl">{{ $det['tanggal'] }}</td>
+                    <td class="pd-uraian">{{ $det['uraian'] }}</td>
+                    <td class="pd-jenis"><span class="pd-jenis-badge pd-jenis-{{ strtolower($det['jenis']) }}">{{ $det['jenis'] }}</span></td>
+                </tr>
+                @endforeach
+            </tbody>
+            <tfoot>
+                <tr class="pd-tfoot">
+                    <td colspan="6">Total: {{ count($printDetailBulanan) }} arsip surat</td>
+                </tr>
+            </tfoot>
+        </table>
+        @else
+        <p class="pd-empty">Belum ada data arsip surat.</p>
+        @endif
+    </div>
 </div>
 
 {{-- ── REKAP PER KLASIFIKASI ───────────────────────────────────────────── --}}
@@ -295,6 +440,44 @@
                 @endif
             </table>
         </div>
+    </div>
+
+    {{-- ── TABEL DETAIL PRINT — Per Klasifikasi (hanya muncul saat @media print) ─ --}}
+    <div class="print-only" id="print-detail-klasifikasi">
+        <div class="print-detail-section-title">Detail Arsip Surat &mdash; Per Kode Klasifikasi</div>
+        @if(!empty($printDetailKlasifikasi))
+        <table class="print-detail-table" id="print-detail-table-klasifikasi">
+            <thead>
+                <tr>
+                    <th class="pd-no">No</th>
+                    <th class="pd-tahun">Tahun</th>
+                    <th class="pd-kode">Kode Kelas / Nomor Surat</th>
+                    <th class="pd-tgl">Tanggal</th>
+                    <th class="pd-uraian">Uraian Informasi Berkas</th>
+                    <th class="pd-jenis">Jenis</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($printDetailKlasifikasi as $i => $det)
+                <tr class="pd-row-klasifikasi" data-print-year="{{ $det['tahun'] }}" data-print-kode="{{ $det['kode_prefix'] }}">
+                    <td class="pd-no">{{ $i + 1 }}</td>
+                    <td class="pd-tahun">{{ $det['tahun'] }}</td>
+                    <td class="pd-kode"><span class="pd-kode-badge">{{ $det['kode'] ?: '-' }}</span></td>
+                    <td class="pd-tgl">{{ $det['tanggal'] }}</td>
+                    <td class="pd-uraian">{{ $det['uraian'] }}</td>
+                    <td class="pd-jenis"><span class="pd-jenis-badge pd-jenis-{{ strtolower($det['jenis']) }}">{{ $det['jenis'] }}</span></td>
+                </tr>
+                @endforeach
+            </tbody>
+            <tfoot>
+                <tr class="pd-tfoot">
+                    <td colspan="6">Total: {{ count($printDetailKlasifikasi) }} arsip surat</td>
+                </tr>
+            </tfoot>
+        </table>
+        @else
+        <p class="pd-empty">Belum ada data arsip surat.</p>
+        @endif
     </div>
 </div>
 
@@ -559,7 +742,7 @@
     font-family: inherit;
     cursor: pointer;
     border-radius: .4rem;
-    transition: all .2s cubic-bezier(.4,0,.2,1);
+    transition: color .18s ease, background .18s ease, box-shadow .18s ease;
     white-space: nowrap;
     position: relative;
 }
@@ -572,6 +755,30 @@
     background: linear-gradient(135deg, #4f46e5, #6366f1);
     font-weight: 600;
     box-shadow: 0 2px 10px rgba(99,102,241,.35);
+}
+
+/* ── Tab Section Transitions ──────────────────────── */
+.report-section {
+    transition: none;
+}
+@keyframes tabFadeSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+.tab-entering {
+    animation: tabFadeSlideIn .22s cubic-bezier(.22,1,.36,1) both;
+}
+.tab-leaving {
+    opacity: 0;
+    transform: translateY(-6px);
+    transition: opacity .1s ease, transform .1s ease;
+    pointer-events: none;
 }
 
 /* ── Report Card ─────────────────────────────── */
@@ -833,7 +1040,8 @@
 
 /* ── Print Header ─────────────────────────────── */
 .print-header,
-.print-signature { display: none !important; }
+.print-signature,
+.print-only { display: none !important; }
 .print-logo-image {
     display: block;
     width: auto;
@@ -844,18 +1052,22 @@
 
 @page {
     size: A4 portrait;
-    margin: 14mm 14mm 14mm 14mm;
+    margin: 15mm 18mm 20mm 18mm;
+    /* Nomor halaman di footer */
+    @bottom-center {
+        content: "Halaman " counter(page) " dari " counter(pages);
+        font-size: 7.5pt;
+        color: #555;
+    }
 }
 
 @media print {
-    /* ── Hilangkan total semua scrollbar browser & track pada mode print ── */
+    /* ── Reset scrollbar ── */
     ::-webkit-scrollbar,
     ::-webkit-scrollbar-thumb,
     ::-webkit-scrollbar-track,
     ::-webkit-scrollbar-corner {
-        display: none !important;
-        width: 0 !important;
-        height: 0 !important;
+        display: none !important; width: 0 !important; height: 0 !important;
         background: transparent !important;
     }
     *, *::before, *::after {
@@ -863,206 +1075,365 @@
         -ms-overflow-style: none !important;
     }
 
+    /* ── Elemen UI disembunyikan ── */
     .no-print,
-    .sidebar,
-    .header,
-    .footer,
-    .sidebar-overlay,
-    .drawer-footer-fixed,
-    #page-loading-bar,
-    #toast-container,
-    .report-tabs,
-    .page-header,
-    #report-page-header { display: none !important; }
+    .sidebar, .header, .footer,
+    .sidebar-overlay, .drawer-footer-fixed,
+    #page-loading-bar, #toast-container,
+    .report-tabs, .page-header,
+    #report-page-header,
+    .report-filter-bar,
+    /* Sembunyikan semua report-card (tabel ringkasan) dari semua tab */
+    .report-section .report-card,
+    .report-section .report-empty {
+        display: none !important;
+    }
 
-    .report-section { margin-bottom: 1.5rem; }
-
+    /* ── Base layout ── */
     * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
     html, body {
         display: block !important;
         background: #fff !important;
-        color: #111827 !important;
+        color: #000 !important;
+        font-family: 'Times New Roman', Times, serif !important;
         font-size: 10pt;
         overflow: visible !important;
     }
-    div, div[style*="overflow"], .kode-detail-wrap, .report-card, .report-section, .layout-body, .main-content, .main-content-wrap {
-        overflow: visible !important;
-        overflow-x: visible !important;
-        overflow-y: visible !important;
-        max-height: none !important;
+    div, div[style*="overflow"], .kode-detail-wrap, .report-section, .layout-body, .main-content, .main-content-wrap {
+        overflow: visible !important; overflow-x: visible !important;
+        overflow-y: visible !important; max-height: none !important;
     }
     html, body, .layout-body, .main-content, .main-content-wrap {
-        background-image: none !important;
-        box-shadow: none !important;
+        background-image: none !important; box-shadow: none !important;
     }
 
-/* ── Kelas helper saat proses cetak aktif (JS preparePrint) ── */
-html.report-printing, body.report-printing {
-    display: block !important;
-    overflow: visible !important;
-}
+/* ── Kelas helper saat proses cetak aktif ── */
+html.report-printing, body.report-printing { display: block !important; overflow: visible !important; }
 html.report-printing::-webkit-scrollbar,
 body.report-printing::-webkit-scrollbar,
 html.report-printing *::-webkit-scrollbar,
 body.report-printing *::-webkit-scrollbar {
-    display: none !important;
-    width: 0 !important;
-    height: 0 !important;
+    display: none !important; width: 0 !important; height: 0 !important;
 }
-    .layout-body, .main-content, .main-content-wrap, .report-section, .report-card,
-    .report-table, .report-table tbody, .report-table tr, .kode-detail-table,
-    .kode-detail-table tbody, .kode-detail-table tr { background: #fff !important; }
+    .layout-body, .main-content, .main-content-wrap, .report-section { background: #fff !important; }
     .main-content { margin-left: 0 !important; padding: 0 !important; }
     .main-content-wrap { max-width: 100% !important; padding: 0 !important; }
     .layout-body { display: block !important; }
+    .report-section { margin-bottom: 0; }
 
+    /* ════════════════════════════════════════════
+       KOP SURAT — Government Letterhead
+       ════════════════════════════════════════════ */
     .print-header {
         display: block !important;
-        margin-bottom: 1rem;
+        margin-bottom: .75rem;
     }
-    .print-header-inner {
-        display: flex !important; align-items: flex-start; gap: 1rem;
+
+    /* Garis atas biru tebal */
+    .print-kop-topbar {
+        display: block !important;
+        height: 5pt;
+        background: #1e3a5f !important;
         margin-bottom: .5rem;
+        border-radius: 0;
     }
-    .print-logo-wrap {
-        width: 18mm;
-        flex: 0 0 18mm;
-        display: flex;
+
+    /* Layout kop: logo kiri, teks kanan */
+    .print-kop {
+        display: flex !important;
+        align-items: center;
+        gap: .75rem;
+        margin-bottom: .35rem;
+    }
+    .print-kop-logo {
+        flex: 0 0 16mm;
+        display: flex !important;
         align-items: center;
         justify-content: center;
     }
     .print-logo-image {
         display: block !important;
         width: auto !important;
-        height: 14mm !important;
-        max-width: 18mm !important;
-        max-height: 14mm !important;
+        height: 16mm !important;
+        max-width: 16mm !important;
         object-fit: contain !important;
-        object-position: center;
     }
-    .print-header-text { flex: 1; }
-    .print-title { font-size: 12pt; font-weight: 700; color: #1e3a5f; margin: 0 0 .15rem; text-transform: uppercase; letter-spacing: .04em; }
-    .print-subtitle { font-size: 9pt; color: #161616ff; margin: 0 0 .1rem; }
-    .print-meta { font-size: 8pt; color: #ff0000b0; margin: 0; }
-    .print-divider { border: none; border-top: 2px solid #1e3a5f; margin: .6rem 0 1rem; }
+    .print-kop-text {
+        flex: 1;
+        text-align: center;
+    }
+    .print-kop-ministry {
+        font-size: 11.5pt !important;
+        font-weight: 700 !important;
+        color: #1e3a5f !important;
+        letter-spacing: .03em;
+        line-height: 1.3;
+        text-transform: uppercase;
+        font-family: 'Times New Roman', Times, serif !important;
+    }
+    .print-kop-unit {
+        font-size: 10pt !important;
+        color: #1e3a5f !important;
+        font-weight: 600 !important;
+        line-height: 1.4;
+        font-family: 'Times New Roman', Times, serif !important;
+    }
+    .print-kop-address {
+        font-size: 7.5pt !important;
+        color: #444 !important;
+        margin-top: .1rem;
+        font-style: italic;
+    }
 
-    .report-card {
-        border: 1px solid #bbb !important;
-        background: #fff !important;
-        box-shadow: none !important;
-        border-radius: 4px !important;
-        margin-bottom: 1rem !important;
-        page-break-inside: avoid;
-        overflow: visible !important;
+    /* Garis pembatas ganda kop surat */
+    .print-kop-divider {
+        display: block !important;
+        margin: .4rem 0 .5rem;
     }
-    .report-card-header {
-        background: #eef2f7 !important;
-        border-bottom: 1px solid #bbb !important;
-        padding: .5rem .75rem !important;
+    .print-kop-line-thick {
+        display: block !important;
+        height: 3pt;
+        background: #1e3a5f !important;
+        margin-bottom: 1.5pt;
     }
-    .report-card-title-wrap { display: flex !important; align-items: center; gap: .5rem; }
-    .report-card-icon { display: none !important; }
-    .report-card-title { color: #1e3a5f !important; font-size: 10pt !important; font-weight: 700 !important; }
-    .report-badge { background: #e0e8f2 !important; color: #1e3a5f !important; border: 1px solid #bbb !important; font-size: 7.5pt !important; }
+    .print-kop-line-thin {
+        display: block !important;
+        height: 1pt;
+        background: #1e3a5f !important;
+    }
 
-    .report-filter-bar { display: none !important; }
-
-    .report-table { width: 100% !important; border-collapse: collapse !important; font-size: 9pt !important; }
-    .report-table th,
-    .report-table td,
-    .report-table tr,
-    .report-table,
-    .report-card,
-    .report-card-header,
-    .kode-detail-table th,
-    .kode-detail-table td {
-        border-left: none !important;
-        border-right: none !important;
+    /* Judul Dokumen — kotak tengah */
+    .print-doc-title-block {
+        display: block !important;
+        text-align: center;
+        margin: .5rem 0 .4rem;
     }
-    .report-table th {
-        background: #eef2ff !important; color: #1e3a5f !important;
-        font-size: 8pt !important; padding: .35rem .6rem !important;
-        border-top: 1px solid #cbd5e1 !important;
-        border-bottom: 1px solid #cbd5e1 !important;
-        border-left: none !important;
-        border-right: none !important;
-    }
-    .report-table td {
+    .print-title {
+        display: block !important;
+        font-size: 13pt !important;
+        font-weight: 700 !important;
         color: #000 !important;
-        border-top: 1px solid #e2e8f0 !important;
-        border-bottom: 1px solid #e2e8f0 !important;
-        border-left: none !important;
-        border-right: none !important;
-        padding: .3rem .6rem !important;
-        font-size: 9pt !important;
+        letter-spacing: .06em;
+        text-transform: uppercase;
+        text-decoration: underline;
+        text-underline-offset: 3pt;
+        font-family: 'Times New Roman', Times, serif !important;
     }
-    .report-table tbody tr:hover td { background: transparent !important; }
-    .report-table tfoot tr td { border-top: 2px solid #999 !important; background: #eef2f7 !important; }
-    .tfoot-label { color: #1e3a5f !important; font-weight: 700 !important; }
-    .row-active td { background: #ebf3ff !important; }
-    .row-empty td  { opacity: .5 !important; }
+    .print-doc-jenis {
+        display: block !important;
+        font-size: 10pt !important;
+        color: #333 !important;
+        font-style: italic;
+        margin-top: .15rem;
+        font-family: 'Times New Roman', Times, serif !important;
+    }
 
-    .count-sm { background: #dde8ff !important; color: #1e3a5f !important; padding: .1rem .35rem !important; border-radius: 3px !important; font-size: 8pt !important; border: none !important; }
-    .count-sk { background: #d1fae5 !important; color: #065f46 !important; padding: .1rem .35rem !important; border-radius: 3px !important; font-size: 8pt !important; border: none !important; }
-    .count-zero { color: #aaa !important; opacity: 1 !important; }
-    .badge-month { background: #fef3c7 !important; color: #000000ff !important; font-size: 7pt !important; border: none !important; }
-    .badge-kode-report { background: #e0e8f2 !important; color: #1e3a5f !important; border: 1px solid #bbb !important; }
-    .td-num { text-align: right !important; }
-    .th-num { text-align: right !important; }
+    /* Tabel metadata (dicetak pada, jenis, sistem) */
+    .print-meta-table {
+        display: table !important;
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 8.5pt !important;
+        margin: .4rem 0 .25rem;
+        font-family: 'Times New Roman', Times, serif !important;
+        color: #000 !important;
+    }
+    .pmt-label {
+        width: 90px;
+        font-weight: 600;
+        padding: .06rem 0;
+        vertical-align: top;
+    }
+    .pmt-sep  { width: 10px; text-align: center; padding: .06rem .15rem; vertical-align: top; }
+    .pmt-val  { padding: .06rem .25rem; vertical-align: top; }
+    .pmt-spacer { width: 20px; }
 
-    /* ── Signature ── */
+    /* Garis bawah header */
+    .print-divider {
+        display: block !important;
+        border: none !important;
+        border-top: 1.5pt solid #1e3a5f !important;
+        margin: .5rem 0 .75rem !important;
+    }
+
+    /* ════════════════════════════════════════════
+       TABEL DETAIL ARSIP — Office Document Style
+       ════════════════════════════════════════════ */
+    .print-only {
+        display: block !important;
+        margin-top: 0;
+    }
+    .print-only.print-hidden { display: none !important; }
+
+    .print-detail-section-title {
+        font-size: 10.5pt !important;
+        font-weight: 700 !important;
+        color: #000 !important;
+        text-align: center;
+        margin-bottom: .5rem;
+        padding: .25rem 0 .25rem;
+        border-top: 1pt solid #000 !important;
+        border-bottom: 1pt solid #000 !important;
+        text-transform: uppercase;
+        letter-spacing: .05em;
+        font-family: 'Times New Roman', Times, serif !important;
+    }
+
+    .print-detail-table {
+        width: 100%;
+        border-collapse: collapse !important;
+        font-size: 8.5pt !important;
+        margin-top: .25rem;
+        font-family: 'Times New Roman', Times, serif !important;
+    }
+    .print-detail-table th {
+        background: #1e3a5f !important;
+        color: #fff !important;
+        font-size: 8pt !important;
+        font-weight: 700 !important;
+        text-transform: uppercase;
+        letter-spacing: .04em;
+        padding: .38rem .55rem !important;
+        border: 1pt solid #1e3a5f !important;
+        text-align: center !important;
+        white-space: nowrap;
+        vertical-align: middle;
+    }
+    .print-detail-table td {
+        padding: .3rem .55rem !important;
+        border: .75pt solid #555 !important;
+        color: #000 !important;
+        vertical-align: top;
+        font-size: 8.5pt !important;
+        line-height: 1.45;
+    }
+    /* Baris ganjil putih, genap abu muda */
+    .print-detail-table tbody tr:nth-child(odd) td {
+        background: #fff !important;
+    }
+    .print-detail-table tbody tr:nth-child(even) td {
+        background: #eef2f7 !important;
+    }
+    /* Baris total */
+    .print-detail-table tfoot td {
+        background: #d9e2ef !important;
+        border-top: 2pt solid #1e3a5f !important;
+        border-bottom: 1.5pt solid #1e3a5f !important;
+        border-left: .75pt solid #1e3a5f !important;
+        border-right: .75pt solid #1e3a5f !important;
+        font-weight: 700 !important;
+        font-size: 8pt !important;
+        color: #1e3a5f !important;
+        text-align: right !important;
+        font-style: italic;
+    }
+
+    /* Kolom widths */
+    .pd-no    { width: 22px !important; text-align: center !important; font-weight: 700; }
+    .pd-tahun { width: 38px !important; text-align: center !important; }
+    .pd-bulan { width: 64px !important; }
+    .pd-kode  { width: 100px !important; }
+    .pd-tgl   { width: 72px !important; white-space: nowrap; }
+    .pd-uraian { }
+    .pd-jenis { width: 32px !important; text-align: center !important; }
+
+    /* Badge kode → teks biasa saat print */
+    .pd-kode-badge {
+        display: inline !important;
+        background: none !important;
+        border: none !important;
+        padding: 0 !important;
+        font-weight: 700 !important;
+        font-size: inherit !important;
+        color: #000 !important;
+        letter-spacing: .01em;
+    }
+    /* Badge jenis SM/SK */
+    .pd-jenis-badge {
+        display: inline-block;
+        border-radius: 2px;
+        padding: .04rem .25rem;
+        font-size: 7.5pt;
+        font-weight: 700;
+        text-align: center;
+    }
+    .pd-jenis-sm {
+        background: #dbeafe !important;
+        color: #1e3a5f !important;
+        border: .75pt solid #93c5fd !important;
+    }
+    .pd-jenis-sk {
+        background: #d1fae5 !important;
+        color: #065f46 !important;
+        border: .75pt solid #6ee7b7 !important;
+    }
+    .pd-empty { font-size: 9pt; color: #555; font-style: italic; text-align: center; padding: 1rem; }
+
+    /* ── Baris pemisah bulan (Rekap Bulanan)
+       Spesifisitas (0,2,3) = seri dengan nth-child, tapi SETELAH → source order menang ── */
+    .print-detail-table tbody tr.pd-month-header td {
+        background: #1e3a5f !important;
+        color: #fff !important;
+        font-family: 'Times New Roman', Times, serif !important;
+        font-size: 9pt !important;
+        font-weight: 700 !important;
+        padding: .4rem .7rem !important;
+        border: 1pt solid #1e3a5f !important;
+        letter-spacing: .07em !important;
+        text-transform: uppercase !important;
+        page-break-after: avoid !important;
+        vertical-align: middle !important;
+    }
+    .print-detail-table tbody tr.pd-month-header:nth-child(odd) td,
+    .print-detail-table tbody tr.pd-month-header:nth-child(even) td {
+        background: #1e3a5f !important;
+        color: #fff !important;
+    }
+    .pd-month-icon {
+        display: inline-block;
+        font-size: 7pt;
+        margin-right: .4rem;
+        vertical-align: middle;
+        opacity: .85;
+    }
+
+    /* ════════════════════════════════════════════
+       TANDA TANGAN
+       ════════════════════════════════════════════ */
     .print-signature {
         display: block !important;
-        margin-top: 2.5rem;
+        margin-top: 2rem;
         page-break-inside: avoid;
+        font-family: 'Times New Roman', Times, serif !important;
     }
-    .sig-info { font-size: 8pt; color: #555; margin-bottom: 1.5rem; }
+    .sig-info {
+        font-size: 8pt;
+        color: #444;
+        margin-bottom: 1.5rem;
+        border-top: 1pt solid #ccc;
+        padding-top: .4rem;
+        font-style: italic;
+    }
     .sig-info p { margin: .1rem 0; }
-    .sig-boxes { display: flex !important; justify-content: space-around; }
-    .sig-box { text-align: center; font-size: 9pt; }
-    .sig-space { height: 50px; }
+    .sig-boxes { display: flex !important; justify-content: space-between; padding: 0 1rem; }
+    .sig-box { text-align: center; font-size: 9.5pt; min-width: 120px; }
+    .sig-space { height: 55px; }
     .sig-box p { margin: .1rem 0; }
 
-    /* ── Fix animasi pre-hide: paksa opacity penuh saat print ── */
-    .pre-hide,
-    .pre-hide.is-visible,
-    .pre-hide:not(.is-visible) {
-        opacity: 1 !important;
-        transform: none !important;
-        transition: none !important;
-        visibility: visible !important;
+    /* ── Fix animasi pre-hide ── */
+    .pre-hide, .pre-hide.is-visible, .pre-hide:not(.is-visible) {
+        opacity: 1 !important; transform: none !important;
+        transition: none !important; visibility: visible !important;
     }
 
-    /* ── Accordion kode detail: tampil saat print ── */
-    /* Hanya tampil accordion yang TIDAK ditandai filter-hidden */
-    .row-kode-detail { display: table-row !important; }
+    /* ── Accordion detail: tampil saat print tapi kita hide semua report-card dg JS ── */
     .row-kode-detail.print-row-hidden { display: none !important; }
-    /* Baris tabel yang disembunyikan oleh filter juga tetap tersembunyi saat print */
     tr.print-row-hidden { display: none !important; }
-    .kode-detail-wrap {
-        padding: .5rem 1rem !important;
-        background: #f8fafc !important;
-        border-top: 1px solid #cbd5e1 !important;
-        max-height: none !important;
-        opacity: 1 !important;
-        overflow: visible !important;
-    }
-    .kode-detail-table { font-size: 8.5pt !important; }
-    .kode-detail-table th {
-        background: #eef2ff !important;
-        color: #1e3a5f !important;
-        border: 1px solid #cbd5e1 !important;
-        font-size: 7.5pt !important;
-        padding: .3rem .5rem !important;
-    }
-    .kode-detail-table td {
-        background: #fff !important;
-        color: #111827 !important;
-        border: 1px solid #d1d5db !important;
-        padding: .3rem .5rem !important;
-    }
+    tr.print-hidden { display: none !important; }
     .no-print { display: none !important; }
 }
+
+
 </style>
 @endpush
 
@@ -1106,7 +1477,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         if (currentSection) {
             currentSection.classList.add('tab-leaving');
-            setTimeout(revealTarget, 200);
+            setTimeout(revealTarget, 120);
         } else {
             revealTarget();
         }
@@ -1149,6 +1520,75 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
 
+        // ── Tampilkan tabel detail print yang sesuai dengan tab aktif ──────
+        var pdBulanan     = document.getElementById('print-detail-bulanan');
+        var pdTahunan     = document.getElementById('print-detail-tahunan');
+        var pdKlasifikasi = document.getElementById('print-detail-klasifikasi');
+
+        // Sembunyikan semua dulu, lalu tampilkan yang sesuai
+        [pdBulanan, pdTahunan, pdKlasifikasi].forEach(function(el) {
+            if (el) el.classList.add('print-hidden');
+        });
+
+        if (activeId === 'bulanan') {
+            if (pdBulanan) pdBulanan.classList.remove('print-hidden');
+            // Jika ada filter tahun aktif di tab bulanan, filter baris detail juga
+            var selBln = document.getElementById('filter-tahun-bulanan');
+            var filterBln = selBln ? selBln.value : '';
+            if (pdBulanan && filterBln) {
+                pdBulanan.querySelectorAll('tr.pd-row-bulanan').forEach(function(tr) {
+                    if (tr.getAttribute('data-print-year') !== filterBln) {
+                        tr.classList.add('print-hidden');
+                    } else {
+                        tr.classList.remove('print-hidden');
+                    }
+                });
+            } else if (pdBulanan) {
+                pdBulanan.querySelectorAll('tr.pd-row-bulanan').forEach(function(tr) {
+                    tr.classList.remove('print-hidden');
+                });
+            }
+
+        } else if (activeId === 'tahunan') {
+            if (pdTahunan) pdTahunan.classList.remove('print-hidden');
+            // Jika ada filter tahun aktif di tab tahunan, filter baris detail juga
+            var selThn = document.getElementById('filter-tahun-tahunan');
+            var filterThn = selThn ? selThn.value : '';
+            if (pdTahunan && filterThn) {
+                pdTahunan.querySelectorAll('tr.pd-row-tahunan').forEach(function(tr) {
+                    if (tr.getAttribute('data-print-year') !== filterThn) {
+                        tr.classList.add('print-hidden');
+                    } else {
+                        tr.classList.remove('print-hidden');
+                    }
+                });
+            } else if (pdTahunan) {
+                pdTahunan.querySelectorAll('tr.pd-row-tahunan').forEach(function(tr) {
+                    tr.classList.remove('print-hidden');
+                });
+            }
+
+        } else if (activeId === 'klasifikasi') {
+            if (pdKlasifikasi) pdKlasifikasi.classList.remove('print-hidden');
+            // Jika ada filter tahun aktif di tab klasifikasi, filter baris detail juga
+            var selKls = document.getElementById('filter-tahun-klasifikasi');
+            var filterKls = selKls ? selKls.value : '';
+            if (pdKlasifikasi && filterKls) {
+                pdKlasifikasi.querySelectorAll('tr.pd-row-klasifikasi').forEach(function(tr) {
+                    if (tr.getAttribute('data-print-year') !== filterKls) {
+                        tr.classList.add('print-hidden');
+                    } else {
+                        tr.classList.remove('print-hidden');
+                    }
+                });
+            } else if (pdKlasifikasi) {
+                pdKlasifikasi.querySelectorAll('tr.pd-row-klasifikasi').forEach(function(tr) {
+                    tr.classList.remove('print-hidden');
+                });
+            }
+        }
+
+
         // ── Tandai baris yang disembunyikan oleh filter agar tetap hidden saat print ──
         // Rekap Tahunan: mark hidden rows & their detail
         document.querySelectorAll('#tabel-tahunan tbody tr').forEach(function(tr) {
@@ -1175,12 +1615,27 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
 
-        // Update teks tanggal cetak
+        // ── Update teks tanggal cetak & jenis laporan di kop surat ──
+        var n = new Date();
+        var dateStr = formatDateID(n) + ', ' + pad(n.getHours()) + ':' + pad(n.getMinutes()) + ' WITA';
+
         var metaDate = document.getElementById('print-meta-date');
-        if (metaDate) {
-            var n = new Date();
-            metaDate.textContent = 'Dicetak pada: '+formatDateID(n)+', '+pad(n.getHours())+':'+pad(n.getMinutes())+' WITA';
-        }
+        if (metaDate) metaDate.textContent = dateStr;
+
+        // Label jenis laporan per tab
+        var jenisMap = {
+            'bulanan'     : 'Rekap Bulanan Per Tahun',
+            'tahunan'     : 'Rekap Tahunan (Semua Tahun)',
+            'klasifikasi' : 'Rekap Per Kode Klasifikasi'
+        };
+        var jenisLabel = jenisMap[activeId] || 'Laporan Rekapitulasi';
+
+        var docJenis = document.getElementById('print-doc-jenis');
+        if (docJenis) docJenis.textContent = jenisLabel;
+
+        var metaJenis = document.getElementById('print-meta-jenis');
+        if (metaJenis) metaJenis.textContent = jenisLabel;
+
         var sigDate = document.getElementById('sig-date');
         if (sigDate) sigDate.textContent = formatDateShortID(new Date());
     }
@@ -1195,9 +1650,12 @@ document.addEventListener('DOMContentLoaded', function () {
             sec.style.display      = (sec.id === 'tab-' + activeId) ? '' : 'none';
             sec.style.marginBottom = '';
         });
-        // Hapus semua class print-row-hidden setelah print selesai
+        // Hapus semua class print-row-hidden dan print-hidden setelah print selesai
         document.querySelectorAll('.print-row-hidden').forEach(function(el) {
             el.classList.remove('print-row-hidden');
+        });
+        document.querySelectorAll('.print-hidden').forEach(function(el) {
+            el.classList.remove('print-hidden');
         });
     }
 
