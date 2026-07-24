@@ -46,23 +46,10 @@ class CleanStorageCommand extends Command
         }
         $this->info("✓ Sesi temporary dibersihkan ({$sessionCount} berkas).");
 
-        // 3. Cache Data
+        // 3. Cache Data — artisan cache:clear sudah cukup menangani seluruh cache
+        //    (BUG-05 fix: loop manual setelah cache:clear bersifat redundan dan berisiko)
         Artisan::call('cache:clear');
-        $cacheDataPath = storage_path('framework/cache/data');
-        $cacheCount = 0;
-        if (File::exists($cacheDataPath)) {
-            foreach (File::directories($cacheDataPath) as $dir) {
-                File::deleteDirectory($dir);
-                $cacheCount++;
-            }
-            foreach (File::files($cacheDataPath) as $file) {
-                if (!in_array($file->getFilename(), ['.gitignore', '.gitkeep'])) {
-                    File::delete($file->getPathname());
-                    $cacheCount++;
-                }
-            }
-        }
-        $this->info("✓ Cache data dibersihkan ({$cacheCount} folder/berkas).");
+        $this->info('✓ Cache data berhasil dibersihkan.');
 
         $this->output->success('Pembersihan storage selesai!');
         return Command::SUCCESS;

@@ -77,7 +77,8 @@ class SuratKeluarController extends Controller
             SheetsCache::KEY_SURAT_KELUAR,
             SheetsCache::TTL_TABLE,
             function () {
-                [$service, $spreadsheetId] = $this->getSheetService();
+                // INFO-02 fix: gunakan getReadonlySheetService() — hanya baca data, tidak perlu scope write
+                [$service, $spreadsheetId] = $this->getReadonlySheetService();
                 $response = $service->spreadsheets_values->get($spreadsheetId, 'dbSK!A:R');
                 $dbRows   = $response->getValues() ?? [];
 

@@ -77,7 +77,8 @@ class ArsipController extends Controller
             SheetsCache::KEY_SURAT_MASUK,
             SheetsCache::TTL_TABLE,
             function () {
-                [$service, $spreadsheetId] = $this->getSheetService();
+                // INFO-01 fix: gunakan getReadonlySheetService() — hanya baca data, tidak perlu scope write
+                [$service, $spreadsheetId] = $this->getReadonlySheetService();
                 $response = $service->spreadsheets_values->get($spreadsheetId, 'dbSM!A:R');
                 $dbRows   = $response->getValues() ?? [];
 

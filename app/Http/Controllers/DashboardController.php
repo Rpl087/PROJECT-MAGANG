@@ -400,6 +400,8 @@ class DashboardController extends Controller
                 'currentYear'               => (int) date('Y'),
                 'currentMonth'              => (int) date('m'),
                 'bulanNames'                => [],
+                'printDetailBulanan'        => [],    // BUG-01 fix: wajib ada agar Blade tidak error
+                'printDetailKlasifikasi'    => [],    // BUG-01 fix: wajib ada agar Blade tidak error
             ]);
         }
     }
@@ -437,8 +439,8 @@ class DashboardController extends Controller
             } else {
                 // Normalisasi: ambil hanya prefix huruf di awal kode
                 // Contoh: "KP 03" → "KP", "PR.02" → "PR", "KP/01" → "KP"
-                if (preg_match('/^([A-Za-z]+)/', $kode, $m)) {
-                    $kode = strtoupper($m[1]);
+                if (preg_match('/^([A-Za-z]+)/', $kode, $km)) {  // BUG-04 fix: $km bukan $m
+                    $kode = strtoupper($km[1]);
                 }
             }
 

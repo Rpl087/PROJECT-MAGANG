@@ -69,16 +69,23 @@ class GoogleDriveService
                 'parents' => [$parentFolderId]
             ]);
 
-            // 5. Kirim file ke Google Drive (gunakan supportsAllDrives agar menggunakan kuota folder pemilik/Shared Drive)
-            $content = file_get_contents($localFilePath);
+            // 5. Kirim file ke Google Drive — gunakan fopen() untuk streaming agar tidak
+            //    membaca seluruh file ke RAM (BUG-02 fix: mencegah memory exhaustion file besar)
+            $fileHandle = fopen($localFilePath, 'rb');
+            if ($fileHandle === false) {
+                throw new \RuntimeException("Gagal membuka file untuk upload: {$localFilePath}");
+            }
             $driveFile = $driveService->files->create($driveFileMetadata, [
-                'data'                => $content,
+                'data'                => $fileHandle,
                 'mimeType'            => 'application/pdf',
                 'uploadType'          => 'multipart',
                 'supportsAllDrives'   => true,
                 'supportsTeamDrives'  => true,
                 'fields'              => 'id, webViewLink',
             ]);
+            if (is_resource($fileHandle)) {
+                fclose($fileHandle);
+            }
 
             $fileId    = $driveFile->id;
             $driveLink = $driveFile->webViewLink;
