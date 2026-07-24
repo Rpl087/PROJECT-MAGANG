@@ -344,6 +344,16 @@
     {{-- ── TABEL DETAIL PRINT — Rekap Tahunan (hanya muncul saat @media print) ─ --}}
     <div class="print-only" id="print-detail-tahunan">
         <div class="print-detail-section-title">Detail Arsip Surat &mdash; Rekap Tahunan</div>
+        @php
+            // Pre-group data per tahun agar header tahun bisa disisipkan
+            $groupedTahunan = [];
+            foreach ($printDetailBulanan as $det) {
+                $groupedTahunan[$det['tahun']][] = $det;
+            }
+            // Urutkan descending (tahun terbaru dulu)
+            krsort($groupedTahunan);
+            $noUrutThn = 1;
+        @endphp
         @if(!empty($printDetailBulanan))
         <table class="print-detail-table" id="print-detail-table-tahunan">
             <thead>
@@ -357,15 +367,24 @@
                 </tr>
             </thead>
             <tbody>
-                @foreach($printDetailBulanan as $i => $det)
+                @foreach($groupedTahunan as $tahunGrp => $tahunRows)
+                {{-- Baris pemisah nama tahun --}}
+                <tr class="pd-year-header pd-row-tahunan" data-print-year="{{ $tahunGrp }}">
+                    <td colspan="6" class="pd-year-label">
+                        <span class="pd-year-icon">&#9632;</span> TAHUN {{ $tahunGrp }}
+                    </td>
+                </tr>
+                {{-- Baris data surat dalam tahun ini --}}
+                @foreach($tahunRows as $det)
                 <tr class="pd-row-tahunan" data-print-year="{{ $det['tahun'] }}">
-                    <td class="pd-no">{{ $i + 1 }}</td>
+                    <td class="pd-no">{{ $noUrutThn++ }}</td>
                     <td class="pd-tahun">{{ $det['tahun'] }}</td>
                     <td class="pd-kode"><span class="pd-kode-badge">{{ $det['kode'] ?: '-' }}</span></td>
                     <td class="pd-tgl">{{ $det['tanggal'] }}</td>
                     <td class="pd-uraian">{{ $det['uraian'] }}</td>
                     <td class="pd-jenis"><span class="pd-jenis-badge pd-jenis-{{ strtolower($det['jenis']) }}">{{ $det['jenis'] }}</span></td>
                 </tr>
+                @endforeach
                 @endforeach
             </tbody>
             <tfoot>
@@ -445,6 +464,25 @@
     {{-- ── TABEL DETAIL PRINT — Per Klasifikasi (hanya muncul saat @media print) ─ --}}
     <div class="print-only" id="print-detail-klasifikasi">
         <div class="print-detail-section-title">Detail Arsip Surat &mdash; Per Kode Klasifikasi</div>
+        @php
+            // Pre-group data per kode_prefix agar header kode klasifikasi bisa disisipkan
+            $groupedKlasifikasi = [];
+            foreach ($printDetailKlasifikasi as $det) {
+                $prefixKey = $det['kode_prefix'] ?? preg_replace('/[^A-Za-z]/', '', $det['kode'] ?? '');
+                $prefixKey = strtoupper(substr($prefixKey, 0, 2)) ?: '-';
+                $groupedKlasifikasi[$prefixKey][] = $det;
+            }
+            // Urutkan berdasarkan urutan KODE_KLASIFIKASI standar
+            $kodeOrderKlas = ['PR','KP','OT','KU','HK','UM','PL','UP','HM','PW','LT','DL','DT','KI'];
+            $sortedKlasGrp = [];
+            foreach ($kodeOrderKlas as $k) {
+                if (isset($groupedKlasifikasi[$k])) $sortedKlasGrp[$k] = $groupedKlasifikasi[$k];
+            }
+            foreach ($groupedKlasifikasi as $k => $v) {
+                if (!isset($sortedKlasGrp[$k])) $sortedKlasGrp[$k] = $v;
+            }
+            $noUrutKls = 1;
+        @endphp
         @if(!empty($printDetailKlasifikasi))
         <table class="print-detail-table" id="print-detail-table-klasifikasi">
             <thead>
@@ -458,15 +496,27 @@
                 </tr>
             </thead>
             <tbody>
-                @foreach($printDetailKlasifikasi as $i => $det)
-                <tr class="pd-row-klasifikasi" data-print-year="{{ $det['tahun'] }}" data-print-kode="{{ $det['kode_prefix'] }}">
-                    <td class="pd-no">{{ $i + 1 }}</td>
+                @foreach($sortedKlasGrp as $kodePrefix => $klasRows)
+                @php $kodeCount = count($klasRows); @endphp
+                {{-- Baris pemisah kode klasifikasi --}}
+                <tr class="pd-kode-header pd-row-klasifikasi" data-print-year="" data-print-kode="{{ $kodePrefix }}">
+                    <td colspan="6" class="pd-kode-header-label">
+                        <span class="pd-kode-header-icon">&#9632;</span>
+                        <span class="pd-kode-header-badge">{{ $kodePrefix }}</span>
+                        <span class="pd-kode-header-count">({{ $kodeCount }} arsip)</span>
+                    </td>
+                </tr>
+                {{-- Baris data surat dalam kode klasifikasi ini --}}
+                @foreach($klasRows as $det)
+                <tr class="pd-row-klasifikasi" data-print-year="{{ $det['tahun'] }}" data-print-kode="{{ $det['kode_prefix'] ?? $kodePrefix }}">
+                    <td class="pd-no">{{ $noUrutKls++ }}</td>
                     <td class="pd-tahun">{{ $det['tahun'] }}</td>
                     <td class="pd-kode"><span class="pd-kode-badge">{{ $det['kode'] ?: '-' }}</span></td>
                     <td class="pd-tgl">{{ $det['tanggal'] }}</td>
                     <td class="pd-uraian">{{ $det['uraian'] }}</td>
                     <td class="pd-jenis"><span class="pd-jenis-badge pd-jenis-{{ strtolower($det['jenis']) }}">{{ $det['jenis'] }}</span></td>
                 </tr>
+                @endforeach
                 @endforeach
             </tbody>
             <tfoot>
@@ -1302,6 +1352,7 @@ body.report-printing *::-webkit-scrollbar {
     .print-detail-table td {
         padding: .3rem .55rem !important;
         border: .75pt solid #555 !important;
+        border-bottom: 1.25pt solid #999 !important; /* garis horizontal antar baris */
         color: #000 !important;
         vertical-align: top;
         font-size: 8.5pt !important;
@@ -1379,6 +1430,7 @@ body.report-printing *::-webkit-scrollbar {
         font-weight: 700 !important;
         padding: .4rem .7rem !important;
         border: 1pt solid #1e3a5f !important;
+        border-bottom: 1.5pt solid #0a2240 !important;
         letter-spacing: .07em !important;
         text-transform: uppercase !important;
         page-break-after: avoid !important;
@@ -1395,6 +1447,84 @@ body.report-printing *::-webkit-scrollbar {
         margin-right: .4rem;
         vertical-align: middle;
         opacity: .85;
+    }
+
+    /* ── Baris pemisah tahun (Rekap Tahunan) ── */
+    .print-detail-table tbody tr.pd-year-header td {
+        background: #2a4a7f !important;
+        color: #fff !important;
+        font-family: 'Times New Roman', Times, serif !important;
+        font-size: 9pt !important;
+        font-weight: 700 !important;
+        padding: .4rem .7rem !important;
+        border: 1pt solid #2a4a7f !important;
+        border-bottom: 1.5pt solid #132c55 !important;
+        letter-spacing: .07em !important;
+        text-transform: uppercase !important;
+        page-break-after: avoid !important;
+        vertical-align: middle !important;
+    }
+    .print-detail-table tbody tr.pd-year-header:nth-child(odd) td,
+    .print-detail-table tbody tr.pd-year-header:nth-child(even) td {
+        background: #2a4a7f !important;
+        color: #fff !important;
+    }
+    .pd-year-icon {
+        display: inline-block;
+        font-size: 7pt;
+        margin-right: .4rem;
+        vertical-align: middle;
+        opacity: .85;
+    }
+
+    /* ── Baris pemisah kode klasifikasi (Per Klasifikasi) ── */
+    .print-detail-table tbody tr.pd-kode-header td {
+        background: #1a5c3a !important;
+        color: #fff !important;
+        font-family: 'Times New Roman', Times, serif !important;
+        font-size: 9pt !important;
+        font-weight: 700 !important;
+        padding: .38rem .7rem !important;
+        border: 1pt solid #1a5c3a !important;
+        border-bottom: 1.5pt solid #0d3d25 !important;
+        page-break-after: avoid !important;
+        vertical-align: middle !important;
+    }
+    .print-detail-table tbody tr.pd-kode-header:nth-child(odd) td,
+    .print-detail-table tbody tr.pd-kode-header:nth-child(even) td {
+        background: #1a5c3a !important;
+        color: #fff !important;
+    }
+    .pd-kode-header-label {
+        display: table-cell !important;
+        letter-spacing: .04em !important;
+    }
+    .pd-kode-header-icon {
+        display: inline-block;
+        font-size: 7pt;
+        margin-right: .45rem;
+        vertical-align: middle;
+        opacity: .85;
+    }
+    .pd-kode-header-badge {
+        display: inline-block;
+        background: rgba(255,255,255,.22) !important;
+        color: #fff !important;
+        border: .75pt solid rgba(255,255,255,.4) !important;
+        border-radius: 2px;
+        padding: .05rem .45rem !important;
+        font-size: 9pt !important;
+        font-weight: 800 !important;
+        letter-spacing: .08em;
+        margin-right: .45rem;
+        vertical-align: middle;
+    }
+    .pd-kode-header-count {
+        font-size: 8pt !important;
+        font-weight: 400 !important;
+        opacity: .8;
+        font-style: italic;
+        vertical-align: middle;
     }
 
     /* ════════════════════════════════════════════
@@ -1574,8 +1704,15 @@ document.addEventListener('DOMContentLoaded', function () {
             var selKls = document.getElementById('filter-tahun-klasifikasi');
             var filterKls = selKls ? selKls.value : '';
             if (pdKlasifikasi && filterKls) {
+                // Sembunyikan baris data yang tidak sesuai tahun
                 pdKlasifikasi.querySelectorAll('tr.pd-row-klasifikasi').forEach(function(tr) {
-                    if (tr.getAttribute('data-print-year') !== filterKls) {
+                    // Jangan sembunyikan baris header kode klasifikasi (pd-kode-header)
+                    if (tr.classList.contains('pd-kode-header')) {
+                        tr.classList.remove('print-hidden');
+                        return;
+                    }
+                    var rowYear = tr.getAttribute('data-print-year');
+                    if (rowYear && rowYear !== filterKls) {
                         tr.classList.add('print-hidden');
                     } else {
                         tr.classList.remove('print-hidden');
@@ -1586,6 +1723,13 @@ document.addEventListener('DOMContentLoaded', function () {
                     tr.classList.remove('print-hidden');
                 });
             }
+        }
+
+        // ── Tandai baris header tahun agar tidak ikut tersembunyi oleh filter ──
+        if (pdTahunan) {
+            pdTahunan.querySelectorAll('tr.pd-year-header').forEach(function(tr) {
+                tr.classList.remove('print-hidden');
+            });
         }
 
 
