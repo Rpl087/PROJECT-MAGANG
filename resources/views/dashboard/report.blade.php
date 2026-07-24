@@ -1451,14 +1451,14 @@ body.report-printing *::-webkit-scrollbar {
 
     /* ── Baris pemisah tahun (Rekap Tahunan) ── */
     .print-detail-table tbody tr.pd-year-header td {
-        background: #2a4a7f !important;
+        background: #1e3a5f !important;
         color: #fff !important;
         font-family: 'Times New Roman', Times, serif !important;
         font-size: 9pt !important;
         font-weight: 700 !important;
         padding: .4rem .7rem !important;
-        border: 1pt solid #2a4a7f !important;
-        border-bottom: 1.5pt solid #132c55 !important;
+        border: 1pt solid #1e3a5f !important;
+        border-bottom: 1.5pt solid #0a2240 !important;
         letter-spacing: .07em !important;
         text-transform: uppercase !important;
         page-break-after: avoid !important;
@@ -1466,7 +1466,7 @@ body.report-printing *::-webkit-scrollbar {
     }
     .print-detail-table tbody tr.pd-year-header:nth-child(odd) td,
     .print-detail-table tbody tr.pd-year-header:nth-child(even) td {
-        background: #2a4a7f !important;
+        background: #1e3a5f !important;
         color: #fff !important;
     }
     .pd-year-icon {
@@ -1700,36 +1700,42 @@ document.addEventListener('DOMContentLoaded', function () {
 
         } else if (activeId === 'klasifikasi') {
             if (pdKlasifikasi) pdKlasifikasi.classList.remove('print-hidden');
-            // Jika ada filter tahun aktif di tab klasifikasi, filter baris detail juga
-            var selKls = document.getElementById('filter-tahun-klasifikasi');
+            var selKls    = document.getElementById('filter-tahun-klasifikasi');
             var filterKls = selKls ? selKls.value : '';
             if (pdKlasifikasi && filterKls) {
-                // Sembunyikan baris data yang tidak sesuai tahun
-                pdKlasifikasi.querySelectorAll('tr.pd-row-klasifikasi').forEach(function(tr) {
-                    // Jangan sembunyikan baris header kode klasifikasi (pd-kode-header)
-                    if (tr.classList.contains('pd-kode-header')) {
-                        tr.classList.remove('print-hidden');
-                        return;
-                    }
-                    var rowYear = tr.getAttribute('data-print-year');
+                // Step 1: Filter baris DATA — tampilkan hanya yang sesuai tahun
+                pdKlasifikasi.querySelectorAll('tr.pd-row-klasifikasi:not(.pd-kode-header)').forEach(function(tr) {
+                    var rowYear = tr.getAttribute('data-print-year') || '';
                     if (rowYear && rowYear !== filterKls) {
                         tr.classList.add('print-hidden');
                     } else {
                         tr.classList.remove('print-hidden');
                     }
                 });
+                // Step 2: Sembunyikan pd-kode-header jika SEMUA data di bawahnya tersembunyi
+                var kodeHeaders = pdKlasifikasi.querySelectorAll('tr.pd-kode-header');
+                kodeHeaders.forEach(function(headerTr) {
+                    var sibling = headerTr.nextElementSibling;
+                    var hasVisible = false;
+                    while (sibling && !sibling.classList.contains('pd-kode-header')) {
+                        if (!sibling.classList.contains('print-hidden')) {
+                            hasVisible = true;
+                            break;
+                        }
+                        sibling = sibling.nextElementSibling;
+                    }
+                    if (hasVisible) {
+                        headerTr.classList.remove('print-hidden');
+                    } else {
+                        headerTr.classList.add('print-hidden');
+                    }
+                });
             } else if (pdKlasifikasi) {
+                // Tanpa filter: tampilkan semua
                 pdKlasifikasi.querySelectorAll('tr.pd-row-klasifikasi').forEach(function(tr) {
                     tr.classList.remove('print-hidden');
                 });
             }
-        }
-
-        // ── Tandai baris header tahun agar tidak ikut tersembunyi oleh filter ──
-        if (pdTahunan) {
-            pdTahunan.querySelectorAll('tr.pd-year-header').forEach(function(tr) {
-                tr.classList.remove('print-hidden');
-            });
         }
 
 
