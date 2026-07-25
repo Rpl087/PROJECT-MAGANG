@@ -7,22 +7,11 @@ use Illuminate\Support\Facades\Schedule;
 
 /*
 |--------------------------------------------------------------------------
-| Console Routes & Scheduled Tasks
+| Console Routes
 |--------------------------------------------------------------------------
 |
-| Di bawah ini adalah jadwal tugas otomatis (cron/scheduler) Laravel.
-| Menghapus secara otomatis berkas temporary pada:
-|  1. storage/framework/views (Compiled Blade Views)
-|  2. storage/framework/sessions (Session files)
-|  3. storage/framework/cache/data (Cache data files & subfolders)
-|
-| Berjalan otomatis setiap hari pukul 00:00 (tengah malam).
+| Pembersihan storage (views, sessions, cache) dilakukan secara manual
+| setiap kali sistem dijalankan melalui setup-and-run.bat (1-click startup).
+| Tidak ada lagi jadwal otomatis tengah malam.
 |
 */
-
-Schedule::command('storage:clean')
-    ->dailyAt('00:00')
-    ->name('cleanup-views-sessions-cache');
-
-
-

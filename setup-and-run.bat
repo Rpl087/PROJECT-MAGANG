@@ -12,10 +12,49 @@ if %errorLevel% neq 0 (
 
 cd /d "%~dp0"
 
+:: ── Deteksi PHP & Composer di Laragon ────────────────────────────────
+where php >nul 2>&1
+if %ERRORLEVEL% neq 0 (
+    echo [INFO] PHP tidak ditemukan di PATH. Mencari PHP di Laragon...
+    for /f "delims=" %%I in ('dir /b /ad /o-n "C:\laragon\bin\php\php-*" 2^>nul') do (
+        set "PHP_DIR=C:\laragon\bin\php\%%I"
+        goto :found_php
+    )
+)
+goto :php_check_done
+
+:found_php
+if exist "%PHP_DIR%\php.exe" (
+    echo [OK] Menggunakan PHP dari: %PHP_DIR%
+    set "PATH=%PHP_DIR%;%PATH%"
+)
+
+:php_check_done
+
+where composer >nul 2>&1
+if %ERRORLEVEL% neq 0 (
+    if exist "C:\laragon\bin\composer" (
+        echo [INFO] Menggunakan Composer dari Laragon...
+        set "PATH=C:\laragon\bin\composer;%PATH%"
+    )
+)
+
 echo ====================================================================
 echo   ARSIP SURAT BPSDMP — MASTER 1-PINTU AUTO-SETUP & SYSTEM RUNNER
 echo ====================================================================
 echo.
+
+:: ── [PRE] Pembersihan Storage Otomatis Sebelum Startup ─────────────
+if exist "vendor/autoload.php" (
+    echo [PRE] Membersihkan storage sementara (views, sessions, cache)...
+    call php artisan storage:clean >nul 2>&1
+    echo [OK] Storage sementara berhasil dibersihkan.
+    echo.
+) else (
+    echo [PRE] Aplikasi belum di-setup (vendor/autoload.php tidak ditemukan).
+    echo [PRE] Pembersihan storage sementara dilewati.
+    echo.
+)
 
 :: ── [1] Memeriksa & Menyalakan Service Laragon ──────────────────────
 echo [1/8] Memeriksa status Laragon (Apache & MySQL)...
@@ -112,11 +151,10 @@ echo.
 echo [7/8] Memeriksa aturan Windows Firewall Port 80...
 powershell -Command "if (!(Get-NetFirewallRule -DisplayName 'Laragon Apache HTTP' -ErrorAction SilentlyContinue)) { New-NetFirewallRule -DisplayName 'Laragon Apache HTTP' -Direction Inbound -Protocol TCP -LocalPort 80 -Action Allow; Write-Host '[OK] Aturan Firewall Port 80 berhasil dibuat.' } else { Write-Host '[OK] Aturan Firewall Port 80 sudah ada.' }"
 
-:: ── [8] Optimization, Storage Clean & Launch ──────────────────────
+:: ── [8] Optimization & Launch ─────────────────────────────────────
 echo.
-echo [8/8] Mengoptimalkan storage, cache & merestart Apache...
+echo [8/8] Mengoptimalkan cache & merestart Apache...
 call php artisan storage:link --force >nul 2>&1
-call php artisan storage:clean
 call php artisan config:cache
 call php artisan route:cache
 call php artisan view:cache
@@ -133,13 +171,13 @@ if %ERRORLEVEL% EQ 0 (
 
 echo.
 echo ====================================================================
-echo  ✅ SISTEM SURAT BPSDMP BERHASIL DIAKTIFKAN DAN SIAP DIGUNAKAN!
+echo  SISTEM SURAT BPSDMP BERHASIL DIAKTIFKAN DAN SIAP DIGUNAKAN!
 echo ====================================================================
 echo  - Akses Internal (Staff/Admin) : http://kearsipan.local/
 echo  - Akses WiFi Tamu (Read-Only)  : http://kearsipan.local/tamu
 echo.
-echo  Jalur Scheduler otomatis membersihkan views, sessions, & cache/data
-echo  setiap tengah malam (00:00).
+echo  Catatan: Storage (views, sessions, cache) dibersihkan otomatis
+echo  setiap kali setup-and-run.bat dijalankan (sebelum sistem aktif).
 echo ====================================================================
 echo.
 pause
