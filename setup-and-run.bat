@@ -61,20 +61,37 @@ IF EXIST "storage\framework\cache\data" (
 echo [OK] Storage sementara berhasil dibersihkan.
 echo.
 
-:: ── [1] Memeriksa & Menyalakan Service Laragon ────────────────────────
-echo [1/8] Memeriksa status Laragon (Apache ^& MySQL)...
-tasklist /FI "IMAGENAME eq laragon.exe" 2>NUL | find /I "laragon.exe" >NUL
-if %ERRORLEVEL% NEQ 0 (
-    echo [ACTION] Menyalakan Laragon...
-    if exist "C:\laragon\laragon.exe" (
-        start "" "C:\laragon\laragon.exe"
-        echo Menunggu service Laragon aktif (10 detik)...
-        timeout /t 10 /nobreak >nul
-    ) else (
-        echo [WARNING] Laragon tidak ditemukan di C:\laragon\laragon.exe! Pastikan Laragon terinstall.
-    )
-) else (
-    echo [OK] Laragon sudah aktif.
+:: ── [1] Memeriksa Status Apache & MySQL ──────────────────────────────
+echo [1/8] Memeriksa status Apache ^& MySQL...
+SET "SVC_OK=1"
+
+tasklist /FI "IMAGENAME eq httpd.exe" 2>NUL | find /I "httpd.exe" >NUL
+IF !ERRORLEVEL! NEQ 0 (
+    echo [!] Apache (httpd.exe) belum berjalan.
+    SET "SVC_OK=0"
+) ELSE (
+    echo [OK] Apache (httpd.exe) berjalan.
+)
+
+tasklist /FI "IMAGENAME eq mysqld.exe" 2>NUL | find /I "mysqld.exe" >NUL
+IF !ERRORLEVEL! NEQ 0 (
+    echo [!] MySQL (mysqld.exe) belum berjalan.
+    SET "SVC_OK=0"
+) ELSE (
+    echo [OK] MySQL (mysqld.exe) berjalan.
+)
+
+IF "!SVC_OK!"=="0" (
+    echo.
+    echo ================================================================
+    echo  PERHATIAN: Laragon belum aktif!
+    echo  1. Buka Laragon terlebih dahulu (tanya Administrator jika perlu)
+    echo  2. Klik tombol [Start All] di Laragon
+    echo  3. Tunggu Apache dan MySQL aktif
+    echo  4. Lalu tekan sembarang tombol di sini untuk melanjutkan...
+    echo ================================================================
+    pause >nul
+    echo.
 )
 
 :: ── [2] Inisialisasi Environment File (.env) ──────────────────────────
@@ -164,14 +181,24 @@ echo [8/8] Mengoptimalkan cache ^& merestart Apache...
 "!PHP!" artisan route:cache
 "!PHP!" artisan view:cache
 
-:: Restart httpd jika berjalan
+:: Restart Apache agar Virtual Host kearsipan.local aktif
 tasklist /FI "IMAGENAME eq httpd.exe" 2>NUL | find /I "httpd.exe" >NUL
-if %ERRORLEVEL% EQ 0 (
+IF !ERRORLEVEL! EQ 0 (
+    echo [INFO] Merestart Apache untuk memuat Virtual Host baru...
     taskkill /F /IM httpd.exe >nul 2>&1
-    timeout /t 2 /nobreak >nul
-    if exist "C:\laragon\bin\apache\httpd-2.4.54-win64-VS16\bin\httpd.exe" (
-        start "" "C:\laragon\bin\apache\httpd-2.4.54-win64-VS16\bin\httpd.exe"
+    ping 127.0.0.1 -n 3 >nul
+    SET "HTTPD_BIN="
+    FOR /D %%A IN ("C:\laragon\bin\apache\httpd-*") DO (
+        IF EXIST "%%A\bin\httpd.exe" SET "HTTPD_BIN=%%A\bin\httpd.exe"
     )
+    IF DEFINED HTTPD_BIN (
+        start "" "!HTTPD_BIN!"
+        echo [OK] Apache berhasil direstart.
+    ) ELSE (
+        echo [WARNING] httpd.exe tidak ditemukan. Restart Apache secara manual dari Laragon.
+    )
+) ELSE (
+    echo [WARNING] Apache tidak berjalan. Aktifkan Laragon untuk memuat Virtual Host.
 )
 
 echo.
