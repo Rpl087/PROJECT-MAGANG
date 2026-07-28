@@ -132,8 +132,8 @@
                 <thead>
                     <tr>
                         <th class="th-sortable" data-col="no" style="cursor:default;">No</th>
-                        <th class="th-sortable" data-col="tanggal">Tanggal Surat <span class="sort-icon">↕</span></th>
-                        <th class="th-sortable" data-col="kode" id="th-kode-sk">Kode Klasifikasi <span class="sort-icon">↕</span></th>
+                        <th class="th-sortable" data-col="tanggal">Tanggal Surat <span class="sort-icon"></span></th>
+                        <th class="th-sortable" data-col="kode" id="th-kode-sk">Kode Klasifikasi <span class="sort-icon"></span></th>
                         <th>Uraian Berkas</th>
                         <th>Link Folder</th>
                         <th>Aksi</th>
@@ -753,11 +753,13 @@
     background: var(--color-primary-hover, #15314f);
     color: #e2e8f0;
 }
-.th-sortable { cursor: pointer; user-select: none; }
+.th-sortable { cursor: pointer; user-select: none; white-space: nowrap; }
 .th-sortable:hover { background: var(--color-primary-hover, #15314f); }
-.th-sortable.sort-asc .sort-icon::after { content: ' ↑'; }
-.th-sortable.sort-desc .sort-icon::after { content: ' ↓'; }
+.th-sortable[data-col="no"]:hover { background: var(--color-primary); cursor: default; }
 .sort-icon { opacity: .6; font-size: .8em; }
+.sort-icon::before { content: '↕'; }
+.th-sortable.sort-asc .sort-icon::before { content: '↑'; }
+.th-sortable.sort-desc .sort-icon::before { content: '↓'; }
 .arsip-table td {
     padding:.7rem 1rem; border-bottom:1px solid var(--color-border);
     color: var(--color-text); vertical-align:middle;
