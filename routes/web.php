@@ -109,6 +109,9 @@ Route::middleware(['auth', \App\Http\Middleware\AdminOnly::class, 'internal_only
     // Laporan Rekapan (admin)
     Route::get('/dashboard/report', [DashboardController::class, 'report'])->name('dashboard.report');
 
+    // Halaman Cetak Custom (admin)
+    Route::get('/dashboard/print', [DashboardController::class, 'printView'])->name('dashboard.print');
+
     // Hapus Surat Masuk
     Route::delete('/arsip/{rowIndex}', [ArsipController::class, 'destroy'])->name('arsip.destroy');
 

@@ -114,6 +114,97 @@ class DashboardController extends Controller
     }
 
     /**
+     * Halaman Cetak Custom — Kop Surat + Rekap Bulanan + Grafik Klasifikasi.
+     */
+    public function printView()
+    {
+        try {
+            [$smRows, $skRows] = SheetsCache::remember(
+                SheetsCache::KEY_DASHBOARD,
+                SheetsCache::TTL_DASHBOARD,
+                function () {
+                    [$service, $spreadsheetId] = $this->getReadonlySheetService();
+                    $smResponse = $service->spreadsheets_values->get($spreadsheetId, 'dbSM!A:R');
+                    $smRows     = $smResponse->getValues() ?? [];
+                    $skResponse = $service->spreadsheets_values->get($spreadsheetId, 'dbSK!A:R');
+                    $skRows     = $skResponse->getValues() ?? [];
+                    return [$smRows, $skRows];
+                }
+            );
+
+            if (!empty($smRows)) array_shift($smRows);
+            if (!empty($skRows)) array_shift($skRows);
+
+            $currentYear  = (int) date('Y');
+            $currentMonth = (int) date('m');
+
+            $smData = $this->processRows($smRows, dateColIndex: 8, klasifikasiColIndex: 1);
+
+            $skRowsFiltered = array_filter($skRows, fn($r) => !empty(trim($r[9] ?? '')));
+            $skData = $this->processRows(array_values($skRowsFiltered), dateColIndex: 9, klasifikasiColIndex: 1);
+
+            $bulanNames = [
+                1  => 'Januari',  2  => 'Februari', 3  => 'Maret',
+                4  => 'April',    5  => 'Mei',       6  => 'Juni',
+                7  => 'Juli',     8  => 'Agustus',   9  => 'September',
+                10 => 'Oktober',  11 => 'November',  12 => 'Desember',
+            ];
+
+            $monthlyRecap = [];
+            $totalSMYear  = 0;
+            $totalSKYear  = 0;
+
+            for ($m = 1; $m <= 12; $m++) {
+                $key     = $currentYear . '-' . str_pad($m, 2, '0', STR_PAD_LEFT);
+                $smCount = $smData['monthly'][$key] ?? 0;
+                $skCount = $skData['monthly'][$key] ?? 0;
+                $totalSMYear += $smCount;
+                $totalSKYear += $skCount;
+                $monthlyRecap[] = [
+                    'bulan'    => $bulanNames[$m],
+                    'sm_count' => $smCount,
+                    'sk_count' => $skCount,
+                    'total'    => $smCount + $skCount,
+                ];
+            }
+
+            $currentMonthKey = $currentYear . '-' . str_pad($currentMonth, 2, '0', STR_PAD_LEFT);
+            $smPieBulan = $smData['klasifikasiMonthly'][$currentMonthKey] ?? [];
+            $skPieBulan = $skData['klasifikasiMonthly'][$currentMonthKey] ?? [];
+            $smPieTahun = $smData['klasifikasiYearly'][$currentYear]      ?? [];
+            $skPieTahun = $skData['klasifikasiYearly'][$currentYear]      ?? [];
+
+            return view('dashboard.print', compact(
+                'monthlyRecap',
+                'totalSMYear',
+                'totalSKYear',
+                'smPieBulan',
+                'skPieBulan',
+                'smPieTahun',
+                'skPieTahun',
+                'currentYear',
+                'currentMonth',
+                'bulanNames',
+            ));
+        } catch (\Exception $e) {
+            SheetsCache::forget(SheetsCache::KEY_DASHBOARD);
+            return view('dashboard.print', [
+                'error'        => 'Gagal memuat data: ' . $e->getMessage(),
+                'monthlyRecap' => [],
+                'totalSMYear'  => 0,
+                'totalSKYear'  => 0,
+                'smPieBulan'   => [],
+                'skPieBulan'   => [],
+                'smPieTahun'   => [],
+                'skPieTahun'   => [],
+                'currentYear'  => (int) date('Y'),
+                'currentMonth' => (int) date('m'),
+                'bulanNames'   => [],
+            ]);
+        }
+    }
+
+    /**
      * Halaman Laporan Rekapan Bulanan & Tahunan (printable).
      */
     public function report()
