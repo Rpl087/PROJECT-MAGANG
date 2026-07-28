@@ -233,9 +233,9 @@ class SuratKeluarController extends Controller
             $body = new Sheets\BatchUpdateSpreadsheetRequest(['requests' => $requests]);
             $service->spreadsheets->batchUpdate($spreadsheetId, $body);
 
-            // Hapus file lokal jika PDF link adalah nama file (bukan URL Google Drive)
-            if ($pdfLink !== '' && !str_starts_with($pdfLink, 'http')) {
-                $this->safeDeleteFile(base_path('uploads/' . $pdfLink));
+            // Hapus file mentah dari folder lokal uploads/ dan dari Google Drive jika ada
+            if (!empty($pdfLink)) {
+                GoogleDriveService::deleteFile($pdfLink);
             }
 
             // Invalidasi cache agar halaman menampilkan data terbaru

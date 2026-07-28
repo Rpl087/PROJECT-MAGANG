@@ -185,4 +185,74 @@ class GoogleDriveService
 
         return $newFilename;
     }
+
+    /**
+     * Hapus file PDF fisik dari folder lokal /uploads dan dari Google Drive jika terhubung.
+     *
+     * @param string $linkOrFilename  Link Google Drive atau nama file lokal
+     * @return bool True jika berhasil atau file telah dihapus
+     */
+    public static function deleteFile(string $linkOrFilename): bool
+    {
+        $linkOrFilename = trim($linkOrFilename);
+        if (empty($linkOrFilename)) {
+            return false;
+        }
+
+        $isDriveUrl  = str_starts_with($linkOrFilename, 'http');
+        $filename    = $linkOrFilename;
+        $driveFileId = null;
+
+        if ($isDriveUrl) {
+            if (preg_match('/\/d\/([a-zA-Z0-9_\-]+)/', $linkOrFilename, $matches)) {
+                $driveFileId = $matches[1];
+            } elseif (preg_match('/id=([a-zA-Z0-9_\-]+)/', $linkOrFilename, $matches)) {
+                $driveFileId = $matches[1];
+            }
+        }
+
+        // 1. Hapus file lokal dari folder /uploads
+        $uploadsDir = base_path('uploads');
+
+        if (!$isDriveUrl) {
+            $localPath = $uploadsDir . DIRECTORY_SEPARATOR . $filename;
+            if (File::exists($localPath)) {
+                File::delete($localPath);
+            }
+        } else {
+            // Jika berupa Drive URL, cari apakah ada salinan file lokal dengan nama yang cocok
+            if (File::exists($uploadsDir)) {
+                $files = File::files($uploadsDir);
+                foreach ($files as $file) {
+                    if ($file->getFilename() === $filename) {
+                        File::delete($file->getPathname());
+                        break;
+                    }
+                }
+            }
+        }
+
+        // 2. Hapus file di Google Drive jika terhubung API
+        if ($driveFileId !== null) {
+            try {
+                $credPath = config('google.service_account_json');
+                if (!empty($credPath) && file_exists(base_path($credPath))) {
+                    $client = new Client();
+                    $client->setAuthConfig(base_path($credPath));
+                    $client->addScope(Drive::DRIVE);
+                    $driveService = new Drive($client);
+
+                    $driveService->files->delete($driveFileId, [
+                        'supportsAllDrives'  => true,
+                        'supportsTeamDrives' => true,
+                    ]);
+                    Log::info("File PDF berhasil dihapus dari Google Drive (ID: {$driveFileId})");
+                }
+            } catch (\Exception $e) {
+                Log::warning('Gagal menghapus file dari Google Drive: ' . $e->getMessage());
+            }
+        }
+
+        return true;
+    }
 }
