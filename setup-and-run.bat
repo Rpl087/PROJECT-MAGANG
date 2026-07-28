@@ -14,7 +14,7 @@ if %errorLevel% neq 0 (
 cd /d "%~dp0"
 
 echo ====================================================================
-echo   ARSIP SURAT BPSDMP ^— MASTER 1-PINTU AUTO-SETUP ^& SYSTEM RUNNER
+echo   ARSIP SURAT BPSDMP — MASTER 1-PINTU AUTO-SETUP ^& SYSTEM RUNNER
 echo ====================================================================
 echo.
 
@@ -43,26 +43,21 @@ IF "!PHP!"=="php" (
 )
 echo.
 
-:: ── [PRE] Pembersihan Storage Otomatis Sebelum Startup ───────────────
-echo [PRE] Membersihkan storage sementara (views, sessions, cache)...
+:: ── [PRE] Pembersihan Storage Saja (Views & Cache - Preservasi Sessions) ──
+echo [PRE] Membersihkan cache sementara (views ^& cache data)...
 IF EXIST "storage\framework\views" (
     del /f /q "storage\framework\views\*.php" >nul 2>&1
     del /f /q "storage\framework\views\*.html" >nul 2>&1
-)
-IF EXIST "storage\framework\sessions" (
-    for /f "delims=" %%F in ('dir /b /a-d "storage\framework\sessions" 2^>nul') do (
-        del /f /q "storage\framework\sessions\%%F" >nul 2>&1
-    )
 )
 IF EXIST "storage\framework\cache\data" (
     rd /s /q "storage\framework\cache\data" >nul 2>&1
     md "storage\framework\cache\data" >nul 2>&1
 )
-echo [OK] Storage sementara berhasil dibersihkan.
+echo [OK] Cache views ^& framework data berhasil dibersihkan (sesi login pengguna dipertahankan).
 echo.
 
-:: ── [1] Memeriksa Status Apache & MySQL ──────────────────────────────
-echo [1/8] Memeriksa status Apache ^& MySQL...
+:: ── [1/10] Memeriksa Status Apache & MySQL ────────────────────────────
+echo [1/10] Memeriksa status Apache ^& MySQL...
 SET "SVC_OK=1"
 
 tasklist /FI "IMAGENAME eq httpd.exe" 2>NUL | find /I "httpd.exe" >NUL
@@ -115,9 +110,8 @@ GOTO :WAIT_MYSQL
 echo.
 
 
-:: ── [2] Inisialisasi Environment File (.env) ──────────────────────────
-echo.
-echo [2/8] Memeriksa berkas konfigurasi .env...
+:: ── [2/10] Inisialisasi Environment File (.env) ──────────────────────
+echo [2/10] Memeriksa berkas konfigurasi .env...
 if not exist ".env" (
     echo [ACTION] Membuat berkas .env dari .env.example...
     copy .env.example .env >nul
@@ -128,14 +122,24 @@ powershell -Command "(Get-Content .env) -replace '^APP_URL=.*', 'APP_URL=http://
 
 "!PHP!" artisan key:generate --force >nul 2>&1
 
-:: ── [3] Inisialisasi Database MySQL (arsip_bpsdmp) ────────────────────
+:: ── [3/10] Pengecekan Google Credentials JSON ─────────────────────────
 echo.
-echo [3/8] Memeriksa database MySQL arsip_bpsdmp...
+echo [3/10] Memeriksa berkas Google Credentials JSON...
+if exist "storage\app\google-credentials.json" (
+    echo [OK] Berkas storage\app\google-credentials.json ditemukan.
+) else (
+    echo [WARNING] Berkas storage\app\google-credentials.json TIDAK DITEMUKAN!
+    echo [WARNING] Integrasi Google Drive ^& Sheets mungkin memerlukan berkas ini.
+)
+
+:: ── [4/10] Inisialisasi Database MySQL (arsip_bpsdmp) ──────────────────
+echo.
+echo [4/10] Memeriksa database MySQL arsip_bpsdmp...
 "!PHP!" -r "try { $pdo = new PDO('mysql:host=127.0.0.1;port=3306', 'root', ''); $pdo->exec('CREATE DATABASE IF NOT EXISTS `arsip_bpsdmp` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;'); echo '[OK] Database arsip_bpsdmp siap.' . PHP_EOL; } catch (Exception $e) { echo '[WARNING] Gagal konek MySQL: ' . $e->getMessage() . PHP_EOL; }"
 
-:: ── [4] Memeriksa Dependensi & Migrasi Database ───────────────────────
+:: ── [5/10] Memeriksa Dependensi & Migrasi Database ─────────────────────
 echo.
-echo [4/8] Memeriksa dependensi ^& menjalankan migrasi database...
+echo [5/10] Memeriksa dependensi Composer ^& menjalankan migrasi database...
 if not exist "vendor/autoload.php" (
     echo [ACTION] Menginstall dependensi Composer...
     call composer install --no-dev --optimize-autoloader --no-interaction
@@ -144,9 +148,29 @@ if not exist "vendor/autoload.php" (
 "!PHP!" artisan migrate --force
 "!PHP!" artisan db:seed --force
 
-:: ── [5] Virtual Host Apache (kearsipan.local.conf) ────────────────────
+:: ── [6/10] Build Aset Frontend (Vite) ──────────────────────────────────
 echo.
-echo [5/8] Mengonfigurasi Virtual Host Apache (kearsipan.local)...
+echo [6/10] Memeriksa kompilasi aset frontend (Vite)...
+if not exist "public/build" (
+    echo [ACTION] Membangun aset frontend produksi (npm run build)...
+    where npm >nul 2>&1
+    if !ERRORLEVEL! EQU 0 (
+        if not exist "node_modules" (
+            echo [ACTION] Menginstall modul Node.js...
+            call npm install --no-audit --no-fund
+        )
+        call npm run build
+        echo [OK] Aset frontend berhasil dikompilasi.
+    ) else (
+        echo [WARNING] Node.js/NPM tidak ditemukan. Pastikan public/build sudah ada.
+    )
+) else (
+    echo [OK] Aset frontend sudah dikompilasi (public/build ada).
+)
+
+:: ── [7/10] Virtual Host Apache (kearsipan.local.conf) ──────────────────
+echo.
+echo [7/10] Mengonfigurasi Virtual Host Apache (kearsipan.local)...
 if exist "C:\laragon\etc\apache2\sites-enabled" (
     (
         echo define ROOT "C:/laragon/www/project-magang/public"
@@ -178,9 +202,9 @@ if exist "C:\laragon\etc\apache2\sites-enabled" (
     echo [OK] Virtual Host kearsipan.local.conf berhasil dibuat.
 )
 
-:: ── [6] Registrasi Windows Hosts File ──────────────────────────────────
+:: ── [8/10] Registrasi Windows Hosts File ────────────────────────────────
 echo.
-echo [6/8] Memeriksa entri Windows Hosts (127.0.0.1 kearsipan.local)...
+echo [8/10] Memeriksa entri Windows Hosts (127.0.0.1 kearsipan.local)...
 findstr /C:"kearsipan.local" "C:\Windows\System32\drivers\etc\hosts" >nul
 if %ERRORLEVEL% NEQ 0 (
     echo 127.0.0.1    kearsipan.local>> "C:\Windows\System32\drivers\etc\hosts"
@@ -189,18 +213,28 @@ if %ERRORLEVEL% NEQ 0 (
     echo [OK] Domain kearsipan.local sudah terdaftar di hosts file.
 )
 
-:: ── [7] Aturan Windows Firewall (Port 80 Inbound) ──────────────────────
+:: ── [9/10] Aturan Windows Firewall (Port 80 Inbound) ────────────────────
 echo.
-echo [7/8] Memeriksa aturan Windows Firewall Port 80...
+echo [9/10] Memeriksa aturan Windows Firewall Port 80...
 powershell -Command "if (!(Get-NetFirewallRule -DisplayName 'Laragon Apache HTTP' -ErrorAction SilentlyContinue)) { New-NetFirewallRule -DisplayName 'Laragon Apache HTTP' -Direction Inbound -Protocol TCP -LocalPort 80 -Action Allow; Write-Host '[OK] Aturan Firewall Port 80 berhasil dibuat.' } else { Write-Host '[OK] Aturan Firewall Port 80 sudah ada.' }"
 
-:: ── [8] Optimization & Launch ──────────────────────────────────────────
+:: ── [10/10] Optimization, Queue Worker, & Launch ────────────────────────
 echo.
-echo [8/8] Mengoptimalkan cache ^& merestart Apache...
+echo [10/10] Mengoptimalkan cache ^& merestart Apache...
 "!PHP!" artisan storage:link --force >nul 2>&1
 "!PHP!" artisan config:cache
 "!PHP!" artisan route:cache
 "!PHP!" artisan view:cache
+
+:: Jalankan Queue Worker di background window jika belum aktif
+tasklist /FI "WINDOWTITLE eq Arsip BPSDMP Queue Worker*" 2>NUL | find /I "cmd.exe" >NUL
+IF !ERRORLEVEL! NEQ 0 (
+    echo [INFO] Menjalankan Queue Worker di background...
+    start "Arsip BPSDMP Queue Worker" /min cmd /c ""!PHP!" artisan queue:work --tries=3 --timeout=90"
+    echo [OK] Queue Worker berhasil aktif di background.
+) else (
+    echo [OK] Queue Worker sudah berjalan di background.
+)
 
 :: Restart Apache agar Virtual Host kearsipan.local aktif
 tasklist /FI "IMAGENAME eq httpd.exe" 2>NUL | find /I "httpd.exe" >NUL
@@ -229,8 +263,8 @@ echo ====================================================================
 echo  - Akses Internal (Staff/Admin) : http://kearsipan.local/
 echo  - Akses WiFi Tamu (Read-Only)  : http://kearsipan.local/tamu
 echo.
-echo  Catatan: Storage (views, sessions, cache) dibersihkan otomatis
-echo  setiap kali setup-and-run.bat dijalankan (sebelum sistem aktif).
+echo  Catatan: Storage views ^& cache data dibersihkan otomatis.
+echo  Sesi login aktif tetap dipertahankan.
 echo ====================================================================
 echo.
 endlocal
