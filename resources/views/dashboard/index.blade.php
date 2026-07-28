@@ -171,6 +171,21 @@
             </div>
             <span class="db-badge">{{ $bulanNames[$currentMonth] ?? '' }} {{ $currentYear }}</span>
         </div>
+        @if(count($smPieBulan) > 0)
+        @php $smBulanTotal = array_sum($smPieBulan); @endphp
+        <div class="db-klas-strip">
+            @foreach($smPieBulan as $kode => $cnt)
+            <span class="db-klas-pill db-klas-pill-sm" title="{{ $kode }}: {{ $cnt }} surat ({{ $smBulanTotal > 0 ? round($cnt/$smBulanTotal*100) : 0 }}%)">
+                <span class="db-klas-pill-code">{{ $kode }}</span>
+                <span class="db-klas-pill-num">{{ $cnt }}</span>
+            </span>
+            @endforeach
+            <span class="db-klas-pill-total">
+                <span class="db-klas-pill-code">Total</span>
+                <span class="db-klas-pill-num">{{ $smBulanTotal }}</span>
+            </span>
+        </div>
+        @endif
         <div class="db-chart-container">
             @if(count($smPieBulan) > 0)
                 <canvas id="chart-sm-bulan"></canvas>
@@ -197,6 +212,21 @@
             </div>
             <span class="db-badge">{{ $bulanNames[$currentMonth] ?? '' }} {{ $currentYear }}</span>
         </div>
+        @if(count($skPieBulan) > 0)
+        @php $skBulanTotal = array_sum($skPieBulan); @endphp
+        <div class="db-klas-strip">
+            @foreach($skPieBulan as $kode => $cnt)
+            <span class="db-klas-pill db-klas-pill-sk" title="{{ $kode }}: {{ $cnt }} surat ({{ $skBulanTotal > 0 ? round($cnt/$skBulanTotal*100) : 0 }}%)">
+                <span class="db-klas-pill-code">{{ $kode }}</span>
+                <span class="db-klas-pill-num">{{ $cnt }}</span>
+            </span>
+            @endforeach
+            <span class="db-klas-pill-total">
+                <span class="db-klas-pill-code">Total</span>
+                <span class="db-klas-pill-num">{{ $skBulanTotal }}</span>
+            </span>
+        </div>
+        @endif
         <div class="db-chart-container">
             @if(count($skPieBulan) > 0)
                 <canvas id="chart-sk-bulan"></canvas>
@@ -224,6 +254,21 @@
             </div>
             <span class="db-badge">{{ $currentYear }}</span>
         </div>
+        @if(count($smPieTahun) > 0)
+        @php $smTahunTotal = array_sum($smPieTahun); @endphp
+        <div class="db-klas-strip">
+            @foreach($smPieTahun as $kode => $cnt)
+            <span class="db-klas-pill db-klas-pill-sm" title="{{ $kode }}: {{ $cnt }} surat ({{ $smTahunTotal > 0 ? round($cnt/$smTahunTotal*100) : 0 }}%)">
+                <span class="db-klas-pill-code">{{ $kode }}</span>
+                <span class="db-klas-pill-num">{{ $cnt }}</span>
+            </span>
+            @endforeach
+            <span class="db-klas-pill-total">
+                <span class="db-klas-pill-code">Total</span>
+                <span class="db-klas-pill-num">{{ $smTahunTotal }}</span>
+            </span>
+        </div>
+        @endif
         <div class="db-chart-container">
             @if(count($smPieTahun) > 0)
                 <canvas id="chart-sm-tahun"></canvas>
@@ -250,6 +295,21 @@
             </div>
             <span class="db-badge">{{ $currentYear }}</span>
         </div>
+        @if(count($skPieTahun) > 0)
+        @php $skTahunTotal = array_sum($skPieTahun); @endphp
+        <div class="db-klas-strip">
+            @foreach($skPieTahun as $kode => $cnt)
+            <span class="db-klas-pill db-klas-pill-sk" title="{{ $kode }}: {{ $cnt }} surat ({{ $skTahunTotal > 0 ? round($cnt/$skTahunTotal*100) : 0 }}%)">
+                <span class="db-klas-pill-code">{{ $kode }}</span>
+                <span class="db-klas-pill-num">{{ $cnt }}</span>
+            </span>
+            @endforeach
+            <span class="db-klas-pill-total">
+                <span class="db-klas-pill-code">Total</span>
+                <span class="db-klas-pill-num">{{ $skTahunTotal }}</span>
+            </span>
+        </div>
+        @endif
         <div class="db-chart-container">
             @if(count($skPieTahun) > 0)
                 <canvas id="chart-sk-tahun"></canvas>
@@ -401,6 +461,85 @@
 .db-bar-sm { background: linear-gradient(90deg,#38bdf8,#0369a1); }
 .db-bar-sk { background: linear-gradient(90deg,#f472b6,#be185d); }
 .db-tfoot-row td { font-weight: 600; background: var(--color-bg); border-top: 2px solid var(--color-border); }
+
+/* ── Klasifikasi Summary Strip ─── */
+.db-klas-strip {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 5px 8px;
+    border-bottom: 1px solid var(--color-border);
+    background: var(--color-bg);
+    align-items: center;
+}
+.db-klas-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 7px 2px 6px;
+    border-radius: 999px;
+    font-size: .65rem;
+    font-weight: 600;
+    cursor: default;
+    transition: opacity .15s;
+    white-space: nowrap;
+}
+.db-klas-pill:hover { opacity: .78; }
+.db-klas-pill-sm {
+    background: rgba(56,189,248,0.12);
+    border: 1px solid rgba(56,189,248,0.35);
+    color: #0369a1;
+}
+.db-klas-pill-sk {
+    background: rgba(244,114,182,0.12);
+    border: 1px solid rgba(244,114,182,0.35);
+    color: #be185d;
+}
+[data-theme="dark"] .db-klas-pill-sm {
+    background: rgba(56,189,248,0.15); border-color: rgba(56,189,248,0.3); color: #38bdf8;
+}
+[data-theme="dark"] .db-klas-pill-sk {
+    background: rgba(244,114,182,0.15); border-color: rgba(244,114,182,0.3); color: #f472b6;
+}
+.db-klas-pill-code {
+    font-weight: 700;
+    letter-spacing: .03em;
+}
+.db-klas-pill-num {
+    font-size: .72rem;
+    font-weight: 800;
+    min-width: 14px;
+    text-align: center;
+    background: currentColor;
+    color: #fff;
+    border-radius: 999px;
+    padding: 0 4px;
+    line-height: 1.45;
+}
+/* Override: angka menggunakan warna kontras */
+.db-klas-pill-sm .db-klas-pill-num  { background: #0369a1; color: #fff; }
+.db-klas-pill-sk .db-klas-pill-num  { background: #be185d; color: #fff; }
+[data-theme="dark"] .db-klas-pill-sm .db-klas-pill-num { background: #0284c7; }
+[data-theme="dark"] .db-klas-pill-sk .db-klas-pill-num { background: #db2777; }
+.db-klas-pill-total {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: auto;
+    padding: 2px 7px 2px 6px;
+    border-radius: 999px;
+    font-size: .65rem;
+    font-weight: 700;
+    background: var(--color-primary-light);
+    border: 1px solid var(--color-primary, #1e3a5f);
+    color: var(--color-primary);
+    white-space: nowrap;
+}
+.db-klas-pill-total .db-klas-pill-num {
+    background: var(--color-primary); color: #fff;
+    border-radius: 999px; padding: 0 4px; line-height: 1.45;
+    font-size: .72rem; font-weight: 800;
+}
 
 /* ── Charts Grid ─────────────────── */
 .db-charts-grid {
