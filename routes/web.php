@@ -106,7 +106,7 @@ Route::middleware(['auth', \App\Http\Middleware\AdminOnly::class, 'internal_only
     // Dashboard (admin)
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard.index');
 
-    // Report Rekapan (admin)
+    // Laporan Rekapan (admin)
     Route::get('/dashboard/report', [DashboardController::class, 'report'])->name('dashboard.report');
 
     // Hapus Surat Masuk

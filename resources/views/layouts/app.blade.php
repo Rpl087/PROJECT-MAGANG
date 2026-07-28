@@ -18,7 +18,7 @@
         <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap">
     </noscript>
     {{-- CSS Utama (render-blocking secara sengaja agar tidak ada FOUC dari design system) --}}
-    <link rel="stylesheet" href="{{ asset('css/app.css') }}?v={{ filemtime(public_path('css/app.css')) }}">
+    <link rel="stylesheet" href="{{ asset('css/app.css') }}?v={{ @filemtime(public_path('css/app.css')) ?: '1' }}">
     {{-- CSS dari child views (tabel, modal, flatpickr, dll.) — diinjek di <head> agar tidak FOUC --}}
     @stack('styles')
     <style>
@@ -643,7 +643,7 @@
                         <span class="sidebar-link-icon">
                             @include('layouts._icon', ['icon' => 'file-text'])
                         </span>
-                        Report Rekap
+                        Laporan Rekap
                     </a>
                 @endif
 

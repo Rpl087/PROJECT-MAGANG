@@ -169,8 +169,10 @@ class ArsipController extends Controller
 
     /**
      * Hapus baris surat masuk dari sheet "dbSM".
-     * - PDF link (kolom R, index 17) digunakan sebagai unique identifier.
-     * - Fallback ke rowIndex langsung jika PDF link tidak ditemukan.
+     * - PDF link (kolom R, index 17) digunakan sebagai unique identifier untuk menghindari
+     *   penghapusan baris yang salah akibat pergeseran index setelah batchUpdate lain.
+     * - Operasi akan dibatalkan jika PDF link tidak ditemukan atau kosong
+     *   (data tanpa PDF link tidak dapat dihapus secara aman).
      *
      * @param int $rowIndex  Row index (0-based di array) dari dbSM
      */

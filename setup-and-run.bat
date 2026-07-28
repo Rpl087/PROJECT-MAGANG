@@ -66,26 +66,26 @@ echo [1/8] Memeriksa status Apache ^& MySQL...
 SET "SVC_OK=1"
 
 tasklist /FI "IMAGENAME eq httpd.exe" 2>NUL | find /I "httpd.exe" >NUL
-IF !ERRORLEVEL! NEQ 0 (
+IF !ERRORLEVEL! EQU 0 (
+    echo [OK] Apache (httpd.exe) berjalan.
+) ELSE (
     echo [!] Apache (httpd.exe) belum berjalan.
     SET "SVC_OK=0"
-) ELSE (
-    echo [OK] Apache (httpd.exe) berjalan.
 )
 
 tasklist /FI "IMAGENAME eq mysqld.exe" 2>NUL | find /I "mysqld.exe" >NUL
-IF !ERRORLEVEL! NEQ 0 (
+IF !ERRORLEVEL! EQU 0 (
+    echo [OK] MySQL (mysqld.exe) berjalan.
+) ELSE (
     echo [!] MySQL (mysqld.exe) belum berjalan.
     SET "SVC_OK=0"
-) ELSE (
-    echo [OK] MySQL (mysqld.exe) berjalan.
 )
 
 IF "!SVC_OK!"=="0" (
     echo.
     echo ================================================================
     echo  PERHATIAN: Laragon belum aktif!
-    echo  1. Buka Laragon terlebih dahulu (tanya Administrator jika perlu)
+    echo  1. Buka Laragon terlebih dahulu
     echo  2. Klik tombol [Start All] di Laragon
     echo  3. Tunggu Apache dan MySQL aktif
     echo  4. Lalu tekan sembarang tombol di sini untuk melanjutkan...
@@ -93,6 +93,27 @@ IF "!SVC_OK!"=="0" (
     pause >nul
     echo.
 )
+
+:: ── [WAIT] Tunggu MySQL benar-benar siap menerima koneksi ─────────────
+echo [WAIT] Menunggu MySQL siap menerima koneksi...
+SET "RETRY=0"
+:WAIT_MYSQL
+"!PHP!" -r "try { new PDO('mysql:host=127.0.0.1;port=3306', 'root', ''); exit(0); } catch (Exception $e) { exit(1); }" >nul 2>&1
+IF !ERRORLEVEL! EQU 0 (
+    echo [OK] MySQL siap menerima koneksi.
+    GOTO :MYSQL_DONE
+)
+SET /A RETRY+=1
+IF !RETRY! GEQ 20 (
+    echo [WARNING] MySQL belum merespons setelah 40 detik. Lanjutkan...
+    GOTO :MYSQL_DONE
+)
+echo [WAIT] MySQL belum siap, percobaan !RETRY!/20 -- tunggu 2 detik...
+ping 127.0.0.1 -n 3 >nul
+GOTO :WAIT_MYSQL
+:MYSQL_DONE
+echo.
+
 
 :: ── [2] Inisialisasi Environment File (.env) ──────────────────────────
 echo.

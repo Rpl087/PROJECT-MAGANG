@@ -1,13 +1,13 @@
 @extends('layouts.app')
 
-@section('title', 'Report Rekapan Arsip')
+@section('title', 'Laporan Rekapan Arsip')
 
 @section('content')
 
 <div class="page-header" id="report-page-header">
     <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:1rem;">
         <div>
-            <h2 class="page-title">Report Rekapan Arsip</h2>
+            <h2 class="page-title">Laporan Rekapan Arsip</h2>
             <p class="page-description">Laporan rekapitulasi surat masuk &amp; keluar</p>
         </div>
         <div class="report-actions no-print" style="display:flex;align-items:center;gap:.75rem;">
@@ -1345,6 +1345,7 @@ body.report-printing *::-webkit-scrollbar {
         letter-spacing: .04em;
         padding: .38rem .55rem !important;
         border: 1pt solid #1e3a5f !important;
+        border-bottom: 2pt solid #0a2240 !important; /* garis pemisah header dengan konten */
         text-align: center !important;
         white-space: nowrap;
         vertical-align: middle;
@@ -1738,6 +1739,31 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         }
 
+        // ── Update total di tfoot sesuai baris yang visible (mengikuti filter tahun) ──
+        // Bulanan
+        if (pdBulanan && !pdBulanan.classList.contains('print-hidden')) {
+            var visibleBln = pdBulanan.querySelectorAll(
+                'tr.pd-row-bulanan:not(.pd-month-header):not(.print-hidden)'
+            ).length;
+            var tfootBln = pdBulanan.querySelector('tr.pd-tfoot td');
+            if (tfootBln) tfootBln.textContent = 'Total: ' + visibleBln + ' arsip surat';
+        }
+        // Tahunan
+        if (pdTahunan && !pdTahunan.classList.contains('print-hidden')) {
+            var visibleThn = pdTahunan.querySelectorAll(
+                'tr.pd-row-tahunan:not(.pd-year-header):not(.print-hidden)'
+            ).length;
+            var tfootThn = pdTahunan.querySelector('tr.pd-tfoot td');
+            if (tfootThn) tfootThn.textContent = 'Total: ' + visibleThn + ' arsip surat';
+        }
+        // Klasifikasi
+        if (pdKlasifikasi && !pdKlasifikasi.classList.contains('print-hidden')) {
+            var visibleKls = pdKlasifikasi.querySelectorAll(
+                'tr.pd-row-klasifikasi:not(.pd-kode-header):not(.print-hidden)'
+            ).length;
+            var tfootKls = pdKlasifikasi.querySelector('tr.pd-tfoot td');
+            if (tfootKls) tfootKls.textContent = 'Total: ' + visibleKls + ' arsip surat';
+        }
 
         // ── Tandai baris yang disembunyikan oleh filter agar tetap hidden saat print ──
         // Rekap Tahunan: mark hidden rows & their detail

@@ -764,6 +764,7 @@
 }
 .arsip-table tbody tr:last-child td { border-bottom:none; }
 .arsip-table tbody tr:hover td { background: var(--color-primary-light); }
+.arsip-table tbody tr:hover td.td-no { background: transparent; }
 .td-center { text-align:center; }
 .td-nowrap { white-space:nowrap; }
 .td-no { width:48px; font-weight:600; color:var(--color-text-muted); }

@@ -114,7 +114,7 @@ class DashboardController extends Controller
     }
 
     /**
-     * Halaman Report Rekapan Bulanan & Tahunan (printable).
+     * Halaman Laporan Rekapan Bulanan & Tahunan (printable).
      */
     public function report()
     {

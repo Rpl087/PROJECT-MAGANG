@@ -761,6 +761,7 @@
 }
 .arsip-table tbody tr:last-child td { border-bottom:none; }
 .arsip-table tbody tr:hover td { background: rgba(99,102,241,.06); }
+.arsip-table tbody tr:hover td.td-no { background: transparent; }
 .arsip-table tbody tr[style*="display:none"] { display:none !important; }
 .td-center { text-align:center; }
 .td-nowrap { white-space:nowrap; }
@@ -1171,7 +1172,7 @@ document.addEventListener('DOMContentLoaded', function () {
         formEditSM.style.display    = 'none';
         editSMLoading.style.display = 'block';
         editSMError.style.display   = 'none';
-        modal.classList && modal.classList.remove('is-open'); // reset hapus modal jika masih open
+        if (modal && modal.classList) modal.classList.remove('is-open'); // reset hapus modal jika masih open
         modalEditSM.style.display   = 'flex';
         document.body.style.overflow = 'hidden';
         // Trigger smooth open
@@ -1537,9 +1538,9 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // Sebelum submit edit SM — ganti select value dengan custom jika "Lainnya"
-    var formEditSM = document.getElementById('form-edit-sm');
-    if (formEditSM) {
-        formEditSM.addEventListener('submit', function(e) {
+    var formEditSMEl = document.getElementById('form-edit-sm');
+    if (formEditSMEl) {
+        formEditSMEl.addEventListener('submit', function(e) {
             if (editKodeEl && editKodeEl.value === '__lainnya__') {
                 var customVal = (editKodeCustomEl ? editKodeCustomEl.value.toUpperCase().trim() : '');
                 if (!/^[A-Z]{2}$/.test(customVal)) {
