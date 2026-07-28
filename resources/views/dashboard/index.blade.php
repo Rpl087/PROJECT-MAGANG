@@ -171,21 +171,7 @@
             </div>
             <span class="db-badge">{{ $bulanNames[$currentMonth] ?? '' }} {{ $currentYear }}</span>
         </div>
-        @if(count($smPieBulan) > 0)
-        @php $smBulanTotal = array_sum($smPieBulan); @endphp
-        <div class="db-klas-strip">
-            @foreach($smPieBulan as $kode => $cnt)
-            <span class="db-klas-pill db-klas-pill-sm" title="{{ $kode }}: {{ $cnt }} surat ({{ $smBulanTotal > 0 ? round($cnt/$smBulanTotal*100) : 0 }}%)">
-                <span class="db-klas-pill-code">{{ $kode }}</span>
-                <span class="db-klas-pill-num">{{ $cnt }}</span>
-            </span>
-            @endforeach
-            <span class="db-klas-pill-total">
-                <span class="db-klas-pill-code">Total</span>
-                <span class="db-klas-pill-num">{{ $smBulanTotal }}</span>
-            </span>
-        </div>
-        @endif
+
         <div class="db-chart-container">
             @if(count($smPieBulan) > 0)
                 <canvas id="chart-sm-bulan"></canvas>
@@ -212,21 +198,7 @@
             </div>
             <span class="db-badge">{{ $bulanNames[$currentMonth] ?? '' }} {{ $currentYear }}</span>
         </div>
-        @if(count($skPieBulan) > 0)
-        @php $skBulanTotal = array_sum($skPieBulan); @endphp
-        <div class="db-klas-strip">
-            @foreach($skPieBulan as $kode => $cnt)
-            <span class="db-klas-pill db-klas-pill-sk" title="{{ $kode }}: {{ $cnt }} surat ({{ $skBulanTotal > 0 ? round($cnt/$skBulanTotal*100) : 0 }}%)">
-                <span class="db-klas-pill-code">{{ $kode }}</span>
-                <span class="db-klas-pill-num">{{ $cnt }}</span>
-            </span>
-            @endforeach
-            <span class="db-klas-pill-total">
-                <span class="db-klas-pill-code">Total</span>
-                <span class="db-klas-pill-num">{{ $skBulanTotal }}</span>
-            </span>
-        </div>
-        @endif
+
         <div class="db-chart-container">
             @if(count($skPieBulan) > 0)
                 <canvas id="chart-sk-bulan"></canvas>
@@ -254,21 +226,7 @@
             </div>
             <span class="db-badge">{{ $currentYear }}</span>
         </div>
-        @if(count($smPieTahun) > 0)
-        @php $smTahunTotal = array_sum($smPieTahun); @endphp
-        <div class="db-klas-strip">
-            @foreach($smPieTahun as $kode => $cnt)
-            <span class="db-klas-pill db-klas-pill-sm" title="{{ $kode }}: {{ $cnt }} surat ({{ $smTahunTotal > 0 ? round($cnt/$smTahunTotal*100) : 0 }}%)">
-                <span class="db-klas-pill-code">{{ $kode }}</span>
-                <span class="db-klas-pill-num">{{ $cnt }}</span>
-            </span>
-            @endforeach
-            <span class="db-klas-pill-total">
-                <span class="db-klas-pill-code">Total</span>
-                <span class="db-klas-pill-num">{{ $smTahunTotal }}</span>
-            </span>
-        </div>
-        @endif
+
         <div class="db-chart-container">
             @if(count($smPieTahun) > 0)
                 <canvas id="chart-sm-tahun"></canvas>
@@ -295,21 +253,7 @@
             </div>
             <span class="db-badge">{{ $currentYear }}</span>
         </div>
-        @if(count($skPieTahun) > 0)
-        @php $skTahunTotal = array_sum($skPieTahun); @endphp
-        <div class="db-klas-strip">
-            @foreach($skPieTahun as $kode => $cnt)
-            <span class="db-klas-pill db-klas-pill-sk" title="{{ $kode }}: {{ $cnt }} surat ({{ $skTahunTotal > 0 ? round($cnt/$skTahunTotal*100) : 0 }}%)">
-                <span class="db-klas-pill-code">{{ $kode }}</span>
-                <span class="db-klas-pill-num">{{ $cnt }}</span>
-            </span>
-            @endforeach
-            <span class="db-klas-pill-total">
-                <span class="db-klas-pill-code">Total</span>
-                <span class="db-klas-pill-num">{{ $skTahunTotal }}</span>
-            </span>
-        </div>
-        @endif
+
         <div class="db-chart-container">
             @if(count($skPieTahun) > 0)
                 <canvas id="chart-sk-tahun"></canvas>
@@ -722,6 +666,27 @@
                     categoryPercentage: 0.78,
                 }]
             },
+            plugins: [{
+                id: 'topDataLabels',
+                afterDatasetsDraw: function(chart) {
+                    var ctx = chart.ctx;
+                    chart.data.datasets.forEach(function(dataset, i) {
+                        var meta = chart.getDatasetMeta(i);
+                        meta.data.forEach(function(bar, index) {
+                            var dataVal = dataset.data[index];
+                            if (dataVal !== undefined && dataVal !== null) {
+                                ctx.save();
+                                ctx.fillStyle = tickColor;
+                                ctx.font = 'bold 12px Inter, system-ui, -apple-system, sans-serif';
+                                ctx.textAlign = 'center';
+                                ctx.textBaseline = 'bottom';
+                                ctx.fillText(dataVal, bar.x, bar.y - 4);
+                                ctx.restore();
+                            }
+                        });
+                    });
+                }
+            }],
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
@@ -765,6 +730,7 @@
                     },
                     y: {
                         beginAtZero: true,
+                        grace: '18%',
                         grid: { color: gridColor, lineWidth: 1 },
                         border: { display: false, dash: [4, 4] },
                         ticks: {

@@ -11,9 +11,7 @@ use Illuminate\Support\Facades\Storage;
 
 // ── Auth Routes ──────────────────────────────────────────────────────────────
 Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
-Route::post('/login', [LoginController::class, 'login'])
-    ->middleware('throttle:5,1')   // Maks 5 percobaan login per menit per IP
-    ->name('login.post');
+Route::post('/login', [LoginController::class, 'login'])->name('login.post');
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
 // ── Password Reset Request (intranet — tanpa email, admin yang menindaklanjuti) ─

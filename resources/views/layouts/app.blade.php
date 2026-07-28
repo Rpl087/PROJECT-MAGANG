@@ -568,46 +568,51 @@
         var overlay = document.getElementById('nav-loading-overlay');
         var bar     = document.getElementById('nav-loading-bar');
         var msg     = document.getElementById('nav-loading-msg');
-        var loadingMessages = {
-            'dashboard':    'Memuat Dashboard...',
-            'report':       'Memuat Laporan Rekap...',
-            'arsip':        'Memuat Surat Masuk...',
-            'surat-keluar': 'Memuat Surat Keluar...',
-            'users':        'Memuat Data Pengguna...',
-        };
+
         function getLoadingMsg(href) {
-            for (var key in loadingMessages) {
-                if (href.indexOf(key) !== -1) return loadingMessages[key];
-            }
+            try {
+                var path = new URL(href, location.origin).pathname;
+                if (path === '/' || path.indexOf('arsip') !== -1) return 'Memuat Surat Masuk...';
+                if (path.indexOf('surat-keluar') !== -1) return 'Memuat Surat Keluar...';
+                if (path.indexOf('dashboard/report') !== -1) return 'Memuat Laporan Rekap...';
+                if (path.indexOf('dashboard') !== -1) return 'Memuat Dashboard...';
+                if (path.indexOf('users') !== -1) return 'Memuat Data Pengguna...';
+                if (path.indexOf('tamu') !== -1) return 'Memuat Mode Tamu...';
+            } catch (e) {}
             return 'Memuat halaman...';
         }
+
         function showLoading(href) {
             if (!overlay || !bar) return;
             if (msg) msg.textContent = getLoadingMsg(href);
             overlay.style.display = 'flex';
             bar.classList.add('is-active');
             requestAnimationFrame(function () {
-                requestAnimationFrame(function () {
-                    overlay.classList.add('is-visible');
-                });
+                overlay.classList.add('is-visible');
             });
         }
-        // Intercept semua klik link internal — tampilkan loading overlay
+
+        // Intercept semua klik link internal — tampilkan loading overlay seragam
         document.addEventListener('click', function (e) {
             var link = e.target.closest('a[href]');
             if (!link) return;
             var href = link.getAttribute('href');
-            if (!href || href.startsWith('#') || href.startsWith('mailto:') ||
-                href.startsWith('tel:') || link.target === '_blank' ||
-                link.hasAttribute('download') || link.origin !== location.origin) return;
+            if (!href || href.startsWith('#') || href.startsWith('javascript:') ||
+                href.startsWith('mailto:') || href.startsWith('tel:') ||
+                link.target === '_blank' || link.hasAttribute('download') ||
+                link.origin !== location.origin) return;
             if (e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return;
             if (link.hasAttribute('data-confirm-nav')) return;
             if (link.classList.contains('sidebar-link-active')) return;
+
             e.preventDefault();
             showLoading(href);
             document.body.classList.add('page-leaving');
-            setTimeout(function () { location.href = href; }, 160);
+            requestAnimationFrame(function () {
+                location.href = href;
+            });
         });
+
         // Sembunyikan overlay saat halaman selesai dimuat (bfcache / back)
         window.addEventListener('pageshow', function () {
             if (overlay) { overlay.classList.remove('is-visible'); overlay.style.display = 'none'; }

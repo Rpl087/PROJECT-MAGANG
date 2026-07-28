@@ -186,11 +186,11 @@ class SuratKeluarController extends Controller
                     ->with('error', 'Data tidak ditemukan di sheet dbSK.');
             }
 
-            // PDF link ada di kolom H (index 7) di dbSK — unique identifier
+            // PDF link ada di kolom H (index 7) di dbSK — unique identifier jika ada
             $pdfLink      = trim($targetRow[7] ?? '');
             $dbskRowIndex = null;
 
-            // Verifikasi: cari baris di dbSK yang cocok berdasarkan PDF link
+            // Priority 1: Verifikasi cari baris di dbSK yang cocok berdasarkan PDF link jika tidak kosong
             if (!empty($pdfLink)) {
                 foreach ($dbskRows as $i => $row) {
                     if ($i === 0) continue; // skip header
@@ -201,10 +201,14 @@ class SuratKeluarController extends Controller
                 }
             }
 
-            // Jika PDF link tidak ditemukan, batalkan
+            // Priority 2 (Fallback): Gunakan $rowIndex jika valid di dbSK (misal data tanpa PDF link)
+            if ($dbskRowIndex === null && isset($dbskRows[$rowIndex]) && $rowIndex > 0) {
+                $dbskRowIndex = $rowIndex;
+            }
+
             if ($dbskRowIndex === null) {
                 return redirect()->route('surat-keluar.index')
-                    ->with('error', 'Gagal menghapus: data tidak dapat diidentifikasi secara unik di dbSK (PDF link tidak ditemukan atau kosong).');
+                    ->with('error', 'Gagal menghapus: data tidak ditemukan di sheet dbSK.');
             }
 
             // ── Hapus baris dari dbSK ──────────────────────────────────────────
@@ -434,6 +438,21 @@ class SuratKeluarController extends Controller
 
             $dbskIndex      = (int) $validated['dbsk_index'];
             $sheetRowNumber = $dbskIndex + 1;
+
+            // Pertahankan link PDF lama jika input pdf_filename dari form bernilai kosong
+            $pdfFilename = trim($validated['pdf_filename'] ?? '');
+            if (empty($pdfFilename)) {
+                $existingRange    = "dbSK!H{$sheetRowNumber}";
+                $existingResponse = $service->spreadsheets_values->get($spreadsheetId, $existingRange);
+                $existingValues   = $existingResponse->getValues() ?? [];
+                $pdfFilename      = trim($existingValues[0][0] ?? '');
+            }
+
+            // Bila kode_klasifikasi di-edit, ubah nama file PDF fisik di /uploads & Google Drive
+            if (!empty($pdfFilename)) {
+                $pdfFilename = GoogleDriveService::renameFile($pdfFilename, $validated['kode_klasifikasi']);
+            }
+
             // Mulai dari kolom B agar timestamp di kolom A TIDAK tertimpa
             $range = "dbSK!B{$sheetRowNumber}:R{$sheetRowNumber}";
 
@@ -444,7 +463,7 @@ class SuratKeluarController extends Controller
                 $this->escapeFormula($validated['kurun_waktu']),
                 $this->escapeFormula($validated['jumlah_folder']),
                 $this->escapeFormula($validated['nomor_item_arsip']),
-                $validated['pdf_filename'] ?? '',           // H: PDF filename (tetap)
+                $pdfFilename,                               // H: PDF filename (tetap)
                 $this->escapeFormula($validated['uraian_informasi_arsip']),
                 $this->escapeFormula($validated['tanggal_surat']),
                 $this->escapeFormula($validated['jumlah_lembar']),

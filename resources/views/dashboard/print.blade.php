@@ -345,7 +345,7 @@
     {{-- Kop Surat --}}
     <div class="kop-wrap">
         <div class="kop-logo">
-            <img src="{{ route('image.view', 'Kop BLSDM Komdigi Manado Revisi.png') }}"
+            <img src="{{ route('image.view', 'komdigi-logo.png') }}"
                  alt="Logo Komdigi"
                  onerror="this.style.display='none'">
         </div>
@@ -453,7 +453,7 @@
         {{-- Kop Surat ulang di halaman 2 --}}
         <div class="kop-wrap" style="margin-bottom:6px;">
             <div class="kop-logo">
-                <img src="{{ route('image.view', 'Kop BLSDM Komdigi Manado Revisi.png') }}"
+                <img src="{{ route('image.view', 'komdigi-logo.png') }}"
                      alt="Logo Komdigi"
                      onerror="this.style.display='none'">
             </div>

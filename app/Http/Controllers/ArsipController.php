@@ -191,11 +191,11 @@ class ArsipController extends Controller
                     ->with('error', 'Data tidak ditemukan di sheet dbSM.');
             }
 
-            // PDF link ada di kolom R (index 17) di sheet dbSM — digunakan sebagai unique identifier
+            // PDF link ada di kolom R (index 17) di sheet dbSM — digunakan sebagai unique identifier jika ada
             $pdfLink      = trim($targetRow[17] ?? '');
             $dbsmRowIndex = null;
 
-            // Cari baris di dbSM yang cocok berdasarkan PDF link
+            // Priority 1: Cari baris di dbSM yang cocok berdasarkan PDF link jika tidak kosong
             if (!empty($pdfLink)) {
                 foreach ($dbsmRows as $i => $row) {
                     if ($i === 0) continue; // skip header
@@ -206,10 +206,14 @@ class ArsipController extends Controller
                 }
             }
 
-            // Batalkan jika baris tidak dapat diidentifikasi — lebih aman daripada hapus baris salah
+            // Priority 2 (Fallback): Gunakan $rowIndex jika valid di dbSM (misal data tanpa PDF link)
+            if ($dbsmRowIndex === null && isset($dbsmRows[$rowIndex]) && $rowIndex > 0) {
+                $dbsmRowIndex = $rowIndex;
+            }
+
             if ($dbsmRowIndex === null) {
                 return redirect()->route('arsip.index')
-                    ->with('error', 'Gagal menghapus: data tidak dapat diidentifikasi secara unik di dbSM (PDF link tidak ditemukan atau kosong).');
+                    ->with('error', 'Gagal menghapus: data tidak ditemukan di sheet dbSM.');
             }
 
             // ── Hapus baris dari dbSM ─────────────────────────────────────────────
@@ -444,6 +448,21 @@ class ArsipController extends Controller
             $dbsmIndex      = (int) $validated['dbsm_index'];
             // Baris di Google Sheets dimulai dari 1 (row 1 = header)
             $sheetRowNumber = $dbsmIndex + 1;
+
+            // Pertahankan link PDF lama jika input pdf_filename dari form bernilai kosong
+            $pdfFilename = trim($validated['pdf_filename'] ?? '');
+            if (empty($pdfFilename)) {
+                $existingRange    = "dbSM!R{$sheetRowNumber}";
+                $existingResponse = $service->spreadsheets_values->get($spreadsheetId, $existingRange);
+                $existingValues   = $existingResponse->getValues() ?? [];
+                $pdfFilename      = trim($existingValues[0][0] ?? '');
+            }
+
+            // Bila kode_klasifikasi di-edit, ubah nama file PDF fisik di /uploads & Google Drive
+            if (!empty($pdfFilename)) {
+                $pdfFilename = GoogleDriveService::renameFile($pdfFilename, $validated['kode_klasifikasi']);
+            }
+
             // Mulai dari kolom B agar timestamp di kolom A TIDAK tertimpa
             $range = "dbSM!B{$sheetRowNumber}:R{$sheetRowNumber}";
 
@@ -464,7 +483,7 @@ class ArsipController extends Controller
                 $this->escapeFormula($validated['retensi_aktif']),
                 $this->escapeFormula($validated['retensi_inaktif']),
                 $this->escapeFormula($validated['retensi_keterangan']),
-                $validated['pdf_filename'] ?? '',
+                $pdfFilename,
             ]];
 
             $body   = new Sheets\ValueRange(['values' => $values]);

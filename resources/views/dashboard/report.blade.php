@@ -189,10 +189,9 @@
             <thead>
                 <tr>
                     <th class="pd-no">No</th>
-                    <th class="pd-tahun">Tahun</th>
                     <th class="pd-kode">Kode Kelas / Nomor Surat</th>
                     <th class="pd-tgl">Tanggal</th>
-                    <th class="pd-uraian">Uraian Informasi Berkas</th>
+                    <th class="pd-uraian">URAIAN INFORMASI ARSIP</th>
                     <th class="pd-jenis">Jenis</th>
                 </tr>
             </thead>
@@ -206,7 +205,7 @@
                 @endphp
                 {{-- Baris pemisah nama bulan --}}
                 <tr class="pd-month-header pd-row-bulanan" data-print-year="{{ $tahunGrup }}">
-                    <td colspan="6" class="pd-month-label">
+                    <td colspan="5" class="pd-month-label">
                         <span class="pd-month-icon">&#9632;</span> {{ $bulanLabelGrup }}
                     </td>
                 </tr>
@@ -214,7 +213,6 @@
                 @foreach($groupRows as $det)
                 <tr class="pd-row-bulanan" data-print-year="{{ $det['tahun'] }}">
                     <td class="pd-no">{{ $noUrut++ }}</td>
-                    <td class="pd-tahun">{{ $det['tahun'] }}</td>
                     <td class="pd-kode"><span class="pd-kode-badge">{{ $det['kode'] ?: '-' }}</span></td>
                     <td class="pd-tgl">{{ $det['tanggal'] }}</td>
                     <td class="pd-uraian">{{ $det['uraian'] }}</td>
@@ -225,7 +223,7 @@
             </tbody>
             <tfoot>
                 <tr class="pd-tfoot">
-                    <td colspan="6">Total: {{ count($printDetailBulanan) }} arsip surat</td>
+                    <td colspan="5">Total: {{ count($printDetailBulanan) }} arsip surat</td>
                 </tr>
             </tfoot>
         </table>
@@ -359,10 +357,9 @@
             <thead>
                 <tr>
                     <th class="pd-no">No</th>
-                    <th class="pd-tahun">Tahun</th>
                     <th class="pd-kode">Kode Kelas / Nomor Surat</th>
                     <th class="pd-tgl">Tanggal</th>
-                    <th class="pd-uraian">Uraian Informasi Berkas</th>
+                    <th class="pd-uraian">URAIAN INFORMASI ARSIP</th>
                     <th class="pd-jenis">Jenis</th>
                 </tr>
             </thead>
@@ -370,7 +367,7 @@
                 @foreach($groupedTahunan as $tahunGrp => $tahunRows)
                 {{-- Baris pemisah nama tahun --}}
                 <tr class="pd-year-header pd-row-tahunan" data-print-year="{{ $tahunGrp }}">
-                    <td colspan="6" class="pd-year-label">
+                    <td colspan="5" class="pd-year-label">
                         <span class="pd-year-icon">&#9632;</span> TAHUN {{ $tahunGrp }}
                     </td>
                 </tr>
@@ -378,7 +375,6 @@
                 @foreach($tahunRows as $det)
                 <tr class="pd-row-tahunan" data-print-year="{{ $det['tahun'] }}">
                     <td class="pd-no">{{ $noUrutThn++ }}</td>
-                    <td class="pd-tahun">{{ $det['tahun'] }}</td>
                     <td class="pd-kode"><span class="pd-kode-badge">{{ $det['kode'] ?: '-' }}</span></td>
                     <td class="pd-tgl">{{ $det['tanggal'] }}</td>
                     <td class="pd-uraian">{{ $det['uraian'] }}</td>
@@ -389,7 +385,7 @@
             </tbody>
             <tfoot>
                 <tr class="pd-tfoot">
-                    <td colspan="6">Total: {{ count($printDetailBulanan) }} arsip surat</td>
+                    <td colspan="5">Total: {{ count($printDetailBulanan) }} arsip surat</td>
                 </tr>
             </tfoot>
         </table>
@@ -488,10 +484,9 @@
             <thead>
                 <tr>
                     <th class="pd-no">No</th>
-                    <th class="pd-tahun">Tahun</th>
                     <th class="pd-kode">Kode Kelas / Nomor Surat</th>
                     <th class="pd-tgl">Tanggal</th>
-                    <th class="pd-uraian">Uraian Informasi Berkas</th>
+                    <th class="pd-uraian">URAIAN INFORMASI ARSIP</th>
                     <th class="pd-jenis">Jenis</th>
                 </tr>
             </thead>
@@ -500,7 +495,7 @@
                 @php $kodeCount = count($klasRows); @endphp
                 {{-- Baris pemisah kode klasifikasi --}}
                 <tr class="pd-kode-header pd-row-klasifikasi" data-print-year="" data-print-kode="{{ $kodePrefix }}">
-                    <td colspan="6" class="pd-kode-header-label">
+                    <td colspan="5" class="pd-kode-header-label">
                         <span class="pd-kode-header-icon">&#9632;</span>
                         <span class="pd-kode-header-badge">{{ $kodePrefix }}</span>
                         <span class="pd-kode-header-count">({{ $kodeCount }} arsip)</span>
@@ -510,7 +505,6 @@
                 @foreach($klasRows as $det)
                 <tr class="pd-row-klasifikasi" data-print-year="{{ $det['tahun'] }}" data-print-kode="{{ $det['kode_prefix'] ?? $kodePrefix }}">
                     <td class="pd-no">{{ $noUrutKls++ }}</td>
-                    <td class="pd-tahun">{{ $det['tahun'] }}</td>
                     <td class="pd-kode"><span class="pd-kode-badge">{{ $det['kode'] ?: '-' }}</span></td>
                     <td class="pd-tgl">{{ $det['tanggal'] }}</td>
                     <td class="pd-uraian">{{ $det['uraian'] }}</td>
@@ -521,7 +515,7 @@
             </tbody>
             <tfoot>
                 <tr class="pd-tfoot">
-                    <td colspan="6">Total: {{ count($printDetailKlasifikasi) }} arsip surat</td>
+                    <td colspan="5">Total: {{ count($printDetailKlasifikasi) }} arsip surat</td>
                 </tr>
             </tfoot>
         </table>
@@ -531,27 +525,7 @@
     </div>
 </div>
 
-{{-- ── TANDA TANGAN (hanya muncul saat print) ──────────────────────────── --}}
-<div class="print-signature" id="print-signature-wrap">
-    <div class="sig-info">
-        <p>Laporan ini digenerate otomatis oleh Sistem Arsip Surat Digital BPSDMP</p>
-        <p>Tanggal Cetak: <span id="sig-date">{{ now()->format('d F Y') }}</span></p>
-    </div>
-    <div class="sig-boxes">
-        <div class="sig-box">
-            <p>Mengetahui,</p>
-            <div class="sig-space"></div>
-            <p><strong>Kepala BPSDMP</strong></p>
-            <p>____________________</p>
-        </div>
-        <div class="sig-box">
-            <p>Dibuat oleh,</p>
-            <div class="sig-space"></div>
-            <p><strong>Pengelola Arsip</strong></p>
-            <p>____________________</p>
-        </div>
-    </div>
-</div>
+
 
 {{-- ── Modal Konfirmasi Cetak ─────────────────────────────────────────────── --}}
 <div id="modal-cetak" class="modal-overlay" role="dialog" aria-modal="true">
@@ -1335,6 +1309,7 @@ body.report-printing *::-webkit-scrollbar {
         font-size: 8.5pt !important;
         margin-top: .25rem;
         font-family: 'Times New Roman', Times, serif !important;
+        border: 1pt solid #333333 !important;
     }
     .print-detail-table th {
         background: #1e3a5f !important;
@@ -1344,16 +1319,14 @@ body.report-printing *::-webkit-scrollbar {
         text-transform: uppercase;
         letter-spacing: .04em;
         padding: .38rem .55rem !important;
-        border: 1pt solid #1e3a5f !important;
-        border-bottom: 2pt solid #0a2240 !important; /* garis pemisah header dengan konten */
+        border: 1pt solid #333333 !important;
         text-align: center !important;
         white-space: nowrap;
         vertical-align: middle;
     }
     .print-detail-table td {
         padding: .3rem .55rem !important;
-        border: .75pt solid #555 !important;
-        border-bottom: 1.25pt solid #999 !important; /* garis horizontal antar baris */
+        border: 1pt solid #333333 !important;
         color: #000 !important;
         vertical-align: top;
         font-size: 8.5pt !important;
@@ -1369,10 +1342,7 @@ body.report-printing *::-webkit-scrollbar {
     /* Baris total */
     .print-detail-table tfoot td {
         background: #d9e2ef !important;
-        border-top: 2pt solid #1e3a5f !important;
-        border-bottom: 1.5pt solid #1e3a5f !important;
-        border-left: .75pt solid #1e3a5f !important;
-        border-right: .75pt solid #1e3a5f !important;
+        border: 1pt solid #333333 !important;
         font-weight: 700 !important;
         font-size: 8pt !important;
         color: #1e3a5f !important;
@@ -1430,8 +1400,7 @@ body.report-printing *::-webkit-scrollbar {
         font-size: 9pt !important;
         font-weight: 700 !important;
         padding: .4rem .7rem !important;
-        border: 1pt solid #1e3a5f !important;
-        border-bottom: 1.5pt solid #0a2240 !important;
+        border: 1pt solid #333333 !important;
         letter-spacing: .07em !important;
         text-transform: uppercase !important;
         page-break-after: avoid !important;
@@ -1458,8 +1427,7 @@ body.report-printing *::-webkit-scrollbar {
         font-size: 9pt !important;
         font-weight: 700 !important;
         padding: .4rem .7rem !important;
-        border: 1pt solid #1e3a5f !important;
-        border-bottom: 1.5pt solid #0a2240 !important;
+        border: 1pt solid #333333 !important;
         letter-spacing: .07em !important;
         text-transform: uppercase !important;
         page-break-after: avoid !important;
@@ -1486,8 +1454,7 @@ body.report-printing *::-webkit-scrollbar {
         font-size: 9pt !important;
         font-weight: 700 !important;
         padding: .38rem .7rem !important;
-        border: 1pt solid #1a5c3a !important;
-        border-bottom: 1.5pt solid #0d3d25 !important;
+        border: 1pt solid #333333 !important;
         page-break-after: avoid !important;
         vertical-align: middle !important;
     }

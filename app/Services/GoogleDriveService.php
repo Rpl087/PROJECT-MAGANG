@@ -112,4 +112,77 @@ class GoogleDriveService
             'driveLink' => $driveLink
         ];
     }
+
+    /**
+     * Rename file PDF lokal di /uploads dan di Google Drive jika terhubung.
+     *
+     * @param string $oldLinkOrFilename  Link Drive lama atau nama file lama
+     * @param string $newKodeKlasifikasi Kode klasifikasi baru
+     * @return string  Nama file atau drive link yang sudah diperbarui
+     */
+    public static function renameFile(string $oldLinkOrFilename, string $newKodeKlasifikasi): string
+    {
+        $oldLinkOrFilename = trim($oldLinkOrFilename);
+        if (empty($oldLinkOrFilename)) {
+            return $oldLinkOrFilename;
+        }
+
+        // Tentukan nama file lokal lama & ekstrak drive file ID jika berupa URL Drive
+        $isDriveUrl  = str_starts_with($oldLinkOrFilename, 'http');
+        $oldFilename = $oldLinkOrFilename;
+        $driveFileId = null;
+
+        if ($isDriveUrl) {
+            if (preg_match('/\/d\/([a-zA-Z0-9_\-]+)/', $oldLinkOrFilename, $matches)) {
+                $driveFileId = $matches[1];
+            } elseif (preg_match('/id=([a-zA-Z0-9_\-]+)/', $oldLinkOrFilename, $matches)) {
+                $driveFileId = $matches[1];
+            }
+        }
+
+        // Buat nama file baru berdasarkan kode klasifikasi baru
+        $kodeKlasSlug = strtoupper(preg_replace('/[^a-zA-Z0-9\-]/', '_', $newKodeKlasifikasi));
+
+        if (!$isDriveUrl && preg_match('/^[A-Z0-9_]+_(\d{8}_\d{6}_.+)$/i', $oldFilename, $parts)) {
+            $newFilename = $kodeKlasSlug . '_' . $parts[1];
+        } else {
+            $timestamp   = now()->format('Ymd_His');
+            $cleanOld    = preg_replace('/[^a-zA-Z0-9\.\-]/', '_', pathinfo($oldFilename, PATHINFO_FILENAME));
+            $ext         = pathinfo($oldFilename, PATHINFO_EXTENSION) ?: 'pdf';
+            $newFilename = $kodeKlasSlug . '_' . $timestamp . '_' . $cleanOld . '.' . $ext;
+        }
+
+        // 1. Rename file lokal di uploads/ jika ada
+        $uploadsDir   = base_path('uploads');
+        $oldLocalPath = $uploadsDir . DIRECTORY_SEPARATOR . $oldFilename;
+        $newLocalPath = $uploadsDir . DIRECTORY_SEPARATOR . $newFilename;
+
+        if (!$isDriveUrl && File::exists($oldLocalPath)) {
+            File::move($oldLocalPath, $newLocalPath);
+        }
+
+        // 2. Jika merupakan file Drive, perbarui nama file di Google Drive
+        if ($driveFileId !== null) {
+            try {
+                $credPath = config('google.service_account_json');
+                if (!empty($credPath) && file_exists(base_path($credPath))) {
+                    $client = new Client();
+                    $client->setAuthConfig(base_path($credPath));
+                    $client->addScope(Drive::DRIVE);
+                    $driveService = new Drive($client);
+
+                    $driveFileMetadata = new DriveFile(['name' => $newFilename]);
+                    $driveService->files->update($driveFileId, $driveFileMetadata, [
+                        'supportsAllDrives'  => true,
+                        'supportsTeamDrives' => true,
+                    ]);
+                }
+            } catch (\Exception $e) {
+                Log::warning('Gagal mengubah nama file di Google Drive: ' . $e->getMessage());
+            }
+            return $oldLinkOrFilename; // Tetap kembalikan Drive URL
+        }
+
+        return $newFilename;
+    }
 }

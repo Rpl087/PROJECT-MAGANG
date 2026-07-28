@@ -652,8 +652,35 @@
                 if (dateEl)  dateEl.textContent  = dateStr;
                 if (badgeEl) badgeEl.textContent  = dateStr;
             }
-            tick();
-            setInterval(tick, 1000);
+    {{-- Navigation Loading Overlay --}}
+    <div id="nav-loading-overlay" style="display:none;position:fixed;inset:0;z-index:99998;background:rgba(15,23,42,0.85);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);align-items:center;justify-content:center;flex-direction:column;gap:1rem;opacity:0;transition:opacity 0.15s ease;">
+        <div style="width:44px;height:44px;border:3px solid transparent;border-top-color:#f59e0b;border-right-color:#f59e0b;border-radius:50%;animation:spinRotate 0.7s linear infinite;position:relative;"></div>
+        <p style="font-size:0.85rem;font-weight:500;color:#8b92a8;" id="nav-loading-msg">Memuat halaman...</p>
+    </div>
+    <div id="nav-loading-bar" style="display:none;position:fixed;top:0;left:0;height:3px;z-index:99999;background:linear-gradient(90deg,#f59e0b 0%,#fbbf24 50%,#f59e0b 100%);background-size:200% 100%;animation:navBarSlide 1s ease-in-out infinite;border-radius:0 2px 2px 0;"></div>
+    <style>@keyframes spinRotate { to { transform: rotate(360deg); } } @keyframes navBarSlide { 0% { width:0%; } 50% { width:70%; } 100% { width:100%; } }</style>
+    <script>
+        (function () {
+            'use strict';
+            var overlay = document.getElementById('nav-loading-overlay');
+            var bar     = document.getElementById('nav-loading-bar');
+            var msg     = document.getElementById('nav-loading-msg');
+            document.addEventListener('click', function (e) {
+                var link = e.target.closest('a[href]');
+                if (!link) return;
+                var href = link.getAttribute('href');
+                if (!href || href.startsWith('#') || href.startsWith('javascript:') || link.target === '_blank' || link.origin !== location.origin) return;
+                if (e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return;
+                if (link.classList.contains('active')) return;
+                e.preventDefault();
+                if (overlay && bar) {
+                    if (msg) msg.textContent = href.indexOf('surat-keluar') !== -1 ? 'Memuat Surat Keluar (Tamu)...' : 'Memuat Surat Masuk (Tamu)...';
+                    overlay.style.display = 'flex';
+                    bar.style.display = 'block';
+                    requestAnimationFrame(function() { overlay.style.opacity = '1'; });
+                }
+                requestAnimationFrame(function () { location.href = href; });
+            });
         })();
     </script>
 </body>

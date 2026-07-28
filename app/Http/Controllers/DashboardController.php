@@ -18,16 +18,7 @@ class DashboardController extends Controller
                 SheetsCache::TTL_DASHBOARD,
                 function () {
                     [$service, $spreadsheetId] = $this->getReadonlySheetService();
-
-                    // Baca sheet dbSM (Surat Masuk)
-                    $smResponse = $service->spreadsheets_values->get($spreadsheetId, 'dbSM!A:R');
-                    $smRows     = $smResponse->getValues() ?? [];
-
-                    // Baca sheet dbSK (Surat Keluar)
-                    $skResponse = $service->spreadsheets_values->get($spreadsheetId, 'dbSK!A:R');
-                    $skRows     = $skResponse->getValues() ?? [];
-
-                    return [$smRows, $skRows];
+                    return $this->fetchBothSheets($service, $spreadsheetId);
                 }
             );
 
@@ -124,11 +115,7 @@ class DashboardController extends Controller
                 SheetsCache::TTL_DASHBOARD,
                 function () {
                     [$service, $spreadsheetId] = $this->getReadonlySheetService();
-                    $smResponse = $service->spreadsheets_values->get($spreadsheetId, 'dbSM!A:R');
-                    $smRows     = $smResponse->getValues() ?? [];
-                    $skResponse = $service->spreadsheets_values->get($spreadsheetId, 'dbSK!A:R');
-                    $skRows     = $skResponse->getValues() ?? [];
-                    return [$smRows, $skRows];
+                    return $this->fetchBothSheets($service, $spreadsheetId);
                 }
             );
 
@@ -216,16 +203,7 @@ class DashboardController extends Controller
                 SheetsCache::TTL_DASHBOARD,
                 function () {
                     [$service, $spreadsheetId] = $this->getReadonlySheetService();
-
-                    // Baca sheet dbSM (Surat Masuk)
-                    $smResponse = $service->spreadsheets_values->get($spreadsheetId, 'dbSM!A:R');
-                    $smRows     = $smResponse->getValues() ?? [];
-
-                    // Baca sheet dbSK (Surat Keluar)
-                    $skResponse = $service->spreadsheets_values->get($spreadsheetId, 'dbSK!A:R');
-                    $skRows     = $skResponse->getValues() ?? [];
-
-                    return [$smRows, $skRows];
+                    return $this->fetchBothSheets($service, $spreadsheetId);
                 }
             );
 
@@ -400,7 +378,7 @@ class DashboardController extends Controller
             // Kumpulkan semua surat (SM + SK) dengan info lengkap, diurutkan tanggal
             $printDetailBulanan = [];
 
-            // SM raw: col[1]=KodeKlas, col[2]=KodeSurat, col[3]=UraianBerkas, col[8]=TanggalSurat
+            // SM raw: col[1]=KodeKlas, col[2]=KodeSurat, col[3]=UraianBerkas, col[7]=UraianArsip, col[8]=TanggalSurat
             foreach ($smRows as $row) {
                 $rawDate = trim($row[8] ?? '');
                 if (empty($rawDate)) continue;
@@ -411,19 +389,21 @@ class DashboardController extends Controller
                 if (str_starts_with($kodeKlas, '#')) $kodeKlas = '';
                 $kodeGabung = $kodeKlas !== '' && $kodeSurat !== '' ? "{$kodeKlas} {$kodeSurat}" : ($kodeKlas ?: $kodeSurat);
                 $kodePrefix = preg_match('/^([A-Za-z]+)/', $kodeKlas, $km) ? strtoupper($km[1]) : 'Lainnya';
+                $uraianArsip = trim($row[7] ?? '');
+                $uraianVal   = $uraianArsip !== '' ? $uraianArsip : trim($row[3] ?? '-');
                 $printDetailBulanan[] = [
-                    'ts'      => $ts,
-                    'tahun'   => (int) date('Y', $ts),
-                    'bulan'   => (int) date('m', $ts),
-                    'kode'    => $kodeGabung,
+                    'ts'          => $ts,
+                    'tahun'       => (int) date('Y', $ts),
+                    'bulan'       => (int) date('m', $ts),
+                    'kode'        => $kodeGabung,
                     'kode_prefix' => $kodePrefix,
-                    'tanggal' => $rawDate,
-                    'uraian'  => trim($row[3] ?? '-'),
-                    'jenis'   => 'SM',
+                    'tanggal'     => $rawDate,
+                    'uraian'      => $uraianVal,
+                    'jenis'       => 'SM',
                 ];
             }
 
-            // SK raw: col[1]=KodeKlas, col[2]=KodeSurat, col[3]=UraianBerkas, col[9]=TanggalSurat
+            // SK raw: col[1]=KodeKlas, col[2]=KodeSurat, col[3]=UraianBerkas, col[8]=UraianArsip, col[9]=TanggalSurat
             foreach ($skRows as $row) {
                 $rawDate = trim($row[9] ?? '');
                 if (empty($rawDate)) continue;
@@ -434,15 +414,17 @@ class DashboardController extends Controller
                 if (str_starts_with($kodeKlas, '#')) $kodeKlas = '';
                 $kodeGabung = $kodeKlas !== '' && $kodeSurat !== '' ? "{$kodeKlas} {$kodeSurat}" : ($kodeKlas ?: $kodeSurat);
                 $kodePrefix = preg_match('/^([A-Za-z]+)/', $kodeKlas, $km) ? strtoupper($km[1]) : 'Lainnya';
+                $uraianArsip = trim($row[8] ?? '');
+                $uraianVal   = $uraianArsip !== '' ? $uraianArsip : trim($row[3] ?? '-');
                 $printDetailBulanan[] = [
-                    'ts'      => $ts,
-                    'tahun'   => (int) date('Y', $ts),
-                    'bulan'   => (int) date('m', $ts),
-                    'kode'    => $kodeGabung,
+                    'ts'          => $ts,
+                    'tahun'       => (int) date('Y', $ts),
+                    'bulan'       => (int) date('m', $ts),
+                    'kode'        => $kodeGabung,
                     'kode_prefix' => $kodePrefix,
-                    'tanggal' => $rawDate,
-                    'uraian'  => trim($row[3] ?? '-'),
-                    'jenis'   => 'SK',
+                    'tanggal'     => $rawDate,
+                    'uraian'      => $uraianVal,
+                    'jenis'       => 'SK',
                 ];
             }
 
@@ -588,5 +570,30 @@ class DashboardController extends Controller
 
         $ts = strtotime($normalized);
         return ($ts !== false && $ts > 0) ? $ts : false;
+    }
+
+    /**
+     * Ambil data sheet dbSM dan dbSK secara efisien dalam 1 HTTP request menggunakan batchGet.
+     */
+    private function fetchBothSheets($service, string $spreadsheetId): array
+    {
+        try {
+            $batchResponse = $service->spreadsheets_values->batchGet($spreadsheetId, [
+                'ranges' => ['dbSM!A:R', 'dbSK!A:R'],
+            ]);
+            $valueRanges = $batchResponse->getValueRanges() ?? [];
+
+            $smRows = isset($valueRanges[0]) ? ($valueRanges[0]->getValues() ?? []) : [];
+            $skRows = isset($valueRanges[1]) ? ($valueRanges[1]->getValues() ?? []) : [];
+
+            return [$smRows, $skRows];
+        } catch (\Exception $e) {
+            $smResponse = $service->spreadsheets_values->get($spreadsheetId, 'dbSM!A:R');
+            $smRows     = $smResponse->getValues() ?? [];
+            $skResponse = $service->spreadsheets_values->get($spreadsheetId, 'dbSK!A:R');
+            $skRows     = $skResponse->getValues() ?? [];
+
+            return [$smRows, $skRows];
+        }
     }
 }
