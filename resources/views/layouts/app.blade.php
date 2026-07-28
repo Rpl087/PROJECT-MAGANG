@@ -351,45 +351,107 @@
 
     </style>
 
-    {{-- ── Page Transition (fade antar halaman) ── --}}
+    {{-- ── Page Transition (fade antar halaman) + Loading Overlay ── --}}
     <style>
     /* Fade-out saat navigasi keluar */
     body.page-leaving {
         opacity: 0;
-        transition: opacity 0.18s ease;
+        transition: opacity 0.15s ease;
         pointer-events: none;
     }
     /* Fade-in saat halaman baru tiba */
     body {
-        animation: pageFadeIn 0.22s ease both;
+        animation: pageFadeIn 0.2s ease both;
     }
     @keyframes pageFadeIn {
         from { opacity: 0; }
         to   { opacity: 1; }
     }
-    /* Toast container tidak ikut fade — harus selalu opacity 1 agar toast tampil */
+    /* Toast container tidak ikut fade */
     #toast-container {
         animation: none !important;
         opacity: 1 !important;
     }
+
+    /* ══════════════════════════════════════════════════════════
+       NAVIGATION LOADING OVERLAY — muncul segera saat link diklik
+       ══════════════════════════════════════════════════════════ */
+    #nav-loading-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 99998;
+        background: rgba(var(--color-bg-rgb, 248,250,252), 0.82);
+        backdrop-filter: blur(4px);
+        -webkit-backdrop-filter: blur(4px);
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        gap: 1rem;
+        opacity: 0;
+        transition: opacity 0.15s ease;
+    }
+    [data-theme="dark"] #nav-loading-overlay {
+        background: rgba(15,23,42,0.85);
+    }
+    #nav-loading-overlay.is-visible {
+        opacity: 1;
+    }
+    .nav-loading-spinner {
+        width: 44px;
+        height: 44px;
+        border: 3px solid transparent;
+        border-top-color: var(--color-primary, #1e3a5f);
+        border-right-color: var(--color-primary, #1e3a5f);
+        border-radius: 50%;
+        animation: navSpinRotate 0.7s linear infinite;
+        position: relative;
+    }
+    .nav-loading-spinner::after {
+        content: '';
+        position: absolute;
+        inset: 4px;
+        border: 2px solid transparent;
+        border-bottom-color: #4f8ef7;
+        border-left-color: #4f8ef7;
+        border-radius: 50%;
+        animation: navSpinRotate 0.5s linear infinite reverse;
+    }
+    @keyframes navSpinRotate {
+        to { transform: rotate(360deg); }
+    }
+    .nav-loading-text {
+        font-size: 0.85rem;
+        font-weight: 500;
+        color: var(--color-text-muted, #64748b);
+        letter-spacing: 0.01em;
+        animation: navLoadingPulse 1.4s ease-in-out infinite;
+    }
+    @keyframes navLoadingPulse {
+        0%, 100% { opacity: 0.6; }
+        50%       { opacity: 1; }
+    }
+    /* Top progress bar tipis saat navigasi */
+    #nav-loading-bar {
+        display: none;
+        position: fixed;
+        top: 0; left: 0;
+        height: 3px;
+        z-index: 99999;
+        background: linear-gradient(90deg, var(--color-primary, #1e3a5f) 0%, #4f8ef7 50%, var(--color-primary, #1e3a5f) 100%);
+        background-size: 200% 100%;
+        animation: navBarSlide 1s ease-in-out infinite;
+        border-radius: 0 2px 2px 0;
+        box-shadow: 0 0 10px rgba(79,142,247,0.5);
+    }
+    @keyframes navBarSlide {
+        0%   { width: 0%;   background-position: 0% 0; }
+        30%  { width: 55%;  background-position: 50% 0; }
+        70%  { width: 80%;  background-position: 100% 0; }
+        100% { width: 95%;  background-position: 150% 0; }
+    }
+    #nav-loading-bar.is-active { display: block; }
     </style>
-    <script>
-    // Intercept semua klik link internal — tambah class page-leaving sebelum navigasi
-    document.addEventListener('click', function (e) {
-        var link = e.target.closest('a[href]');
-        if (!link) return;
-        var href = link.getAttribute('href');
-        // Abaikan: anchor (#), external, mailto:, tel:, target=_blank, download
-        if (!href || href.startsWith('#') || href.startsWith('mailto:') ||
-            href.startsWith('tel:') || link.target === '_blank' ||
-            link.hasAttribute('download') || link.origin !== location.origin) return;
-        // Abaikan klik dengan modifier key (buka tab baru)
-        if (e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return;
-        e.preventDefault();
-        document.body.classList.add('page-leaving');
-        setTimeout(function () { location.href = href; }, 180);
-    });
-    </script>
 
 
     <style>
@@ -493,6 +555,68 @@
     </script>
     {{-- Page Loading Bar: tampil selama halaman belum fully loaded, hilang di DOMContentLoaded --}}
     <div id="page-loading-bar" role="progressbar" aria-label="Memuat halaman..."></div>
+
+    {{-- ── Navigation Loading Overlay — muncul segera saat link navigasi diklik ── --}}
+    <div id="nav-loading-overlay" role="status" aria-label="Memuat halaman...">
+        <div class="nav-loading-spinner" aria-hidden="true"></div>
+        <p class="nav-loading-text" id="nav-loading-msg">Memuat halaman...</p>
+    </div>
+    <div id="nav-loading-bar" aria-hidden="true"></div>
+    <script>
+    (function () {
+        'use strict';
+        var overlay = document.getElementById('nav-loading-overlay');
+        var bar     = document.getElementById('nav-loading-bar');
+        var msg     = document.getElementById('nav-loading-msg');
+        var loadingMessages = {
+            'dashboard':    'Memuat Dashboard...',
+            'report':       'Memuat Laporan Rekap...',
+            'arsip':        'Memuat Surat Masuk...',
+            'surat-keluar': 'Memuat Surat Keluar...',
+            'users':        'Memuat Data Pengguna...',
+        };
+        function getLoadingMsg(href) {
+            for (var key in loadingMessages) {
+                if (href.indexOf(key) !== -1) return loadingMessages[key];
+            }
+            return 'Memuat halaman...';
+        }
+        function showLoading(href) {
+            if (!overlay || !bar) return;
+            if (msg) msg.textContent = getLoadingMsg(href);
+            overlay.style.display = 'flex';
+            bar.classList.add('is-active');
+            requestAnimationFrame(function () {
+                requestAnimationFrame(function () {
+                    overlay.classList.add('is-visible');
+                });
+            });
+        }
+        // Intercept semua klik link internal — tampilkan loading overlay
+        document.addEventListener('click', function (e) {
+            var link = e.target.closest('a[href]');
+            if (!link) return;
+            var href = link.getAttribute('href');
+            if (!href || href.startsWith('#') || href.startsWith('mailto:') ||
+                href.startsWith('tel:') || link.target === '_blank' ||
+                link.hasAttribute('download') || link.origin !== location.origin) return;
+            if (e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return;
+            if (link.hasAttribute('data-confirm-nav')) return;
+            if (link.classList.contains('sidebar-link-active')) return;
+            e.preventDefault();
+            showLoading(href);
+            document.body.classList.add('page-leaving');
+            setTimeout(function () { location.href = href; }, 160);
+        });
+        // Sembunyikan overlay saat halaman selesai dimuat (bfcache / back)
+        window.addEventListener('pageshow', function () {
+            if (overlay) { overlay.classList.remove('is-visible'); overlay.style.display = 'none'; }
+            if (bar) bar.classList.remove('is-active');
+            document.body.classList.remove('page-leaving');
+        });
+    })();
+    </script>
+
     <!-- Header -->
     <header class="header" id="main-header">
         <div class="header-inner">
@@ -1220,12 +1344,26 @@
                 var target = pendingHref;
                 pendingHref = null;
                 document.body.style.overflow = '';
-                // Tutup modal dulu, lalu jalankan page-leaving
+                // Tutup modal dulu, tampilkan loading overlay, lalu navigasi
                 modal.classList.remove('is-open');
                 setTimeout(function () {
                     modal.style.display = 'none';
+                    // Tampilkan loading overlay via fungsi global
+                    var loadingOverlay = document.getElementById('nav-loading-overlay');
+                    var loadingBar = document.getElementById('nav-loading-bar');
+                    var loadingMsg = document.getElementById('nav-loading-msg');
+                    if (loadingMsg) loadingMsg.textContent = 'Memuat Dashboard...';
+                    if (loadingOverlay) {
+                        loadingOverlay.style.display = 'flex';
+                        if (loadingBar) loadingBar.classList.add('is-active');
+                        requestAnimationFrame(function () {
+                            requestAnimationFrame(function () {
+                                loadingOverlay.classList.add('is-visible');
+                            });
+                        });
+                    }
                     document.body.classList.add('page-leaving');
-                    setTimeout(function () { location.href = target; }, 180);
+                    setTimeout(function () { location.href = target; }, 160);
                 }, 220);
             });
         }

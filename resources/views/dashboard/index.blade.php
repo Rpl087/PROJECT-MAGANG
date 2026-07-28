@@ -11,19 +11,32 @@
         <h2 class="page-title">Dashboard</h2>
         <p class="page-description">Rekap surat masuk &amp; keluar — Tahun {{ $currentYear }}</p>
     </div>
-    <button type="button" class="db-fullscreen-btn" id="db-fullscreen-btn" aria-label="Aktifkan layar penuh" title="Tampilkan layar penuh">
-        <svg class="db-fullscreen-enter" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <polyline points="8 3 3 3 3 8"/><line x1="3" y1="3" x2="9" y2="9"/>
-            <polyline points="16 3 21 3 21 8"/><line x1="21" y1="3" x2="15" y2="9"/>
-            <polyline points="8 21 3 21 3 16"/><line x1="3" y1="21" x2="9" y2="15"/>
-            <polyline points="16 21 21 21 21 16"/><line x1="21" y1="21" x2="15" y2="15"/>
-        </svg>
-        <svg class="db-fullscreen-exit" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <polyline points="4 14 10 14 10 20"/><line x1="10" y1="14" x2="3" y2="21"/>
-            <polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/>
-        </svg>
-        <span id="db-fullscreen-label">Layar Penuh</span>
-    </button>
+    <div style="display:flex;align-items:center;gap:.5rem;flex-shrink:0;">
+        {{-- Tombol Print: arahkan ke halaman Report (printable) --}}
+        @auth
+        @if(Auth::user()?->isAdmin())
+        <a href="{{ route('dashboard.report') }}" id="btn-print-dashboard" class="db-print-btn" title="Cetak / Ekspor Laporan Rekap">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/>
+            </svg>
+            <span class="db-print-label">Cetak / Ekspor</span>
+        </a>
+        @endif
+        @endauth
+        <button type="button" class="db-fullscreen-btn" id="db-fullscreen-btn" aria-label="Aktifkan layar penuh" title="Tampilkan layar penuh">
+            <svg class="db-fullscreen-enter" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polyline points="8 3 3 3 3 8"/><line x1="3" y1="3" x2="9" y2="9"/>
+                <polyline points="16 3 21 3 21 8"/><line x1="21" y1="3" x2="15" y2="9"/>
+                <polyline points="8 21 3 21 3 16"/><line x1="3" y1="21" x2="9" y2="15"/>
+                <polyline points="16 21 21 21 21 16"/><line x1="21" y1="21" x2="15" y2="15"/>
+            </svg>
+            <svg class="db-fullscreen-exit" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polyline points="4 14 10 14 10 20"/><line x1="10" y1="14" x2="3" y2="21"/>
+                <polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/>
+            </svg>
+            <span id="db-fullscreen-label">Layar Penuh</span>
+        </button>
+    </div>
 </div>
 
 @if(isset($error))
@@ -274,6 +287,25 @@
 .db-fullscreen-exit { display: none; }
 .db-fullscreen-btn.is-fullscreen .db-fullscreen-enter { display: none; }
 .db-fullscreen-btn.is-fullscreen .db-fullscreen-exit { display: block; }
+
+/* ── Print Button ─────────────────────── */
+.db-print-btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: .42rem;
+    padding: .42rem .75rem; border: 1px solid rgba(16,185,129,0.45); border-radius: 8px;
+    background: rgba(16,185,129,0.1); color: #059669; font-family: inherit;
+    font-size: .75rem; font-weight: 600; cursor: pointer; white-space: nowrap;
+    text-decoration: none;
+    box-shadow: 0 1px 4px rgba(16,185,129,0.12);
+    transition: background .2s ease, border-color .2s ease, color .2s ease, box-shadow .2s ease;
+}
+.db-print-btn:hover {
+    background: #059669; border-color: #047857; color: #fff;
+    box-shadow: 0 2px 10px rgba(5,150,105,0.35);
+}
+[data-theme="dark"] .db-print-btn {
+    background: rgba(16,185,129,0.15); border-color: rgba(16,185,129,0.35); color: #34d399;
+}
+[data-theme="dark"] .db-print-btn:hover { background: #065f46; border-color: #047857; color: #a7f3d0; }
 .db-stats-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -430,6 +462,8 @@
 @media (max-width: 480px) {
     .db-fullscreen-btn span { display: none; }
     .db-fullscreen-btn { padding: .5rem; }
+    .db-print-label { display: none; }
+    .db-print-btn { padding: .5rem; }
     .db-stats-grid  { grid-template-columns: 1fr; }
     .db-chart-container { min-height: 220px; padding: .75rem; } /* reduce di HP */
     .db-chart-container canvas { max-width: 180px; max-height: 180px; }
