@@ -1,14 +1,14 @@
 @extends('layouts.app')
 
-@section('title', 'Laporan Rekapan Arsip')
+@section('title', 'Rekap Laporan Arsip')
 
 @section('content')
 
 <div class="page-header" id="report-page-header">
     <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:1rem;">
         <div>
-            <h2 class="page-title">Laporan Rekapan Arsip</h2>
-            <p class="page-description">Laporan rekapitulasi surat masuk &amp; keluar</p>
+            <h2 class="page-title">Rekap Laporan Arsip</h2>
+            <p class="page-description">Rekapitulasi surat masuk &amp; keluar</p>
         </div>
         <div class="report-actions no-print" style="display:flex;align-items:center;gap:.75rem;">
             {{-- tombol: TIDAK pakai onclick, JS handler yang handle --}}
@@ -33,22 +33,29 @@
 {{-- ── Print Header / Kop Surat (hanya tampil saat print) ──────────────── --}}
 <div class="print-header" id="print-header-wrap">
 
-    {{-- ── Garis atas tebal (identitas instansi) ── --}}
+    {{-- ── Garis atas tebal biru (identitas instansi) ── --}}
     <div class="print-kop-topbar"></div>
 
-    {{-- ── KOP SURAT: Logo + Nama Instansi ── --}}
+    {{-- ── KOP SURAT: Logo kiri + teks instansi kanan (sama persis dengan dashboard/print.blade.php) ── --}}
     <div class="print-kop">
         <div class="print-kop-logo">
-            <img class="print-logo-image" src="{{ route('image.view', 'komdigi-logo.png') }}" alt="Logo Komdigi">
+            <img class="print-logo-image"
+                 src="{{ route('image.view', 'komdigi-logo.png') }}"
+                 alt="Logo Komdigi"
+                 onerror="this.style.display='none'">
         </div>
+        <div class="print-kop-separator"></div>
         <div class="print-kop-text">
-            <div class="print-kop-ministry">KEMENTERIAN KOMUNIKASI DAN DIGITAL REPUBLIK INDONESIA</div>
-            <div class="print-kop-unit">Balai Pengembangan Sumber Daya Manusia dan Penelitian (BPSDMP)</div>
-            <div class="print-kop-address">Sistem Arsip Surat Digital &mdash; BPSDMP</div>
+            <div class="print-kop-ministry">Kementerian Komunikasi dan Digital RI</div>
+            <div class="print-kop-unit">
+                Badan Pengembangan Sumber Daya Manusia Komunikasi dan Digital<br>
+                Balai Pelatihan Sumber Daya Manusia Komunikasi dan Digital Manado
+            </div>
+            <div class="print-kop-address">Jln. Pomurow No. 76, Manado, No. Tlp/HP 085117816728, tu.bpsdmp_manado@komdigi.go.id</div>
         </div>
     </div>
 
-    {{-- ── Garis pembatas ganda kop ── --}}
+    {{-- ── Garis pembatas ganda kop surat ── --}}
     <div class="print-kop-divider">
         <div class="print-kop-line-thick"></div>
         <div class="print-kop-line-thin"></div>
@@ -84,11 +91,14 @@
     <div class="print-divider"></div>
 </div>
 
+
 {{-- ── TAB NAVIGASI (hanya layar, tidak tercetak) ─────────────────────── --}}
 <div class="report-tabs no-print">
     <button class="report-tab active" data-tab="bulanan">Rekap Bulanan</button>
     <button class="report-tab" data-tab="tahunan">Rekap Tahunan</button>
-    <button class="report-tab" data-tab="klasifikasi">Per Klasifikasi</button>
+    <button class="report-tab" data-tab="klasifikasi">Klasifikasi</button>
+    <button class="report-tab" data-tab="surat-masuk">Surat Masuk</button>
+    <button class="report-tab" data-tab="surat-keluar">Surat Keluar</button>
 </div>
 
 {{-- ── REKAP BULANAN PER TAHUN ─────────────────────────────────────────── --}}
@@ -525,7 +535,257 @@
     </div>
 </div>
 
+{{-- ── TAB SURAT MASUK ─────────────────────────────────────────────── --}}
+<div class="report-section" id="tab-surat-masuk" style="display:none;">
+    <div class="report-filter-bar no-print">
+        <div class="filter-group" style="display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;">
+            <div style="display:flex;align-items:center;gap:.4rem;">
+                <label for="filter-tahun-sm" style="font-size:.82rem;font-weight:600;color:var(--color-text-muted);">Filter Tahun:</label>
+                <select id="filter-tahun-sm" class="filter-select" style="min-width:110px;">
+                    <option value="">Semua Tahun</option>
+                    @foreach($tahun5 as $ty)
+                    <option value="{{ $ty }}">{{ $ty }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div style="display:flex;align-items:center;gap:.4rem;">
+                <label for="sort-sm" style="font-size:.82rem;font-weight:600;color:var(--color-text-muted);">Urutan:</label>
+                <select id="sort-sm" class="filter-select" style="min-width:160px;">
+                    <option value="asc">Tanggal Input (Terlama)</option>
+                    <option value="desc">Tanggal Input (Terbaru)</option>
+                </select>
+            </div>
+        </div>
+    </div>
+    <div class="report-card" style="page-break-inside:avoid;">
+        <div class="report-card-header">
+            <div class="report-card-title-wrap">
+                <div class="report-card-icon">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.72 12 19.79 19.79 0 0 1 1.65 3.42 2 2 0 0 1 3.62 1.2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.84a16 16 0 0 0 6 6l.94-.94a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.5 16.06z"/></svg>
+                </div>
+                <h3 class="report-card-title" id="sm-card-title">Daftar Surat Masuk</h3>
+            </div>
+            <span class="report-badge" id="sm-badge">{{ count($printDetailSM) }} Surat</span>
+        </div>
+        <div style="overflow-x:auto;">
+            <table class="report-table" id="tabel-surat-masuk">
+                <thead>
+                    <tr>
+                        <th class="th-no">No</th>
+                        <th>Kode / Nomor Surat</th>
+                        <th class="th-sortable" data-sort-target="sm" data-col="tanggal" style="cursor:pointer;white-space:nowrap;">
+                            Tanggal Input
+                            <span class="sort-icon" id="sort-icon-sm">&#9650;</span>
+                        </th>
+                        <th>Uraian Informasi</th>
+                    </tr>
+                </thead>
+                <tbody id="tbody-surat-masuk">
+                    @forelse($printDetailSM as $i => $det)
+                    <tr data-ts="{{ $det['ts'] }}" data-tahun="{{ $det['tahun'] }}">
+                        <td class="td-no">{{ $i + 1 }}</td>
+                        <td><span class="badge-kode-report">{{ $det['kode'] ?: '-' }}</span></td>
+                        <td style="white-space:nowrap;">{{ $det['tanggal'] }}</td>
+                        <td>{{ $det['uraian'] }}</td>
+                    </tr>
+                    @empty
+                    <tr><td colspan="4" class="td-empty-row">Belum ada data surat masuk</td></tr>
+                    @endforelse
+                </tbody>
+                @if(count($printDetailSM) > 0)
+                <tfoot>
+                    <tr class="tfoot-total">
+                        <td colspan="3" class="tfoot-label">TOTAL SURAT MASUK</td>
+                        <td class="td-num"><strong id="sm-total">{{ count($printDetailSM) }}</strong> surat</td>
+                    </tr>
+                </tfoot>
+                @endif
+            </table>
+        </div>
+    </div>
 
+    {{-- Print detail Surat Masuk --}}
+    <div class="print-only" id="print-detail-surat-masuk">
+        <div class="print-detail-section-title">Daftar Arsip Surat Masuk</div>
+        @php
+            $noSM = 1;
+            $bulanNamesSM = [1=>'Januari',2=>'Februari',3=>'Maret',4=>'April',5=>'Mei',6=>'Juni',
+                             7=>'Juli',8=>'Agustus',9=>'September',10=>'Oktober',11=>'November',12=>'Desember'];
+            $groupedSM = [];
+            foreach($printDetailSM as $det) {
+                $gKey = $det['tahun'] . '-' . str_pad($det['bulan'], 2, '0', STR_PAD_LEFT);
+                $groupedSM[$gKey][] = $det;
+            }
+            ksort($groupedSM);
+        @endphp
+        @if(!empty($printDetailSM))
+        <table class="print-detail-table" id="print-detail-table-surat-masuk">
+            <thead>
+                <tr>
+                    <th class="pd-no">No</th>
+                    <th class="pd-kode">Kode / Nomor Surat</th>
+                    <th class="pd-tgl">Tanggal</th>
+                    <th class="pd-uraian">URAIAN INFORMASI ARSIP</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($groupedSM as $gKey => $gRows)
+                @php
+                    $fRow = $gRows[0];
+                    $lblSM = strtoupper(($bulanNamesSM[$fRow['bulan']] ?? '-') . ' ' . $fRow['tahun']);
+                @endphp
+                <tr class="pd-month-header pd-row-sm" data-print-year="{{ $fRow['tahun'] }}">
+                    <td colspan="4" class="pd-month-label">
+                        <span class="pd-month-icon">&#9632;</span> {{ $lblSM }}
+                    </td>
+                </tr>
+                @foreach($gRows as $det)
+                <tr class="pd-row-sm" data-print-year="{{ $det['tahun'] }}">
+                    <td class="pd-no">{{ $noSM++ }}</td>
+                    <td class="pd-kode"><span class="pd-kode-badge">{{ $det['kode'] ?: '-' }}</span></td>
+                    <td class="pd-tgl">{{ $det['tanggal'] }}</td>
+                    <td class="pd-uraian">{{ $det['uraian'] }}</td>
+                </tr>
+                @endforeach
+                @endforeach
+            </tbody>
+            <tfoot>
+                <tr class="pd-tfoot">
+                    <td colspan="4">Total: {{ count($printDetailSM) }} surat masuk</td>
+                </tr>
+            </tfoot>
+        </table>
+        @else
+        <p class="pd-empty">Belum ada data surat masuk.</p>
+        @endif
+    </div>
+</div>
+
+{{-- ── TAB SURAT KELUAR ───────────────────────────────────────────── --}}
+<div class="report-section" id="tab-surat-keluar" style="display:none;">
+    <div class="report-filter-bar no-print">
+        <div class="filter-group" style="display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;">
+            <div style="display:flex;align-items:center;gap:.4rem;">
+                <label for="filter-tahun-sk" style="font-size:.82rem;font-weight:600;color:var(--color-text-muted);">Filter Tahun:</label>
+                <select id="filter-tahun-sk" class="filter-select" style="min-width:110px;">
+                    <option value="">Semua Tahun</option>
+                    @foreach($tahun5 as $ty)
+                    <option value="{{ $ty }}">{{ $ty }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div style="display:flex;align-items:center;gap:.4rem;">
+                <label for="sort-sk" style="font-size:.82rem;font-weight:600;color:var(--color-text-muted);">Urutan:</label>
+                <select id="sort-sk" class="filter-select" style="min-width:160px;">
+                    <option value="asc">Tanggal Input (Terlama)</option>
+                    <option value="desc">Tanggal Input (Terbaru)</option>
+                </select>
+            </div>
+        </div>
+    </div>
+    <div class="report-card" style="page-break-inside:avoid;">
+        <div class="report-card-header">
+            <div class="report-card-title-wrap">
+                <div class="report-card-icon" style="background:rgba(16,185,129,.12);border-color:rgba(16,185,129,.2);color:#34d399;">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                </div>
+                <h3 class="report-card-title" id="sk-card-title">Daftar Surat Keluar</h3>
+            </div>
+            <span class="report-badge" id="sk-badge" style="background:rgba(16,185,129,.1);color:#34d399;border-color:rgba(16,185,129,.25);">{{ count($printDetailSK) }} Surat</span>
+        </div>
+        <div style="overflow-x:auto;">
+            <table class="report-table" id="tabel-surat-keluar">
+                <thead>
+                    <tr>
+                        <th class="th-no">No</th>
+                        <th>Kode / Nomor Surat</th>
+                        <th class="th-sortable" data-sort-target="sk" data-col="tanggal" style="cursor:pointer;white-space:nowrap;">
+                            Tanggal Input
+                            <span class="sort-icon" id="sort-icon-sk">&#9650;</span>
+                        </th>
+                        <th>Uraian Informasi</th>
+                    </tr>
+                </thead>
+                <tbody id="tbody-surat-keluar">
+                    @forelse($printDetailSK as $i => $det)
+                    <tr data-ts="{{ $det['ts'] }}" data-tahun="{{ $det['tahun'] }}">
+                        <td class="td-no">{{ $i + 1 }}</td>
+                        <td><span class="badge-kode-report" style="background:rgba(16,185,129,.1);color:#34d399;border-color:rgba(16,185,129,.2);">{{ $det['kode'] ?: '-' }}</span></td>
+                        <td style="white-space:nowrap;">{{ $det['tanggal'] }}</td>
+                        <td>{{ $det['uraian'] }}</td>
+                    </tr>
+                    @empty
+                    <tr><td colspan="4" class="td-empty-row">Belum ada data surat keluar</td></tr>
+                    @endforelse
+                </tbody>
+                @if(count($printDetailSK) > 0)
+                <tfoot>
+                    <tr class="tfoot-total">
+                        <td colspan="3" class="tfoot-label">TOTAL SURAT KELUAR</td>
+                        <td class="td-num"><strong id="sk-total">{{ count($printDetailSK) }}</strong> surat</td>
+                    </tr>
+                </tfoot>
+                @endif
+            </table>
+        </div>
+    </div>
+
+    {{-- Print detail Surat Keluar --}}
+    <div class="print-only" id="print-detail-surat-keluar">
+        <div class="print-detail-section-title">Daftar Arsip Surat Keluar</div>
+        @php
+            $noSK = 1;
+            $bulanNamesSK = [1=>'Januari',2=>'Februari',3=>'Maret',4=>'April',5=>'Mei',6=>'Juni',
+                             7=>'Juli',8=>'Agustus',9=>'September',10=>'Oktober',11=>'November',12=>'Desember'];
+            $groupedSK = [];
+            foreach($printDetailSK as $det) {
+                $gKey = $det['tahun'] . '-' . str_pad($det['bulan'], 2, '0', STR_PAD_LEFT);
+                $groupedSK[$gKey][] = $det;
+            }
+            ksort($groupedSK);
+        @endphp
+        @if(!empty($printDetailSK))
+        <table class="print-detail-table" id="print-detail-table-surat-keluar">
+            <thead>
+                <tr>
+                    <th class="pd-no">No</th>
+                    <th class="pd-kode">Kode / Nomor Surat</th>
+                    <th class="pd-tgl">Tanggal</th>
+                    <th class="pd-uraian">URAIAN INFORMASI ARSIP</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($groupedSK as $gKey => $gRows)
+                @php
+                    $fRow = $gRows[0];
+                    $lblSK = strtoupper(($bulanNamesSK[$fRow['bulan']] ?? '-') . ' ' . $fRow['tahun']);
+                @endphp
+                <tr class="pd-month-header pd-row-sk" data-print-year="{{ $fRow['tahun'] }}">
+                    <td colspan="4" class="pd-month-label">
+                        <span class="pd-month-icon">&#9632;</span> {{ $lblSK }}
+                    </td>
+                </tr>
+                @foreach($gRows as $det)
+                <tr class="pd-row-sk" data-print-year="{{ $det['tahun'] }}">
+                    <td class="pd-no">{{ $noSK++ }}</td>
+                    <td class="pd-kode"><span class="pd-kode-badge">{{ $det['kode'] ?: '-' }}</span></td>
+                    <td class="pd-tgl">{{ $det['tanggal'] }}</td>
+                    <td class="pd-uraian">{{ $det['uraian'] }}</td>
+                </tr>
+                @endforeach
+                @endforeach
+            </tbody>
+            <tfoot>
+                <tr class="pd-tfoot">
+                    <td colspan="4">Total: {{ count($printDetailSK) }} surat keluar</td>
+                </tr>
+            </tfoot>
+        </table>
+        @else
+        <p class="pd-empty">Belum ada data surat keluar.</p>
+        @endif
+    </div>
+</div>
 
 {{-- ── Modal Konfirmasi Cetak ─────────────────────────────────────────────── --}}
 <div id="modal-cetak" class="modal-overlay" role="dialog" aria-modal="true">
@@ -785,6 +1045,23 @@
 .report-section {
     transition: none;
 }
+/* ── Sortable Column Header ─────────────────────────────── */
+.th-sortable {
+    user-select: none;
+}
+.th-sortable:hover {
+    background: rgba(99,102,241,.18) !important;
+    color: #a5b4fc !important;
+}
+.sort-icon {
+    display: inline-block;
+    font-size: .6rem;
+    margin-left: .35rem;
+    opacity: .65;
+    vertical-align: middle;
+    transition: transform .2s ease;
+}
+
 @keyframes tabFadeSlideIn {
     from {
         opacity: 0;
@@ -1162,51 +1439,62 @@ body.report-printing *::-webkit-scrollbar {
         border-radius: 0;
     }
 
-    /* Layout kop: logo kiri, teks kanan */
+    /* Layout kop: logo kiri | garis pemisah | teks kanan (sama dengan dashboard/print.blade.php) */
     .print-kop {
         display: flex !important;
         align-items: center;
-        gap: .75rem;
-        margin-bottom: .35rem;
+        gap: 0;
+        padding-bottom: 6pt;
+        margin-bottom: 4pt;
     }
     .print-kop-logo {
-        flex: 0 0 16mm;
+        flex-shrink: 0;
+        width: 28mm;
         display: flex !important;
         align-items: center;
         justify-content: center;
+        padding-right: 10pt;
+        border-right: 1pt solid #c8d0dc;
     }
     .print-logo-image {
         display: block !important;
-        width: auto !important;
-        height: 16mm !important;
-        max-width: 16mm !important;
+        width: 100% !important;
+        height: auto !important;
+        max-height: 22mm !important;
         object-fit: contain !important;
+    }
+    .print-kop-separator {
+        display: none !important; /* border-right pada logo sudah cukup */
     }
     .print-kop-text {
         flex: 1;
-        text-align: center;
+        padding-left: 10pt;
+        text-align: left;
     }
     .print-kop-ministry {
-        font-size: 11.5pt !important;
-        font-weight: 700 !important;
-        color: #1e3a5f !important;
-        letter-spacing: .03em;
-        line-height: 1.3;
+        font-size: 12.5pt !important;
+        font-weight: 800 !important;
+        color: #1a1a1a !important;
+        letter-spacing: .01em;
+        line-height: 1.2;
         text-transform: uppercase;
-        font-family: 'Times New Roman', Times, serif !important;
+        font-family: 'Arial', 'Helvetica', sans-serif !important;
     }
     .print-kop-unit {
-        font-size: 10pt !important;
-        color: #1e3a5f !important;
-        font-weight: 600 !important;
-        line-height: 1.4;
-        font-family: 'Times New Roman', Times, serif !important;
+        font-size: 9pt !important;
+        color: #1a1a1a !important;
+        font-weight: 700 !important;
+        line-height: 1.35;
+        margin-top: 2pt;
+        text-transform: uppercase;
+        font-family: 'Arial', 'Helvetica', sans-serif !important;
     }
     .print-kop-address {
         font-size: 7.5pt !important;
-        color: #444 !important;
-        margin-top: .1rem;
+        color: #555 !important;
+        margin-top: 4pt;
         font-style: italic;
+        font-family: 'Arial', 'Helvetica', sans-serif !important;
     }
 
     /* Garis pembatas ganda kop surat */
@@ -1619,12 +1907,14 @@ document.addEventListener('DOMContentLoaded', function () {
         });
 
         // ── Tampilkan tabel detail print yang sesuai dengan tab aktif ──────
-        var pdBulanan     = document.getElementById('print-detail-bulanan');
-        var pdTahunan     = document.getElementById('print-detail-tahunan');
-        var pdKlasifikasi = document.getElementById('print-detail-klasifikasi');
+        var pdBulanan       = document.getElementById('print-detail-bulanan');
+        var pdTahunan       = document.getElementById('print-detail-tahunan');
+        var pdKlasifikasi   = document.getElementById('print-detail-klasifikasi');
+        var pdSuratMasuk    = document.getElementById('print-detail-surat-masuk');
+        var pdSuratKeluar   = document.getElementById('print-detail-surat-keluar');
 
         // Sembunyikan semua dulu, lalu tampilkan yang sesuai
-        [pdBulanan, pdTahunan, pdKlasifikasi].forEach(function(el) {
+        [pdBulanan, pdTahunan, pdKlasifikasi, pdSuratMasuk, pdSuratKeluar].forEach(function(el) {
             if (el) el.classList.add('print-hidden');
         });
 
@@ -1704,6 +1994,42 @@ document.addEventListener('DOMContentLoaded', function () {
                     tr.classList.remove('print-hidden');
                 });
             }
+
+        } else if (activeId === 'surat-masuk') {
+            if (pdSuratMasuk) pdSuratMasuk.classList.remove('print-hidden');
+            var selSmPrint = document.getElementById('filter-tahun-sm');
+            var filterSm   = selSmPrint ? selSmPrint.value : '';
+            if (pdSuratMasuk && filterSm) {
+                pdSuratMasuk.querySelectorAll('tr.pd-row-sm').forEach(function(tr) {
+                    if (tr.getAttribute('data-print-year') !== filterSm) {
+                        tr.classList.add('print-hidden');
+                    } else {
+                        tr.classList.remove('print-hidden');
+                    }
+                });
+            } else if (pdSuratMasuk) {
+                pdSuratMasuk.querySelectorAll('tr.pd-row-sm').forEach(function(tr) {
+                    tr.classList.remove('print-hidden');
+                });
+            }
+
+        } else if (activeId === 'surat-keluar') {
+            if (pdSuratKeluar) pdSuratKeluar.classList.remove('print-hidden');
+            var selSkPrint = document.getElementById('filter-tahun-sk');
+            var filterSk   = selSkPrint ? selSkPrint.value : '';
+            if (pdSuratKeluar && filterSk) {
+                pdSuratKeluar.querySelectorAll('tr.pd-row-sk').forEach(function(tr) {
+                    if (tr.getAttribute('data-print-year') !== filterSk) {
+                        tr.classList.add('print-hidden');
+                    } else {
+                        tr.classList.remove('print-hidden');
+                    }
+                });
+            } else if (pdSuratKeluar) {
+                pdSuratKeluar.querySelectorAll('tr.pd-row-sk').forEach(function(tr) {
+                    tr.classList.remove('print-hidden');
+                });
+            }
         }
 
         // ── Update total di tfoot sesuai baris yang visible (mengikuti filter tahun) ──
@@ -1730,6 +2056,22 @@ document.addEventListener('DOMContentLoaded', function () {
             ).length;
             var tfootKls = pdKlasifikasi.querySelector('tr.pd-tfoot td');
             if (tfootKls) tfootKls.textContent = 'Total: ' + visibleKls + ' arsip surat';
+        }
+        // Surat Masuk
+        if (pdSuratMasuk && !pdSuratMasuk.classList.contains('print-hidden')) {
+            var visibleSM = pdSuratMasuk.querySelectorAll(
+                'tr.pd-row-sm:not(.pd-month-header):not(.print-hidden)'
+            ).length;
+            var tfootSM = pdSuratMasuk.querySelector('tr.pd-tfoot td');
+            if (tfootSM) tfootSM.textContent = 'Total: ' + visibleSM + ' surat masuk';
+        }
+        // Surat Keluar
+        if (pdSuratKeluar && !pdSuratKeluar.classList.contains('print-hidden')) {
+            var visibleSK = pdSuratKeluar.querySelectorAll(
+                'tr.pd-row-sk:not(.pd-month-header):not(.print-hidden)'
+            ).length;
+            var tfootSK = pdSuratKeluar.querySelector('tr.pd-tfoot td');
+            if (tfootSK) tfootSK.textContent = 'Total: ' + visibleSK + ' surat keluar';
         }
 
         // ── Tandai baris yang disembunyikan oleh filter agar tetap hidden saat print ──
@@ -1767,9 +2109,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
         // Label jenis laporan per tab
         var jenisMap = {
-            'bulanan'     : 'Rekap Bulanan Per Tahun',
-            'tahunan'     : 'Rekap Tahunan (Semua Tahun)',
-            'klasifikasi' : 'Rekap Per Kode Klasifikasi'
+            'bulanan'       : 'Rekap Bulanan Per Tahun',
+            'tahunan'       : 'Rekap Tahunan (Semua Tahun)',
+            'klasifikasi'   : 'Rekap Kode Klasifikasi',
+            'surat-masuk'   : 'Daftar Surat Masuk',
+            'surat-keluar'  : 'Daftar Surat Keluar'
         };
         var jenisLabel = jenisMap[activeId] || 'Laporan Rekapitulasi';
 
@@ -1824,9 +2168,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // ── Modal Konfirmasi Cetak ───────────────────────────────────────────
     var TAB_LABELS = {
-        bulanan:      'Rekap Bulanan',
-        tahunan:      'Rekap Tahunan',
-        klasifikasi:  'Rekap Per Klasifikasi'
+        bulanan:       'Rekap Bulanan',
+        tahunan:       'Rekap Tahunan',
+        klasifikasi:   'Klasifikasi',
+        'surat-masuk': 'Surat Masuk',
+        'surat-keluar':'Surat Keluar'
     };
 
     var modalCetak       = document.getElementById('modal-cetak');
@@ -2046,6 +2392,91 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // ── Live Clock ────────────────────────────────────────────────────
 
+
+    // ── Helper: sort & filter tabel surat masuk / keluar ────────────────
+    function applySuratFilter(tbodyId, filterTahun, sortDir, totalElId, badgeId) {
+        var tbody = document.getElementById(tbodyId);
+        if (!tbody) return;
+        var rows = Array.from(tbody.querySelectorAll('tr[data-ts]'));
+
+        // Filter berdasarkan tahun
+        rows.forEach(function(tr) {
+            var rowTahun = tr.getAttribute('data-tahun') || '';
+            tr.style.display = (!filterTahun || rowTahun === filterTahun) ? '' : 'none';
+        });
+
+        // Sort berdasarkan data-ts (timestamp)
+        var visibleRows = rows.filter(function(tr) { return tr.style.display !== 'none'; });
+        visibleRows.sort(function(a, b) {
+            var tsA = parseInt(a.getAttribute('data-ts')) || 0;
+            var tsB = parseInt(b.getAttribute('data-ts')) || 0;
+            return sortDir === 'asc' ? tsA - tsB : tsB - tsA;
+        });
+
+        // Re-append in sorted order & re-number
+        visibleRows.forEach(function(tr, i) {
+            tbody.appendChild(tr);
+            var tdNo = tr.querySelector('.td-no');
+            if (tdNo) tdNo.textContent = i + 1;
+        });
+
+        // Update badge & total count
+        var count = visibleRows.length;
+        var totalEl = document.getElementById(totalElId);
+        if (totalEl) totalEl.textContent = count;
+        var badge = document.getElementById(badgeId);
+        if (badge) badge.textContent = count + ' Surat';
+    }
+
+    // ── Filter + Sort: Tab Surat Masuk ───────────────────────────────────
+    var selTahunSM = document.getElementById('filter-tahun-sm');
+    var selSortSM  = document.getElementById('sort-sm');
+    var sortIconSM = document.getElementById('sort-icon-sm');
+
+    function updateSM() {
+        var tahun   = selTahunSM ? selTahunSM.value : '';
+        var sortDir = selSortSM  ? selSortSM.value  : 'asc';
+        // Update sort icon
+        if (sortIconSM) sortIconSM.innerHTML = sortDir === 'asc' ? '&#9650;' : '&#9660;';
+        applySuratFilter('tbody-surat-masuk', tahun, sortDir, 'sm-total', 'sm-badge');
+    }
+
+    if (selTahunSM) selTahunSM.addEventListener('change', updateSM);
+    if (selSortSM)  selSortSM.addEventListener('change',  updateSM);
+
+    // Klik header kolom Tanggal untuk toggle sort
+    var thSortSM = document.querySelector('#tabel-surat-masuk .th-sortable');
+    if (thSortSM) {
+        thSortSM.addEventListener('click', function() {
+            if (!selSortSM) return;
+            selSortSM.value = selSortSM.value === 'asc' ? 'desc' : 'asc';
+            updateSM();
+        });
+    }
+
+    // ── Filter + Sort: Tab Surat Keluar ──────────────────────────────────
+    var selTahunSK = document.getElementById('filter-tahun-sk');
+    var selSortSK  = document.getElementById('sort-sk');
+    var sortIconSK = document.getElementById('sort-icon-sk');
+
+    function updateSK() {
+        var tahun   = selTahunSK ? selTahunSK.value : '';
+        var sortDir = selSortSK  ? selSortSK.value  : 'asc';
+        if (sortIconSK) sortIconSK.innerHTML = sortDir === 'asc' ? '&#9650;' : '&#9660;';
+        applySuratFilter('tbody-surat-keluar', tahun, sortDir, 'sk-total', 'sk-badge');
+    }
+
+    if (selTahunSK) selTahunSK.addEventListener('change', updateSK);
+    if (selSortSK)  selSortSK.addEventListener('change',  updateSK);
+
+    var thSortSK = document.querySelector('#tabel-surat-keluar .th-sortable');
+    if (thSortSK) {
+        thSortSK.addEventListener('click', function() {
+            if (!selSortSK) return;
+            selSortSK.value = selSortSK.value === 'asc' ? 'desc' : 'asc';
+            updateSK();
+        });
+    }
 
     // Init: sembunyikan header/sig di layar
     restoreAfterPrint();

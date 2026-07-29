@@ -431,6 +431,12 @@ class DashboardController extends Controller
             // Urutkan berdasarkan tanggal (timestamp) ascending
             usort($printDetailBulanan, fn($a, $b) => $a['ts'] <=> $b['ts']);
 
+            // ── Data Detail Print: Per Surat Masuk (sorted by tanggal input) ──
+            $printDetailSM = array_values(array_filter($printDetailBulanan, fn($d) => $d['jenis'] === 'SM'));
+
+            // ── Data Detail Print: Per Surat Keluar (sorted by tanggal input) ──
+            $printDetailSK = array_values(array_filter($printDetailBulanan, fn($d) => $d['jenis'] === 'SK'));
+
             // ── Data Detail Print: Per Klasifikasi ─────────────────────────────
             // Semua surat diurutkan berdasarkan kode klasifikasi priority lalu tanggal
             $printDetailKlasifikasi = $printDetailBulanan; // copy sorted by date
@@ -458,6 +464,8 @@ class DashboardController extends Controller
                 'bulanNames',
                 'printDetailBulanan',
                 'printDetailKlasifikasi',
+                'printDetailSM',
+                'printDetailSK',
             ));
         } catch (\Exception $e) {
             // Hapus cache yang mungkin korup
@@ -475,6 +483,8 @@ class DashboardController extends Controller
                 'bulanNames'                => [],
                 'printDetailBulanan'        => [],    // BUG-01 fix: wajib ada agar Blade tidak error
                 'printDetailKlasifikasi'    => [],    // BUG-01 fix: wajib ada agar Blade tidak error
+                'printDetailSM'             => [],
+                'printDetailSK'             => [],
             ]);
         }
     }

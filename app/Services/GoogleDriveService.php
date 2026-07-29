@@ -69,23 +69,21 @@ class GoogleDriveService
                 'parents' => [$parentFolderId]
             ]);
 
-            // 5. Kirim file ke Google Drive — gunakan fopen() untuk streaming agar tidak
-            //    membaca seluruh file ke RAM (BUG-02 fix: mencegah memory exhaustion file besar)
-            $fileHandle = fopen($localFilePath, 'rb');
-            if ($fileHandle === false) {
-                throw new \RuntimeException("Gagal membuka file untuk upload: {$localFilePath}");
+            // 5. Kirim file ke Google Drive — baca sebagai string agar kompatibel dengan
+            //    Google API PHP Client yang memanggil base64_encode() secara internal.
+            //    (PHP 8 strict: base64_encode() harus menerima string, bukan resource)
+            $fileContents = file_get_contents($localFilePath);
+            if ($fileContents === false) {
+                throw new \RuntimeException("Gagal membaca file untuk upload ke Drive: {$localFilePath}");
             }
             $driveFile = $driveService->files->create($driveFileMetadata, [
-                'data'                => $fileHandle,
+                'data'                => $fileContents,
                 'mimeType'            => 'application/pdf',
                 'uploadType'          => 'multipart',
                 'supportsAllDrives'   => true,
                 'supportsTeamDrives'  => true,
                 'fields'              => 'id, webViewLink',
             ]);
-            if (is_resource($fileHandle)) {
-                fclose($fileHandle);
-            }
 
             $fileId    = $driveFile->id;
             $driveLink = $driveFile->webViewLink;

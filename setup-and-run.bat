@@ -117,8 +117,9 @@ if not exist ".env" (
     copy .env.example .env >nul
 )
 
-:: Pastikan APP_URL=http://kearsipan.local dan INTRANET_ENABLED=true
-powershell -Command "(Get-Content .env) -replace '^APP_URL=.*', 'APP_URL=http://kearsipan.local' -replace '^INTRANET_ENABLED=.*', 'INTRANET_ENABLED=true' | Set-Content .env"
+:: Pastikan APP_URL=http://kearsipan.local, INTRANET_ENABLED=true,
+:: SESSION_DRIVER=database, SESSION_EXPIRE_ON_CLOSE=false (agar user tidak auto-logout)
+powershell -Command "(Get-Content .env) -replace '^APP_URL=.*', 'APP_URL=http://kearsipan.local' -replace '^INTRANET_ENABLED=.*', 'INTRANET_ENABLED=true' -replace '^SESSION_DRIVER=.*', 'SESSION_DRIVER=database' -replace '^SESSION_EXPIRE_ON_CLOSE=.*', 'SESSION_EXPIRE_ON_CLOSE=false' -replace '^SESSION_LIFETIME=.*', 'SESSION_LIFETIME=480' | Set-Content .env"
 
 "!PHP!" artisan key:generate --force >nul 2>&1
 
@@ -147,6 +148,10 @@ if not exist "vendor/autoload.php" (
 
 "!PHP!" artisan migrate --force
 "!PHP!" artisan db:seed --force
+
+:: Pastikan tabel sessions ada (wajib jika SESSION_DRIVER=database)
+"!PHP!" artisan session:table 2>nul
+"!PHP!" artisan migrate --force 2>nul
 
 :: ── [6/10] Build Aset Frontend (Vite) ──────────────────────────────────
 echo.
@@ -227,11 +232,13 @@ echo [10/10] Mengoptimalkan cache ^& merestart Apache...
 "!PHP!" artisan view:cache
 
 :: Jalankan Queue Worker di background window jika belum aktif
+:: --max-jobs=500 : worker restart otomatis setiap 500 job (cegah memory leak / hang)
+:: --max-time=3600: worker restart setelah 1 jam berjalan (cegah stuck)
 tasklist /FI "WINDOWTITLE eq Arsip BPSDMP Queue Worker*" 2>NUL | find /I "cmd.exe" >NUL
 IF !ERRORLEVEL! NEQ 0 (
     echo [INFO] Menjalankan Queue Worker di background...
-    start "Arsip BPSDMP Queue Worker" /min cmd /c ""!PHP!" artisan queue:work --tries=3 --timeout=90"
-    echo [OK] Queue Worker berhasil aktif di background.
+    start "Arsip BPSDMP Queue Worker" /min cmd /k ""!PHP!" artisan queue:work --tries=3 --timeout=90 --max-jobs=500 --max-time=3600"
+    echo [OK] Queue Worker berhasil aktif di background (auto-restart setiap 500 jobs/1 jam).
 ) else (
     echo [OK] Queue Worker sudah berjalan di background.
 )
@@ -260,12 +267,26 @@ echo.
 echo ====================================================================
 echo  SISTEM SURAT BPSDMP BERHASIL DIAKTIFKAN DAN SIAP DIGUNAKAN!
 echo ====================================================================
-echo  - Akses Internal (Staff/Admin) : http://kearsipan.local/
+echo  - Akses Utama (URL)           : http://kearsipan.local/
 echo  - Akses WiFi Tamu (Read-Only)  : http://kearsipan.local/tamu
 echo.
-echo  Catatan: Storage views ^& cache data dibersihkan otomatis.
-echo  Sesi login aktif tetap dipertahankan.
+echo  ------------------------------------------------------------------
+echo  KREDENSIAL MULTI-USER UNTUK SIMULASI 1 LAPTOP (EKSEKUTOR & TESTER):
+echo  ------------------------------------------------------------------
+echo  [1] AKUN EKSEKUTOR / ADMIN (Jendela Browser Normal):
+echo      - Email    : admin@bpsdmp.go.id
+echo      - Password : admin_BPSDMP26
+echo.
+echo  [2] AKUN TESTER / INTERNSHIP (Jendela Browser Incognito/Private):
+echo      - Email    : internship@bpsdmp.go.id
+echo      - Password : internship_BPSDMP
 echo ====================================================================
+echo.
+echo [INFO] Membuka 2 Jendela Browser Terisolasi untuk Uji Coba Multi-User...
+start http://kearsipan.local/login
+start chrome --incognito "http://kearsipan.local/login" 2>nul || start msedge -inprivate "http://kearsipan.local/login" 2>nul
+
+echo [OK] Browser berhasil dibuka. Silakan login dengan akun yang sesuai.
 echo.
 endlocal
 pause

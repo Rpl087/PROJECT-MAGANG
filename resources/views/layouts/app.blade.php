@@ -574,7 +574,7 @@
                 var path = new URL(href, location.origin).pathname;
                 if (path === '/' || path.indexOf('arsip') !== -1) return 'Memuat Surat Masuk...';
                 if (path.indexOf('surat-keluar') !== -1) return 'Memuat Surat Keluar...';
-                if (path.indexOf('dashboard/report') !== -1) return 'Memuat Laporan Rekap...';
+                if (path.indexOf('dashboard/report') !== -1) return 'Memuat Rekap Laporan...';
                 if (path.indexOf('dashboard') !== -1) return 'Memuat Dashboard...';
                 if (path.indexOf('users') !== -1) return 'Memuat Data Pengguna...';
                 if (path.indexOf('tamu') !== -1) return 'Memuat Mode Tamu...';
@@ -582,9 +582,15 @@
             return 'Memuat halaman...';
         }
 
-        function showLoading(href) {
+        function showLoading(hrefOrMsg) {
             if (!overlay || !bar) return;
-            if (msg) msg.textContent = getLoadingMsg(href);
+            if (msg) {
+                if (hrefOrMsg && (hrefOrMsg.indexOf('/') !== -1 || hrefOrMsg.indexOf('.') !== -1)) {
+                    msg.textContent = getLoadingMsg(hrefOrMsg);
+                } else {
+                    msg.textContent = hrefOrMsg || 'Memproses...';
+                }
+            }
             overlay.style.display = 'flex';
             bar.classList.add('is-active');
             requestAnimationFrame(function () {
@@ -604,6 +610,10 @@
             if (e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return;
             if (link.hasAttribute('data-confirm-nav')) return;
             if (link.classList.contains('sidebar-link-active')) return;
+            
+            // Exclude PDF/view/image links
+            if (link.classList.contains('btn-pdf')) return;
+            if (/\/(pdf|view|image|file)\//i.test(href)) return;
 
             e.preventDefault();
             showLoading(href);
@@ -612,6 +622,17 @@
                 location.href = href;
             });
         });
+
+        // Intercept semua form submit — tampilkan loading overlay
+        document.addEventListener('submit', function (e) {
+            var form = e.target;
+            if (!form || form.tagName !== 'FORM') return;
+            setTimeout(function () {
+                if (!e.defaultPrevented) {
+                    showLoading('Memproses...');
+                }
+            }, 0);
+        }, true);
 
         // Sembunyikan overlay saat halaman selesai dimuat (bfcache / back)
         window.addEventListener('pageshow', function () {
@@ -772,7 +793,7 @@
                         <span class="sidebar-link-icon">
                             @include('layouts._icon', ['icon' => 'file-text'])
                         </span>
-                        Laporan Rekap
+                        Rekap Laporan
                     </a>
                 @endif
 
@@ -858,7 +879,11 @@
 
     </div>
 
+
+
+
     {{-- ── Modal Konfirmasi Navigasi ke Dashboard / Report ── --}}
+
     <div id="modal-nav-confirm" class="modal-overlay" style="display:none;">
         <div id="modal-nav-confirm-box" class="modal-box" style="max-width:420px;width:90%;text-align:left;">
             {{-- Icon --}}
