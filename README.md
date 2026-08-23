@@ -31,6 +31,7 @@ start-all.bat
 Skrip runner ini **tidak membutuhkan hak Administrator** dan akan melakukan:
 - ⚡ **Service Check** — Memastikan Laragon, Apache, dan MySQL sudah aktif.
 - ⚙️ **Queue Worker** — Menyalakan Laravel Queue Worker di latar belakang jika belum aktif.
+- 🕔 **Task Scheduler** — Menyalakan Laravel Scheduler di latar belakang jika belum aktif (otomatis menjalankan pembersihan storage setiap pukul **17:00**).
 - 🌐 **Auto-Launch** — Membuka browser langsung ke URL login aplikasi.
 
 ### 🌐 3. Akses Aplikasi
@@ -384,11 +385,13 @@ DB_PASSWORD=
 
 ## 🔒 Pemeliharaan & Jadwal Otomatis (Scheduler)
 
-Aplikasi dilengkapi dengan **Laravel Task Scheduler** yang berjalan setiap pukul **00:00 (Tengah Malam)** untuk membersihkan berkas-berkas temporary:
+Aplikasi dilengkapi dengan **Laravel Task Scheduler** yang berjalan setiap hari pukul **17:00 (5 Sore)** untuk membersihkan berkas-berkas temporary secara otomatis:
 
 - `storage/framework/views` — Compiled Blade Views
 - `storage/framework/sessions` — File Session Usang
 - `storage/framework/cache/data` — Subfolder Cache Data
+
+Scheduler dijalankan secara otomatis oleh [`start-all.bat`](file:///c:/laragon/www/project-magang/start-all.bat) menggunakan `php artisan schedule:work` di background. Log eksekusi scheduler tersimpan di `storage/logs/scheduler.log`.
 
 Pembersihan manual dapat dilakukan kapan saja via terminal:
 ```bash
@@ -454,6 +457,8 @@ project-magang/
 | 8 | Perbaikan keamanan database seeder → menghapus truncate user tabel agar user kustom persisten | `DatabaseSeeder.php` |
 | 9 | Pemisahan skrip startup harian `start-all.bat` dari skrip inisialisasi awal `setup-and-run.bat` | `start-all.bat`, `setup-and-run.bat` |
 | 10 | Penyesuaian parameter host header Ngrok agar sesuai dengan virtual host `kearsipan.local` | `start-ngrok.bat` |
+| 11 | Aktifkan Task Scheduler `storage:clean` otomatis setiap pukul **17:00** dengan logging ke `storage/logs/scheduler.log` | `routes/console.php` |
+| 12 | Tambahkan spawn `schedule:work` di background pada runner harian agar scheduler aktif tanpa intervensi manual | `start-all.bat` |
 
 ---
 

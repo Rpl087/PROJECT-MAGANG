@@ -1,5 +1,5 @@
 @echo off
-title Arsip BPSDMP - Sistem Runner Ringan
+title Arsip BPSDMP - Sistem Runner Harian
 color 0E
 setlocal EnableDelayedExpansion
 
@@ -64,23 +64,36 @@ IF "!SVC_OK!"=="0" (
 
 :: ── [3] Jalankan Queue Worker jika belum aktif ─────────────────────────
 echo.
-echo [2/3] Memeriksa Queue Worker...
+echo [2/4] Memeriksa Queue Worker...
 tasklist /FI "WINDOWTITLE eq Arsip BPSDMP Queue Worker*" 2>NUL | find /I "cmd.exe" >NUL
 IF %ERRORLEVEL% NEQ 0 (
     echo [ACTION] Menjalankan Queue Worker di background...
     start "Arsip BPSDMP Queue Worker" /min cmd /k ""!PHP!" artisan queue:work --tries=3 --timeout=90 --max-jobs=500 --max-time=3600"
-    echo [OK] Queue Worker diaktifkan di background (auto-restart harian).
+    echo [OK] Queue Worker diaktifkan di background (auto-restart setiap 500 jobs/1 jam).
 ) else (
     echo [OK] Queue Worker sudah berjalan di background.
 )
 
-:: ── [4] Buka Browser ──────────────────────────────────────────────────
+:: ── [4] Jalankan Scheduler jika belum aktif ──────────────────────────
 echo.
-echo [3/3] Membuka URL Aplikasi...
+echo [3/4] Memeriksa Task Scheduler (storage:clean jam 17:00)...
+tasklist /FI "WINDOWTITLE eq Arsip BPSDMP Scheduler*" 2>NUL | find /I "cmd.exe" >NUL
+IF %ERRORLEVEL% NEQ 0 (
+    echo [ACTION] Menjalankan Task Scheduler di background...
+    start "Arsip BPSDMP Scheduler" /min cmd /k ""!PHP!" artisan schedule:work"
+    echo [OK] Scheduler diaktifkan — storage:clean akan berjalan otomatis setiap pukul 17:00.
+) else (
+    echo [OK] Task Scheduler sudah berjalan di background.
+)
+
+:: ── [5] Buka Browser ──────────────────────────────────────────────────
+echo.
+echo [4/4] Membuka URL Aplikasi...
 start http://kearsipan.local/login
 echo.
 echo ====================================================================
 echo  SISTEM BERHASIL DIJALANKAN DAN SIAP DIGUNAKAN!
+echo  - Pembersihan otomatis storage dijadwalkan pukul 17:00 setiap hari.
 echo ====================================================================
 echo.
 pause
