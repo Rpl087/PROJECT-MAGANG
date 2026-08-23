@@ -15,14 +15,11 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // ── Hapus semua user lama ─────────────────────────────────────────────
-        User::query()->delete();
-
         // ── Admin utama ───────────────────────────────────────────────────────
         User::firstOrCreate(
-            ['name' => 'Admin'],
+            ['email' => 'admin@bpsdmp.go.id'],
             [
-                'email'    => 'admin@bpsdmp.go.id',
+                'name'     => 'Admin',
                 'password' => Hash::make('admin_BPSDMP26'),
                 'role'     => 'admin',
             ]
@@ -30,9 +27,9 @@ class DatabaseSeeder extends Seeder
 
         // ── User Internship ───────────────────────────────────────────────────
         User::firstOrCreate(
-            ['name' => 'Internship'],
+            ['email' => 'internship@bpsdmp.go.id'],
             [
-                'email'    => 'internship@bpsdmp.go.id',
+                'name'     => 'Internship',
                 'password' => Hash::make('internship_BPSDMP'),
                 'role'     => 'internship',
             ]
