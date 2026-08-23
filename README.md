@@ -4,29 +4,38 @@ Aplikasi web berbasis **Laravel 13** untuk pengarsipan surat masuk dan surat kel
 
 ---
 
-## ⚡ Quick Start — Jalankan Pertama Kali (Mode 1-Pintu)
+## ⚡ Quick Start — Setup Awal & Jalankan Aplikasi
 
-Setelah melakukan `git clone` pada PC server khusus, Anda **cukup menjalankan 1 berkas skrip master** tanpa perlu konfigurasi manual:
+Setelah melakukan `git clone` pada PC server khusus, Anda dapat mengelola jalannya aplikasi menggunakan skrip otomatisasi berikut:
 
-1. Buka folder proyek dan klik ganda berkas:
-   ```cmd
-   setup-and-run.bat
-   ```
-   *(atau jalankan `start-all.bat` untuk sesi berikutnya)*
+### 📥 1. Inisialisasi Pertama Kali (Setup)
+Jalankan file berikut **hanya pada saat instalasi pertama kali** di server:
+```cmd
+setup-and-run.bat
+```
+Skrip ini memerlukan hak akses **Administrator** untuk melakukan konfigurasi otomatis:
+- 🔑 **UAC Elevation** — Meminta akses Administrator Windows otomatis.
+- ⚡ **Service Laragon** — Menyalakan dan mengaktifkan Apache & MySQL di Laragon.
+- 📝 **Environment** — Membuat berkas `.env` jika belum ada & mengisi parameter default.
+- 🗄️ **Database** — Membuat database `arsip_bpsdmp` dan menjalankan migrasi database.
+- 🌐 **Virtual Host** — Membuat VirtualHost Apache `kearsipan.local.conf` di Laragon.
+- 📌 **Hosts File** — Mendaftarkan domain `127.0.0.1 kearsipan.local` di berkas `hosts` Windows.
+- 🛡️ **Firewall** — Membuka Inbound Port 80 pada Windows Firewall.
+- 🧹 **Storage & Cache** — Melakukan pembersihan berkas temporary views & cache framework data.
 
-2. Skrip master 1-Pintu akan secara otomatis mengeksekusi alur berikut:
-   - 🔑 **UAC Elevation** — Meminta akses Administrator Windows otomatis
-   - ⚡ **Service Laragon** — Menyalakan Apache & MySQL
-   - 📝 **Environment** — Mengisi berkas `.env` & generate `APP_KEY`
-   - 🗄️ **Database** — Membuat database `arsip_bpsdmp`, menjalankan migrasi & seed
-   - 🌐 **Virtual Host** — Membuat VirtualHost Apache `kearsipan.local.conf`
-   - 📌 **Hosts File** — Mendaftarkan domain `127.0.0.1 kearsipan.local` di `hosts` Windows
-   - 🛡️ **Firewall** — Membuka Inbound Port 80 pada Windows Firewall
-   - 🧹 **Storage & Cache** — Membersihkan temporary views, sessions, & cache/data (`storage:clean`)
+### 🚀 2. Menjalankan Aplikasi Sehari-hari (Daily Runner)
+Untuk penggunaan sehari-hari setelah setup awal berhasil, **jangan** menjalankan skrip setup di atas. Gunakan skrip berikut yang jauh lebih ringan, cepat, dan aman:
+```cmd
+start-all.bat
+```
+Skrip runner ini **tidak membutuhkan hak Administrator** dan akan melakukan:
+- ⚡ **Service Check** — Memastikan Laragon, Apache, dan MySQL sudah aktif.
+- ⚙️ **Queue Worker** — Menyalakan Laravel Queue Worker di latar belakang jika belum aktif.
+- 🌐 **Auto-Launch** — Membuka browser langsung ke URL login aplikasi.
 
-3. Akses aplikasi melalui browser:
-   - **Akses Staff / Admin**: `http://kearsipan.local/`
-   - **Akses WiFi Tamu (Read-Only)**: `http://kearsipan.local/tamu`
+### 🌐 3. Akses Aplikasi
+- **Akses Staff / Admin**: `http://kearsipan.local/`
+- **Akses WiFi Tamu (Read-Only)**: `http://kearsipan.local/tamu`
 
 ---
 
@@ -442,6 +451,9 @@ project-magang/
 | 5 | Standardisasi loading animation kontekstual & font fallback sistem untuk navigasi Intranet WiFi instan | `layouts/app.blade.php`, `tamu/index.blade.php` |
 | 6 | Penyeragaman kisi garis tabel cetak (`1pt solid #333`), header *URAIAN INFORMASI ARSIP*, hapus kolom Tahun & tanda tangan | `dashboard/report.blade.php` |
 | 7 | Trait `ChecksIpSubnet` → penanganan subnet IPv4 & IPv6 yang aman tanpa exception | `Concerns/ChecksIpSubnet.php` |
+| 8 | Perbaikan keamanan database seeder → menghapus truncate user tabel agar user kustom persisten | `DatabaseSeeder.php` |
+| 9 | Pemisahan skrip startup harian `start-all.bat` dari skrip inisialisasi awal `setup-and-run.bat` | `start-all.bat`, `setup-and-run.bat` |
+| 10 | Penyesuaian parameter host header Ngrok agar sesuai dengan virtual host `kearsipan.local` | `start-ngrok.bat` |
 
 ---
 
