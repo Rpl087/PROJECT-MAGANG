@@ -1,5 +1,44 @@
 <?php
 
+/**
+ * ============================================================
+ * ROUTING UTAMA APLIKASI KEARSIPAN
+ * ============================================================
+ *
+ * Arsitektur akses dibagi menjadi 4 kelompok:
+ *
+ * 1. PUBLIK (tanpa auth)
+ *    - /login, /logout, /password/request-reset
+ *    - /pdf/{type}/{filename}  → serve file PDF lokal (uploads/)
+ *    - /image/{filename}       → serve gambar dari storage/image/
+ *
+ * 2. USER TERAUTENTIKASI (middleware: auth)
+ *    - GET  /              → ArsipController@index       (Surat Masuk, semua role)
+ *    - POST /arsip         → ArsipController@store       (hanya internal_only)
+ *    - GET  /surat-keluar  → SuratKeluarController@index (semua role)
+ *    - POST /surat-keluar  → SuratKeluarController@store (hanya internal_only)
+ *
+ * 3. ADMIN SAJA (middleware: auth + AdminOnly + internal_only)
+ *    - /dashboard, /dashboard/report, /dashboard/print
+ *    - Edit/hapus arsip masuk & keluar
+ *    - /admin/users → manajemen pengguna & reset password
+ *
+ * 4. TAMU/GUEST (middleware: guest_network, tanpa auth)
+ *    - /tamu/           → view read-only Surat Masuk
+ *    - /tamu/surat-keluar → view read-only Surat Keluar
+ *    Akses dibatasi oleh subnet guest (lihat config/network.php)
+ *
+ * MIDDLEWARE ALIAS (didaftarkan di bootstrap/app.php):
+ *    - 'internal_only' → InternalNetworkOnly::class
+ *    - 'guest_network' → GuestNetwork::class
+ *
+ * CATATAN PENTING:
+ *    Jika aplikasi berjalan di subfolder (misal: /project-magangv1/public/),
+ *    JANGAN gunakan route cache (php artisan route:cache), karena dapat
+ *    menyebabkan semua route menjadi 404. Hapus bootstrap/cache/routes-v7.php
+ *    secara manual jika cache bermasalah.
+ */
+
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\ArsipController;
 use App\Http\Controllers\Auth\LoginController;
@@ -9,17 +48,18 @@ use App\Http\Controllers\SuratKeluarController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 
-// ── Auth Routes ──────────────────────────────────────────────────────────────
 Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [LoginController::class, 'login'])->name('login.post');
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
-// ── Password Reset Request (intranet — tanpa email, admin yang menindaklanjuti) ─
 Route::post('/password/request-reset', [PasswordResetController::class, 'requestReset'])
-    ->middleware('throttle:3,5')   // Maks 3 request reset per 5 menit per IP
+    ->middleware('throttle:3,5')
     ->name('password.request-reset');
 
-// ── Public PDF Access ─────────────────────────────────────────────────────────
+// Route serve PDF: membaca dari folder uploads/ di root project.
+// Validasi tipe (surat-masuk/surat-keluar) dan nama file (hanya .pdf, alfanumerik/dash/spasi).
+// TIDAK memerlukan login — agar link PDF yang disimpan di Google Sheets tetap bisa dibuka.
+// Cache-Control: 1 hari (86400 detik) untuk mengurangi request berulang.
 Route::get('/pdf/{type}/{filename}', function (string $type, string $filename) {
     if (!in_array($type, ['surat-masuk', 'surat-keluar'])) {
         abort(404);
@@ -42,7 +82,9 @@ Route::get('/pdf/{type}/{filename}', function (string $type, string $filename) {
     ]);
 })->name('pdf.view')->where('filename', '.+');
 
-// ── Public Image Access ───────────────────────────────────────────────────────
+// Route serve gambar: membaca dari storage/image/ (bukan public/images).
+// Digunakan untuk aset gambar seperti logo yang disimpan di storage (bukan public/).
+// Cache immutable: 1 tahun — gambar tidak berubah, cocok untuk aset statis.
 Route::get('/image/{filename}', function (string $filename) {
     if (!preg_match('/^[\w\-. ]+\.(png|jpg|jpeg|gif|svg|webp|ico)$/i', $filename)) {
         abort(403, 'Akses ditolak.');
@@ -70,65 +112,57 @@ Route::get('/image/{filename}', function (string $filename) {
     ]);
 })->name('image.view')->where('filename', '.+');
 
-// ── SSE Endpoint — Notifikasi Reset Password Realtime (khusus admin) ──────────
-// Admin mendengarkan endpoint ini untuk mendapat notifikasi realtime
-// saat ada internship yang submit permintaan reset password.
+// SSE (Server-Sent Events): digunakan oleh halaman admin untuk notifikasi real-time
+// saat ada permintaan reset password baru. Hanya admin yang bisa mengakses.
 Route::get('/sse/reset-requests', [UserController::class, 'resetRequestsSSE'])
     ->middleware(['auth', \App\Http\Middleware\AdminOnly::class])
     ->name('sse.reset-requests');
 
-// API endpoint polling fallback untuk admin
+// Endpoint polling versi untuk fallback jika SSE tidak didukung browser.
 Route::get('/api/reset-requests-version', [UserController::class, 'resetRequestsVersion'])
     ->middleware(['auth', \App\Http\Middleware\AdminOnly::class])
     ->name('api.reset-requests-version');
 
-// ── Protected Routes (wajib login) ───────────────────────────────────────────
+// ─── GRUP: USER TERAUTENTIKASI ────────────────────────────────────────────────
+// Semua user yang sudah login (admin & internship) bisa membaca data.
+// Operasi tulis (POST) dibatasi hanya dari IP jaringan internal (internal_only).
 Route::middleware('auth')->group(function () {
 
-    // Surat Masuk — semua user login (admin & internship)
     Route::get('/', [ArsipController::class, 'index'])->name('arsip.index');
     Route::post('/arsip', [ArsipController::class, 'store'])
-        ->middleware('internal_only')
+        ->middleware('internal_only') // Hanya bisa tambah data dari jaringan kantor
         ->name('arsip.store');
 
-    // Surat Keluar — semua user login
     Route::get('/surat-keluar', [SuratKeluarController::class, 'index'])->name('surat-keluar.index');
     Route::post('/surat-keluar', [SuratKeluarController::class, 'store'])
-        ->middleware('internal_only')
+        ->middleware('internal_only') // Hanya bisa tambah data dari jaringan kantor
         ->name('surat-keluar.store');
 });
 
-// ── Admin-only Routes (wajib login + role admin) ──────────────────────────────
+// ─── GRUP: ADMIN SAJA ────────────────────────────────────────────────────────
+// Hanya user dengan role='admin' yang bisa mengakses.
+// Selain itu, WAJIB dari jaringan internal (internal_only).
+// Jika INTRANET_ENABLED=false di .env, internal_only tidak aktif (semua IP diizinkan).
 Route::middleware(['auth', \App\Http\Middleware\AdminOnly::class, 'internal_only'])->group(function () {
 
-    // Dashboard (admin)
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard.index');
 
-    // Laporan Rekapan (admin)
     Route::get('/dashboard/report', [DashboardController::class, 'report'])->name('dashboard.report');
 
-    // Halaman Cetak Custom (admin)
     Route::get('/dashboard/print', [DashboardController::class, 'printView'])->name('dashboard.print');
 
-    // Hapus Surat Masuk
     Route::delete('/arsip/{rowIndex}', [ArsipController::class, 'destroy'])->name('arsip.destroy');
 
-    // Edit Surat Masuk
     Route::get('/arsip/{rowIndex}/edit', [ArsipController::class, 'edit'])->name('arsip.edit');
 
-    // Update Surat Masuk
     Route::put('/arsip/{rowIndex}', [ArsipController::class, 'update'])->name('arsip.update');
 
-    // Hapus Surat Keluar
     Route::delete('/surat-keluar/{rowIndex}', [SuratKeluarController::class, 'destroy'])->name('surat-keluar.destroy');
 
-    // Edit Surat Keluar
     Route::get('/surat-keluar/{rowIndex}/edit', [SuratKeluarController::class, 'edit'])->name('surat-keluar.edit');
 
-    // Update Surat Keluar
     Route::put('/surat-keluar/{rowIndex}', [SuratKeluarController::class, 'update'])->name('surat-keluar.update');
 
-    // ── Kelola Pengguna (admin) ────────────────────────────────────────────────
     Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/users', [UserController::class, 'index'])->name('users.index');
         Route::post('/users/{user}/reset-password', [UserController::class, 'resetPassword'])
@@ -138,13 +172,14 @@ Route::middleware(['auth', \App\Http\Middleware\AdminOnly::class, 'internal_only
     });
 });
 
-// ── Guest Network Routes (WiFi Tamu — read-only, tanpa login) ─────────────────
-// Hanya bisa diakses dari subnet WiFi Tamu atau Internal (via middleware GuestNetwork)
+// ─── GRUP: TAMU (GUEST VIEW) ─────────────────────────────────────────────────
+// Halaman baca-saja untuk tamu/pegawai tanpa akun.
+// Tidak perlu login, tapi IP harus masuk subnet guest atau internal (GuestNetwork middleware).
+// Konfigurasi subnet: GUEST_NETWORK_SUBNET di .env → config/network.php
+// Berguna untuk pegawai yang ingin cek arsip tanpa harus memiliki akun login.
 Route::middleware('guest_network')->prefix('tamu')->name('tamu.')->group(function () {
 
-    // Halaman utama tamu: daftar surat masuk (read-only)
     Route::get('/', [ArsipController::class, 'indexGuest'])->name('index');
 
-    // Halaman surat keluar tamu (read-only)
     Route::get('/surat-keluar', [SuratKeluarController::class, 'indexGuest'])->name('surat-keluar');
 });

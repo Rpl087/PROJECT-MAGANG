@@ -4,200 +4,176 @@ namespace App\Http\Controllers;
 
 use App\Services\SheetsCache;
 
+/**
+ * ============================================================
+ * DASHBOARD CONTROLLER
+ * ============================================================
+ *
+ * Mengelola tampilan dashboard statistik arsip (hanya untuk admin).
+ * Data diambil dari sheet dbSM (Surat Masuk) dan dbSK (Surat Keluar)
+ * menggunakan batchGet API untuk efisiensi (1 request, 2 sheet).
+ *
+ * HALAMAN YANG DIKELOLA:
+ *   - /dashboard         → tampilan statistik interaktif (chart, rekap bulanan)
+ *   - /dashboard/report  → laporan rekap lengkap per tahun & klasifikasi
+ *   - /dashboard/print   → tampilan print-friendly untuk laporan
+ *
+ * ALUR DATA:
+ *   1. Ambil data dbSM dan dbSK dari Google Sheets (via batchGet)
+ *   2. Proses baris-baris data menjadi statistik (processRows)
+ *   3. Kirim data ke view untuk ditampilkan
+ *
+ * PARSING TANGGAL:
+ *   - Mendukung format tanggal Bahasa Indonesia (Januari, Februari, dst)
+ *   - Mendukung format DD/MM/YYYY dan DD-MM-YYYY
+ *   - Baris dengan tanggal kosong/tidak valid diabaikan
+ *
+ * FALLBACK BATCHGET:
+ *   Jika batchGet gagal (quota/error), otomatis fallback ke dua request
+ *   terpisah untuk dbSM dan dbSK.
+ *
+ * CATATAN INDEX KOLOM (digunakan di processRows dan report):
+ *   - dbSM: dateColIndex=8 (tanggal surat), klasifikasiColIndex=1
+ *   - dbSK: dateColIndex=9 (tanggal surat SK berbeda posisi), klasifikasiColIndex=1
+ */
 class DashboardController extends Controller
 {
     /**
-     * Ambil data dari Google Sheets dan kirim ke view dashboard.
+     * Translasi nama bulan Bahasa Indonesia ke Bahasa Inggris.
+     * Digunakan oleh parseDate() agar strtotime() bisa memahami tanggal berbahasa Indonesia.
      */
+    private const ID_TO_EN = [
+        'januari'   => 'January',
+        'februari'  => 'February',
+        'maret'     => 'March',
+        'april'     => 'April',
+        'mei'       => 'May',
+        'juni'      => 'June',
+        'juli'      => 'July',
+        'agustus'   => 'August',
+        'september' => 'September',
+        'oktober'   => 'October',
+        'november'  => 'November',
+        'desember'  => 'December',
+    ];
+
     public function index()
     {
         try {
-            // Ambil raw rows dari cache (atau fetch dari API jika cache miss)
-            [$smRows, $skRows] = SheetsCache::remember(
-                SheetsCache::KEY_DASHBOARD,
-                SheetsCache::TTL_DASHBOARD,
-                function () {
-                    [$service, $spreadsheetId] = $this->getReadonlySheetService();
-                    return $this->fetchBothSheets($service, $spreadsheetId);
-                }
-            );
+            $data = $this->buildDashboardStats(SheetsCache::KEY_DASHBOARD);
 
-            // Hapus baris header
-            if (!empty($smRows)) array_shift($smRows);
-            if (!empty($skRows)) array_shift($skRows);
-
-            $currentYear  = (int) date('Y');
-            $currentMonth = (int) date('m');
-
-            // ── Proses Surat Masuk ─────────────────────────────────────────
-            // B(1)=Kode Klasifikasi, I(8)=Tanggal Surat
-            $smData = $this->processRows($smRows, dateColIndex: 8, klasifikasiColIndex: 1);
-
-            // ── Proses Surat Keluar ────────────────────────────────────────
-            // B(1)=Kode Klasifikasi, J(9)=Tanggal Surat — filter baris tanpa tanggal (dbSK menggunakan indeks 9)
-            $skRowsFiltered = array_filter($skRows, fn($r) => !empty(trim($r[9] ?? '')));
-            $skData = $this->processRows(array_values($skRowsFiltered), dateColIndex: 9, klasifikasiColIndex: 1);
-
-            // ── Rekap Bulanan (12 bulan dalam tahun berjalan) ──────────────
-            $bulanNames = [
-                1  => 'Januari',  2  => 'Februari', 3  => 'Maret',
-                4  => 'April',    5  => 'Mei',       6  => 'Juni',
-                7  => 'Juli',     8  => 'Agustus',   9  => 'September',
-                10 => 'Oktober',  11 => 'November',  12 => 'Desember',
-            ];
-
-            $monthlyRecap = [];
-            $totalSMYear  = 0;
-            $totalSKYear  = 0;
-
-            for ($m = 1; $m <= 12; $m++) {
-                $key     = $currentYear . '-' . str_pad($m, 2, '0', STR_PAD_LEFT);
-                $smCount = $smData['monthly'][$key] ?? 0;
-                $skCount = $skData['monthly'][$key] ?? 0;
-                $totalSMYear += $smCount;
-                $totalSKYear += $skCount;
-
-                $monthlyRecap[] = [
-                    'bulan'    => $bulanNames[$m],
-                    'sm_count' => $smCount,
-                    'sk_count' => $skCount,
-                    'total'    => $smCount + $skCount,
-                ];
-            }
-
-            // ── Data Pie Klasifikasi ────────────────────────────────────────
-            $currentMonthKey = $currentYear . '-' . str_pad($currentMonth, 2, '0', STR_PAD_LEFT);
-
-            $smPieBulan = $smData['klasifikasiMonthly'][$currentMonthKey] ?? [];
-            $skPieBulan = $skData['klasifikasiMonthly'][$currentMonthKey] ?? [];
-            $smPieTahun = $smData['klasifikasiYearly'][$currentYear]      ?? [];
-            $skPieTahun = $skData['klasifikasiYearly'][$currentYear]      ?? [];
-
-            return view('dashboard.index', compact(
-                'monthlyRecap',
-                'totalSMYear',
-                'totalSKYear',
-                'smPieBulan',
-                'skPieBulan',
-                'smPieTahun',
-                'skPieTahun',
-                'currentYear',
-                'currentMonth',
-                'bulanNames',
-            ));
+            return view('dashboard.index', $data);
         } catch (\Exception $e) {
-            // Hapus cache yang mungkin korup
             SheetsCache::forget(SheetsCache::KEY_DASHBOARD);
-            return view('dashboard.index', [
-                'error'        => 'Gagal memuat data: ' . $e->getMessage(),
-                'monthlyRecap' => [],
-                'totalSMYear'  => 0,
-                'totalSKYear'  => 0,
-                'smPieBulan'   => [],
-                'skPieBulan'   => [],
-                'smPieTahun'   => [],
-                'skPieTahun'   => [],
-                'currentYear'  => (int) date('Y'),
-                'currentMonth' => (int) date('m'),
-                'bulanNames'   => [],
-            ]);
+            return view('dashboard.index', $this->emptyDashboardData($e->getMessage()));
         }
     }
 
-    /**
-     * Halaman Cetak Custom — Kop Surat + Rekap Bulanan + Grafik Klasifikasi.
-     */
     public function printView()
     {
         try {
-            [$smRows, $skRows] = SheetsCache::remember(
-                SheetsCache::KEY_DASHBOARD,
-                SheetsCache::TTL_DASHBOARD,
-                function () {
-                    [$service, $spreadsheetId] = $this->getReadonlySheetService();
-                    return $this->fetchBothSheets($service, $spreadsheetId);
-                }
-            );
+            $data = $this->buildDashboardStats(SheetsCache::KEY_DASHBOARD);
 
-            if (!empty($smRows)) array_shift($smRows);
-            if (!empty($skRows)) array_shift($skRows);
-
-            $currentYear  = (int) date('Y');
-            $currentMonth = (int) date('m');
-
-            $smData = $this->processRows($smRows, dateColIndex: 8, klasifikasiColIndex: 1);
-
-            $skRowsFiltered = array_filter($skRows, fn($r) => !empty(trim($r[9] ?? '')));
-            $skData = $this->processRows(array_values($skRowsFiltered), dateColIndex: 9, klasifikasiColIndex: 1);
-
-            $bulanNames = [
-                1  => 'Januari',  2  => 'Februari', 3  => 'Maret',
-                4  => 'April',    5  => 'Mei',       6  => 'Juni',
-                7  => 'Juli',     8  => 'Agustus',   9  => 'September',
-                10 => 'Oktober',  11 => 'November',  12 => 'Desember',
-            ];
-
-            $monthlyRecap = [];
-            $totalSMYear  = 0;
-            $totalSKYear  = 0;
-
-            for ($m = 1; $m <= 12; $m++) {
-                $key     = $currentYear . '-' . str_pad($m, 2, '0', STR_PAD_LEFT);
-                $smCount = $smData['monthly'][$key] ?? 0;
-                $skCount = $skData['monthly'][$key] ?? 0;
-                $totalSMYear += $smCount;
-                $totalSKYear += $skCount;
-                $monthlyRecap[] = [
-                    'bulan'    => $bulanNames[$m],
-                    'sm_count' => $smCount,
-                    'sk_count' => $skCount,
-                    'total'    => $smCount + $skCount,
-                ];
-            }
-
-            $currentMonthKey = $currentYear . '-' . str_pad($currentMonth, 2, '0', STR_PAD_LEFT);
-            $smPieBulan = $smData['klasifikasiMonthly'][$currentMonthKey] ?? [];
-            $skPieBulan = $skData['klasifikasiMonthly'][$currentMonthKey] ?? [];
-            $smPieTahun = $smData['klasifikasiYearly'][$currentYear]      ?? [];
-            $skPieTahun = $skData['klasifikasiYearly'][$currentYear]      ?? [];
-
-            return view('dashboard.print', compact(
-                'monthlyRecap',
-                'totalSMYear',
-                'totalSKYear',
-                'smPieBulan',
-                'skPieBulan',
-                'smPieTahun',
-                'skPieTahun',
-                'currentYear',
-                'currentMonth',
-                'bulanNames',
-            ));
+            return view('dashboard.print', $data);
         } catch (\Exception $e) {
             SheetsCache::forget(SheetsCache::KEY_DASHBOARD);
-            return view('dashboard.print', [
-                'error'        => 'Gagal memuat data: ' . $e->getMessage(),
-                'monthlyRecap' => [],
-                'totalSMYear'  => 0,
-                'totalSKYear'  => 0,
-                'smPieBulan'   => [],
-                'skPieBulan'   => [],
-                'smPieTahun'   => [],
-                'skPieTahun'   => [],
-                'currentYear'  => (int) date('Y'),
-                'currentMonth' => (int) date('m'),
-                'bulanNames'   => [],
-            ]);
+            return view('dashboard.print', $this->emptyDashboardData($e->getMessage()));
         }
     }
 
     /**
-     * Halaman Laporan Rekapan Bulanan & Tahunan (printable).
+     * Membangun data statistik dashboard (digunakan oleh index() dan printView()).
+     * Mengambil dua sheet sekaligus via batchGet, lalu memproses rekap bulanan
+     * dan klasifikasi per bulan/tahun.
      */
+    private function buildDashboardStats(string $cacheKey): array
+    {
+        [$smRows, $skRows] = SheetsCache::remember(
+            $cacheKey,
+            SheetsCache::TTL_DASHBOARD,
+            function () {
+                [$service, $spreadsheetId] = $this->getReadonlySheetService();
+                return $this->fetchBothSheets($service, $spreadsheetId);
+            }
+        );
+
+        if (!empty($smRows)) array_shift($smRows);
+        if (!empty($skRows)) array_shift($skRows);
+
+        $currentYear  = (int) date('Y');
+        $currentMonth = (int) date('m');
+
+        $smData = $this->processRows($smRows, dateColIndex: 8, klasifikasiColIndex: 1);
+
+        $skRowsFiltered = array_filter($skRows, fn($r) => !empty(trim($r[9] ?? '')));
+        $skData = $this->processRows(array_values($skRowsFiltered), dateColIndex: 9, klasifikasiColIndex: 1);
+
+        $bulanNames = [
+            1  => 'Januari',  2  => 'Februari', 3  => 'Maret',
+            4  => 'April',    5  => 'Mei',       6  => 'Juni',
+            7  => 'Juli',     8  => 'Agustus',   9  => 'September',
+            10 => 'Oktober',  11 => 'November',  12 => 'Desember',
+        ];
+
+        $monthlyRecap = [];
+        $totalSMYear  = 0;
+        $totalSKYear  = 0;
+
+        for ($m = 1; $m <= 12; $m++) {
+            $key     = $currentYear . '-' . str_pad($m, 2, '0', STR_PAD_LEFT);
+            $smCount = $smData['monthly'][$key] ?? 0;
+            $skCount = $skData['monthly'][$key] ?? 0;
+            $totalSMYear += $smCount;
+            $totalSKYear += $skCount;
+
+            $monthlyRecap[] = [
+                'bulan'    => $bulanNames[$m],
+                'sm_count' => $smCount,
+                'sk_count' => $skCount,
+                'total'    => $smCount + $skCount,
+            ];
+        }
+
+        $currentMonthKey = $currentYear . '-' . str_pad($currentMonth, 2, '0', STR_PAD_LEFT);
+
+        return [
+            'monthlyRecap' => $monthlyRecap,
+            'totalSMYear'  => $totalSMYear,
+            'totalSKYear'  => $totalSKYear,
+            'smPieBulan'   => $smData['klasifikasiMonthly'][$currentMonthKey] ?? [],
+            'skPieBulan'   => $skData['klasifikasiMonthly'][$currentMonthKey] ?? [],
+            'smPieTahun'   => $smData['klasifikasiYearly'][$currentYear]      ?? [],
+            'skPieTahun'   => $skData['klasifikasiYearly'][$currentYear]      ?? [],
+            'currentYear'  => $currentYear,
+            'currentMonth' => $currentMonth,
+            'bulanNames'   => $bulanNames,
+        ];
+    }
+
+    /**
+     * Mengembalikan struktur data kosong untuk view dashboard saat terjadi error.
+     */
+    private function emptyDashboardData(string $errorMessage): array
+    {
+        return [
+            'error'        => 'Gagal memuat data: ' . $errorMessage,
+            'monthlyRecap' => [],
+            'totalSMYear'  => 0,
+            'totalSKYear'  => 0,
+            'smPieBulan'   => [],
+            'skPieBulan'   => [],
+            'smPieTahun'   => [],
+            'skPieTahun'   => [],
+            'currentYear'  => (int) date('Y'),
+            'currentMonth' => (int) date('m'),
+            'bulanNames'   => [],
+        ];
+    }
+
     public function report()
     {
         try {
-            // Ambil raw rows dari cache (atau fetch dari API jika cache miss)
+
             [$smRows, $skRows] = SheetsCache::remember(
                 SheetsCache::KEY_REPORT,
                 SheetsCache::TTL_DASHBOARD,
@@ -207,14 +183,11 @@ class DashboardController extends Controller
                 }
             );
 
-            // Hapus baris header
             if (!empty($smRows)) array_shift($smRows);
             if (!empty($skRows)) array_shift($skRows);
 
-            // ── Proses Surat Masuk — I(8)=Tanggal ──────────────────────────
             $smData = $this->processRows($smRows, dateColIndex: 8, klasifikasiColIndex: 1);
 
-            // ── Proses Surat Keluar — J(9)=Tanggal (dbSK menggunakan indeks 9)
             $skRowsFiltered = array_filter($skRows, fn($r) => !empty(trim($r[9] ?? '')));
             $skData = $this->processRows(array_values($skRowsFiltered), dateColIndex: 9, klasifikasiColIndex: 1);
 
@@ -228,14 +201,12 @@ class DashboardController extends Controller
             $currentYear  = (int) date('Y');
             $currentMonth = (int) date('m');
 
-            // ── Kumpulkan semua tahun yang ada datanya ─────────────────────
             $allYears = array_unique(array_merge(
                 array_keys($smData['klasifikasiYearly']),
                 array_keys($skData['klasifikasiYearly'])
             ));
             sort($allYears);
 
-            // ── Rekap Bulanan per Tahun ─────────────────────────────────────
             $rekapPerTahun = [];
             foreach ($allYears as $year) {
                 $rows = [];
@@ -264,11 +235,10 @@ class DashboardController extends Controller
                 ];
             }
 
-            // ── Rekap Tahunan (ringkasan per tahun) ───────────────────────────────────
             $kodePriority = ['PR','KP','OT','KU','HK','UM','PL','UP','HM','PW','LT','DL','DT','KI'];
             $rekapTahunan = [];
             foreach ($allYears as $year) {
-                // Kumpulkan semua kode untuk tahun ini
+
                 $smKode  = $smData['klasifikasiYearly'][$year] ?? [];
                 $skKode  = $skData['klasifikasiYearly'][$year] ?? [];
                 $allK    = array_unique(array_merge(array_keys($smKode), array_keys($skKode)));
@@ -292,7 +262,6 @@ class DashboardController extends Controller
                 ];
             }
 
-            // ── Rekap Per Klasifikasi (semua tahun digabung) ───────────────
             $klasifikasiSM = [];
             foreach ($smData['klasifikasiYearly'] as $year => $kodes) {
                 foreach ($kodes as $kode => $count) {
@@ -306,7 +275,6 @@ class DashboardController extends Controller
                 }
             }
 
-            // Sort berdasarkan kodePriority
             $allKodes = array_unique(array_merge(array_keys($klasifikasiSM), array_keys($klasifikasiSK)));
             usort($allKodes, function ($a, $b) use ($kodePriority) {
                 $ia = array_search($a, $kodePriority);
@@ -328,8 +296,6 @@ class DashboardController extends Controller
                 ];
             }
 
-            // ── Rekap Per Klasifikasi PER TAHUN (untuk filter tahun) ───────────────
-            // Struktur: [year => [['kode'=>'KP','sm_count'=>5,'sk_count'=>2,'total'=>7], ...]]
             $rekapKlasifikasiPerTahun = [];
             foreach ($allYears as $year) {
                 $smKodeY = $smData['klasifikasiYearly'][$year] ?? [];
@@ -349,8 +315,6 @@ class DashboardController extends Controller
                 $rekapKlasifikasiPerTahun[$year] = $rowsY;
             }
 
-            // ── Klasifikasi Per Bulan (untuk fitur klik baris bulan di Rekap Bulanan) ──
-            // Struktur JSON: {'YYYY-MM': {'KP': [sm, sk], 'PR': [sm, sk], ...}, ...}
             $klasifikasiPerBulan = [];
             foreach ($allYears as $year) {
                 for ($m = 1; $m <= 12; $m++) {
@@ -374,11 +338,8 @@ class DashboardController extends Controller
                 }
             }
 
-            // ── Data Detail Print: Rekap Bulanan ──────────────────────────────
-            // Kumpulkan semua surat (SM + SK) dengan info lengkap, diurutkan tanggal
             $printDetailBulanan = [];
 
-            // SM raw: col[1]=KodeKlas, col[2]=KodeSurat, col[3]=UraianBerkas, col[7]=UraianArsip, col[8]=TanggalSurat
             foreach ($smRows as $row) {
                 $rawDate = trim($row[8] ?? '');
                 if (empty($rawDate)) continue;
@@ -403,7 +364,6 @@ class DashboardController extends Controller
                 ];
             }
 
-            // SK raw: col[1]=KodeKlas, col[2]=KodeSurat, col[3]=UraianBerkas, col[8]=UraianArsip, col[9]=TanggalSurat
             foreach ($skRows as $row) {
                 $rawDate = trim($row[9] ?? '');
                 if (empty($rawDate)) continue;
@@ -428,25 +388,20 @@ class DashboardController extends Controller
                 ];
             }
 
-            // Urutkan berdasarkan tanggal (timestamp) ascending
             usort($printDetailBulanan, fn($a, $b) => $a['ts'] <=> $b['ts']);
 
-            // ── Data Detail Print: Per Surat Masuk (sorted by tanggal input) ──
             $printDetailSM = array_values(array_filter($printDetailBulanan, fn($d) => $d['jenis'] === 'SM'));
 
-            // ── Data Detail Print: Per Surat Keluar (sorted by tanggal input) ──
             $printDetailSK = array_values(array_filter($printDetailBulanan, fn($d) => $d['jenis'] === 'SK'));
 
-            // ── Data Detail Print: Per Klasifikasi ─────────────────────────────
-            // Semua surat diurutkan berdasarkan kode klasifikasi priority lalu tanggal
-            $printDetailKlasifikasi = $printDetailBulanan; // copy sorted by date
+            $printDetailKlasifikasi = $printDetailBulanan;
             usort($printDetailKlasifikasi, function ($a, $b) use ($kodePriority) {
                 $ia = array_search($a['kode_prefix'], $kodePriority);
                 $ib = array_search($b['kode_prefix'], $kodePriority);
                 $ia = $ia === false ? 999 : $ia;
                 $ib = $ib === false ? 999 : $ib;
                 if ($ia !== $ib) return $ia <=> $ib;
-                // Jika kode sama, urutkan berdasarkan kode lengkap lalu tanggal
+
                 $kodeCompare = strcmp($a['kode'], $b['kode']);
                 if ($kodeCompare !== 0) return $kodeCompare;
                 return $a['ts'] <=> $b['ts'];
@@ -468,7 +423,7 @@ class DashboardController extends Controller
                 'printDetailSK',
             ));
         } catch (\Exception $e) {
-            // Hapus cache yang mungkin korup
+
             SheetsCache::forget(SheetsCache::KEY_REPORT);
             return view('dashboard.report', [
                 'error'                     => 'Gagal memuat data: ' . $e->getMessage(),
@@ -481,8 +436,8 @@ class DashboardController extends Controller
                 'currentYear'               => (int) date('Y'),
                 'currentMonth'              => (int) date('m'),
                 'bulanNames'                => [],
-                'printDetailBulanan'        => [],    // BUG-01 fix: wajib ada agar Blade tidak error
-                'printDetailKlasifikasi'    => [],    // BUG-01 fix: wajib ada agar Blade tidak error
+                'printDetailBulanan'        => [],
+                'printDetailKlasifikasi'    => [],
                 'printDetailSM'             => [],
                 'printDetailSK'             => [],
             ]);
@@ -490,17 +445,19 @@ class DashboardController extends Controller
     }
 
     /**
-     * Memproses baris spreadsheet dan mengelompokkan per bulan & per tahun.
+     * Memproses array baris data sheet menjadi statistik:
+     *   - monthly: jumlah arsip per bulan (key: 'YYYY-MM')
+     *   - klasifikasiMonthly: jumlah per kode per bulan
+     *   - klasifikasiYearly: jumlah per kode per tahun
      *
-     * @param array $rows                 Baris data (sudah tanpa header)
-     * @param int   $dateColIndex         Indeks kolom tanggal surat (0-based)
-     * @param int   $klasifikasiColIndex  Indeks kolom kode klasifikasi (0-based)
+     * Baris dengan tanggal kosong atau tidak valid diabaikan.
+     * Kode klasifikasi diambil hanya prefix huruf (misal: 'KP' dari 'KP.001').
      */
     private function processRows(array $rows, int $dateColIndex, int $klasifikasiColIndex): array
     {
-        $monthly            = [];  // ['YYYY-MM' => count]
-        $klasifikasiMonthly = [];  // ['YYYY-MM' => ['KODE' => count]]
-        $klasifikasiYearly  = [];  // [YYYY => ['KODE' => count]]
+        $monthly            = [];
+        $klasifikasiMonthly = [];
+        $klasifikasiYearly  = [];
 
         foreach ($rows as $row) {
             $rawDate = $row[$dateColIndex] ?? '';
@@ -516,13 +473,12 @@ class DashboardController extends Controller
             $monthly[$key] = ($monthly[$key] ?? 0) + 1;
 
             $kode = trim($row[$klasifikasiColIndex] ?? '');
-            // Abaikan formula error Google Sheets (misal #N/A, #REF!) untuk grouping
+
             if (empty($kode) || str_starts_with($kode, '#')) {
                 $kode = 'Tidak Diketahui';
             } else {
-                // Normalisasi: ambil hanya prefix huruf di awal kode
-                // Contoh: "KP 03" → "KP", "PR.02" → "PR", "KP/01" → "KP"
-                if (preg_match('/^([A-Za-z]+)/', $kode, $km)) {  // BUG-04 fix: $km bukan $m
+
+                if (preg_match('/^([A-Za-z]+)/', $kode, $km)) {
                     $kode = strtoupper($km[1]);
                 }
             }
@@ -536,44 +492,25 @@ class DashboardController extends Controller
     }
 
     /**
-     * Parse tanggal dari berbagai format, termasuk nama bulan Indonesia.
+     * Mengurai string tanggal ke Unix timestamp.
+     * Mendukung:
+     *   - Nama bulan Bahasa Indonesia (via ID_TO_EN)
+     *   - Format DD/MM/YYYY dan DD-MM-YYYY
+     *   - Format-format lain yang didukung strtotime()
      *
-     * Format yang didukung:
-     *   - "11 Mei 2026"   → tanggal bulan(id) tahun
-     *   - "11 May 2026"   → tanggal bulan(en) tahun
-     *   - "2026-05-11"    → YYYY-MM-DD
-     *   - "11/05/2026"    → DD/MM/YYYY
-     *   - "11-05-2026"    → DD-MM-YYYY
-     *
-     * @return int|false  Unix timestamp atau false jika gagal
+     * @return int|false Timestamp atau false jika tidak valid
      */
     private function parseDate(string $raw): int|false
     {
         $raw = trim($raw);
         if (empty($raw)) return false;
 
-        $idToEn = [
-            'januari'   => 'January',
-            'februari'  => 'February',
-            'maret'     => 'March',
-            'april'     => 'April',
-            'mei'       => 'May',
-            'juni'      => 'June',
-            'juli'      => 'July',
-            'agustus'   => 'August',
-            'september' => 'September',
-            'oktober'   => 'October',
-            'november'  => 'November',
-            'desember'  => 'December',
-        ];
-
         $normalized = preg_replace_callback(
-            '/\b(' . implode('|', array_keys($idToEn)) . ')\b/ui',
-            fn($m) => $idToEn[strtolower($m[1])],
+            '/\b(' . implode('|', array_keys(self::ID_TO_EN)) . ')\b/ui',
+            fn($m) => self::ID_TO_EN[strtolower($m[1])],
             $raw
         );
 
-        // DD/MM/YYYY atau DD-MM-YYYY → YYYY-MM-DD
         if (preg_match('/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/', $normalized, $parts)) {
             $normalized = "{$parts[3]}-{$parts[2]}-{$parts[1]}";
         }
@@ -583,7 +520,13 @@ class DashboardController extends Controller
     }
 
     /**
-     * Ambil data sheet dbSM dan dbSK secara efisien dalam 1 HTTP request menggunakan batchGet.
+     * Mengambil data dari dua sheet (dbSM dan dbSK) dalam satu API call (batchGet).
+     * Lebih efisien dari dua request terpisah.
+     *
+     * Jika batchGet gagal (misal: error jaringan/quota), fallback ke
+     * dua request terpisah untuk menjaga keandalan.
+     *
+     * @return array [$smRows, $skRows]
      */
     private function fetchBothSheets($service, string $spreadsheetId): array
     {

@@ -5,30 +5,48 @@ namespace App\Services;
 use Illuminate\Support\Facades\Cache;
 
 /**
- * SheetsCache
+ * ============================================================
+ * SHEETS CACHE SERVICE
+ * ============================================================
  *
- * Centralized helper untuk caching data Google Sheets.
- * Mencegah pemanggilan Google API berulang pada setiap request,
- * sehingga loading halaman turun dari beberapa menit menjadi < 1 detik.
+ * Mengelola caching data dari Google Sheets agar tidak setiap
+ * request melakukan API call ke Google (mengurangi latensi & kuota API).
  *
- * Cache Keys:
- *   sheets.surat-masuk   → data sheet "SURAT MASUK!A:Q"
- *   sheets.surat-keluar  → data sheet "SURAT KELUAR!A:Q"
- *   sheets.dbsm          → data sheet "dbSM!A:R"
- *   sheets.dbsk          → data sheet "dbSK!A:R" (opsional, jika dibutuhkan)
+ * STRATEGI CACHING:
+ *   - User biasa (internship): cache normal dengan TTL_TABLE (5 menit)
+ *   - Admin: cache mikro terpisah dengan TTL_ADMIN_MICRO (15 detik)
+ *     agar admin melihat data lebih segar setelah melakukan perubahan.
+ *     Cache admin menulis ulang cache normal setiap refresh.
  *
- * TTL default: 5 menit (300 detik)
- * Cache di-invalidate otomatis setelah store / update / destroy.
+ * KEY CACHE:
+ *   - 'sheets.surat-masuk'  → data tabel surat masuk (dbSM)
+ *   - 'sheets.surat-keluar' → data tabel surat keluar (dbSK)
+ *   - 'sheets.dashboard'    → data statistik dashboard
+ *   - 'sheets.report'       → data laporan lengkap
+ *   - 'admin.micro.*'       → prefix cache khusus admin (TTL pendek)
+ *
+ * INVALIDASI CACHE:
+ *   - forgetSuratMasuk()  : hapus cache SM + dashboard + report
+ *   - forgetSuratKeluar() : hapus cache SK + dashboard + report
+ *   - forgetAll()         : hapus semua cache sekaligus
+ *   Dipanggil otomatis setiap store/update/destroy data.
+ *
+ * BACKEND CACHE:
+ *   - Menggunakan driver dari config/cache.php (default: file)
+ *   - Untuk performa lebih baik, ganti ke Redis atau Memcached di .env
+ *     CACHE_DRIVER=redis
  */
 class SheetsCache
 {
-    /** TTL dalam detik untuk data tabel (5 menit) */
+
+    // Durasi cache data tabel (surat masuk/keluar) dalam detik
     public const TTL_TABLE = 300;
 
-    /** TTL dalam detik untuk data dashboard (5 menit) */
+    // Durasi cache dashboard dan report dalam detik
     public const TTL_DASHBOARD = 300;
 
-    // ── Cache Keys ────────────────────────────────────────────────────────────
+    // Durasi cache mikro khusus admin (lebih pendek agar data lebih segar)
+    public const TTL_ADMIN_MICRO = 15;
 
     public const KEY_SURAT_MASUK  = 'sheets.surat-masuk';
     public const KEY_SURAT_KELUAR = 'sheets.surat-keluar';
@@ -36,56 +54,64 @@ class SheetsCache
     public const KEY_REPORT       = 'sheets.report';
 
     /**
-     * Ambil data dari cache; jika miss, jalankan $callback dan simpan hasilnya.
+     * Ambil data dari cache, atau jalankan $callback jika cache kosong.
      *
-     * @param  string   $key      Cache key
-     * @param  int      $ttl      Time-to-live (detik)
-     * @param  callable $callback Fungsi yang memanggil Google Sheets API
-     * @return mixed
+     * Jika user adalah admin, gunakan cache mikro (TTL pendek) yang
+     * juga memperbarui cache normal setiap kali diakses.
      */
     public static function remember(string $key, int $ttl, callable $callback): mixed
     {
+        if (auth()->check() && auth()->user()->isAdmin()) {
+            // Gunakan konstanta langsung — env() tidak bekerja setelah config:cache dijalankan
+            return Cache::remember('admin.micro.' . $key, self::TTL_ADMIN_MICRO, function () use ($key, $ttl, $callback) {
+                $data = $callback();
+                Cache::put($key, $data, $ttl);
+                return $data;
+            });
+        }
+
         return Cache::remember($key, $ttl, $callback);
     }
 
     /**
-     * Hapus satu cache key (invalidasi setelah write).
+     * Menghapus satu key cache beserta versi cache mikro admin-nya.
      */
     public static function forget(string $key): void
     {
         Cache::forget($key);
+        Cache::forget('admin.micro.' . $key);
     }
 
     /**
-     * Hapus semua cache terkait Surat Masuk.
-     * Dipanggil setelah store / update / destroy pada ArsipController.
+     * Hapus cache yang berkaitan dengan surat masuk.
+     * Juga menghapus dashboard & report karena keduanya bergantung pada data SM.
      */
     public static function forgetSuratMasuk(): void
     {
-        Cache::forget(self::KEY_SURAT_MASUK);
-        Cache::forget(self::KEY_DASHBOARD);
-        Cache::forget(self::KEY_REPORT);
+        self::forget(self::KEY_SURAT_MASUK);
+        self::forget(self::KEY_DASHBOARD);
+        self::forget(self::KEY_REPORT);
     }
 
     /**
-     * Hapus semua cache terkait Surat Keluar.
-     * Dipanggil setelah store / update / destroy pada SuratKeluarController.
+     * Hapus cache yang berkaitan dengan surat keluar.
+     * Juga menghapus dashboard & report karena keduanya bergantung pada data SK.
      */
     public static function forgetSuratKeluar(): void
     {
-        Cache::forget(self::KEY_SURAT_KELUAR);
-        Cache::forget(self::KEY_DASHBOARD);
-        Cache::forget(self::KEY_REPORT);
+        self::forget(self::KEY_SURAT_KELUAR);
+        self::forget(self::KEY_DASHBOARD);
+        self::forget(self::KEY_REPORT);
     }
 
     /**
-     * Hapus seluruh cache Google Sheets (nuclear option).
+     * Hapus SEMUA cache Sheets sekaligus (digunakan saat storage:clean dijalankan).
      */
     public static function forgetAll(): void
     {
-        Cache::forget(self::KEY_SURAT_MASUK);
-        Cache::forget(self::KEY_SURAT_KELUAR);
-        Cache::forget(self::KEY_DASHBOARD);
-        Cache::forget(self::KEY_REPORT);
+        self::forget(self::KEY_SURAT_MASUK);
+        self::forget(self::KEY_SURAT_KELUAR);
+        self::forget(self::KEY_DASHBOARD);
+        self::forget(self::KEY_REPORT);
     }
 }

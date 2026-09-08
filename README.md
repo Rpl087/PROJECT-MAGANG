@@ -34,9 +34,14 @@ Skrip runner ini **tidak membutuhkan hak Administrator** dan akan melakukan:
 - 🕔 **Task Scheduler** — Menyalakan Laravel Scheduler di latar belakang jika belum aktif (otomatis menjalankan pembersihan storage setiap pukul **17:00**).
 - 🌐 **Auto-Launch** — Membuka browser langsung ke URL login aplikasi.
 
-### 🌐 3. Akses Aplikasi
+### 🌐 3. Akses Aplikasi & Kredensial Login
 - **Akses Staff / Admin**: `http://kearsipan.local/`
 - **Akses WiFi Tamu (Read-Only)**: `http://kearsipan.local/tamu`
+
+| Peran | Username / Email | Password Default |
+|---|---|---|
+| **Admin** | `Admin` atau `admin@bpsdmp.go.id` | `admin_BPSDMP26` |
+| **Internship** | `Internship` atau `internship@bpsdmp.go.id` | `internship_BPSDMP` |
 
 ---
 

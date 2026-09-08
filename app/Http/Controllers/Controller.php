@@ -5,11 +5,38 @@ namespace App\Http\Controllers;
 use Google\Client;
 use Google\Service\Sheets;
 
+/**
+ * ============================================================
+ * BASE CONTROLLER - Controller Induk
+ * ============================================================
+ *
+ * Semua controller utama (ArsipController, SuratKeluarController,
+ * DashboardController) mewarisi class ini.
+ *
+ * BERISI:
+ *   1. Konstanta KODE_KLASIFIKASI_ORDER → urutan tampilan kode
+ *   2. Konstanta KODE_MAP              → nilai default retensi per kode
+ *   3. Helper escapeFormula()          → cegah formula injection di Sheets
+ *   4. Helper sortByKlasifikasi()      → sort data berdasar urutan KODE
+ *   5. Helper applyKodeMapFallback()   → isi otomatis retensi jika kosong
+ *   6. Helper getSheetService()        → koneksi Google Sheets (full access)
+ *   7. Helper getReadonlySheetService()→ koneksi Google Sheets (read-only)
+ *   8. Helper getSheetId()             → ambil ID numerik sheet berdasar nama
+ *   9. Helper safeDeleteFile()         → hapus file lokal dengan aman
+ *
+ * ARSITEKTUR KONEKSI GOOGLE:
+ *   - Menggunakan Service Account (bukan OAuth user).
+ *   - File kredensial: path dikonfigurasi di .env → GOOGLE_SERVICE_ACCOUNT_JSON
+ *   - ID Spreadsheet: GOOGLE_SHEET_ID di .env
+ *   - Jika file kredensial tidak ada, akan throw RuntimeException.
+ */
 abstract class Controller
 {
+
     /**
-     * Urutan prioritas kode klasifikasi surat (digunakan untuk sorting).
-     * Didefinisikan di sini agar tidak duplikat di ArsipController & SuratKeluarController.
+     * Urutan tampilan kode klasifikasi di tabel arsip.
+     * Data akan diurutkan berdasarkan indeks array ini.
+     * Kode yang tidak ada di sini akan ditempatkan di akhir.
      */
     protected const KODE_KLASIFIKASI_ORDER = [
         'PR', 'KP', 'OT', 'KU', 'HK', 'UM', 'PL',
@@ -17,8 +44,11 @@ abstract class Controller
     ];
 
     /**
-     * Mapping kode klasifikasi → [Aktif, Inaktif, Keterangan, Keamanan, Akses].
-     * Didefinisikan di base controller agar tidak duplikat di ArsipController & SuratKeluarController.
+     * Nilai default retensi & keamanan untuk setiap kode klasifikasi.
+     * Format per kode: [retensi_aktif, retensi_inaktif, retensi_keterangan, klasifikasi_keamanan, tingkat_akses]
+     *
+     * Digunakan oleh applyKodeMapFallback() saat user tidak mengisi
+     * kolom retensi secara manual. Nilai ini sesuai jadwal retensi arsip.
      */
     protected const KODE_MAP = [
         'PR' => ['2 Tahun',  '3 Tahun',  'Musnah',   'Biasa', 'Terbuka' ],
@@ -38,9 +68,9 @@ abstract class Controller
     ];
 
     /**
-     * Mengamankan data dari Google Sheets Formula Injection (CSV Injection).
-     * Jika string diawali dengan karakter formula (=, +, -, @),
-     * kita tambahkan kutip satu (') di awal agar Google Sheets menganggapnya sebagai teks biasa.
+     * Mencegah formula injection di Google Sheets.
+     * Jika nilai dimulai dengan =, +, -, atau @, tambahkan tanda kutip (') di depan
+     * agar Sheets tidak menginterpretasinya sebagai formula berbahaya.
      */
     protected function escapeFormula(mixed $value): mixed
     {
@@ -54,8 +84,11 @@ abstract class Controller
     }
 
     /**
-     * Urutkan baris berdasarkan prefix kode klasifikasi tanpa mengubah indeks sheet.
-     * Digunakan oleh ArsipController & SuratKeluarController.
+     * Mengurutkan array $rows berdasarkan kode klasifikasi sesuai KODE_KLASIFIKASI_ORDER.
+     * Jika kode sama, diurutkan berdasarkan nama kode (alfabet),
+     * lalu berdasarkan nomor index baris di Spreadsheet.
+     *
+     * @param array $rows Array berisi elemen ['index' => int, 'data' => array]
      */
     protected function sortByKlasifikasi(array &$rows): void
     {
@@ -81,10 +114,15 @@ abstract class Controller
     }
 
     /**
-     * Terapkan fallback kodeMap ke array validated berdasarkan kode klasifikasi.
-     * Digunakan oleh store() dan update() di ArsipController & SuratKeluarController.
+     * Mengisi kolom retensi & keamanan secara otomatis berdasarkan KODE_MAP
+     * jika user tidak mengisi field tersebut saat tambah/edit arsip.
      *
-     * @param array $validated  Array validated request (passed by reference)
+     * Field yang diisi otomatis:
+     *   - retensi_aktif, retensi_inaktif, retensi_keterangan
+     *   - klasifikasi_keamanan, tingkat_akses
+     *
+     * Kode diambil dari 2 huruf pertama kode_klasifikasi (prefix).
+     * Contoh: 'KP.001' → prefix 'KP' → nilai dari KODE_MAP['KP']
      */
     protected function applyKodeMapFallback(array &$validated): void
     {
@@ -102,11 +140,15 @@ abstract class Controller
     }
 
     /**
-     * Buat instance Google Sheets service dari kredensial service account.
-     * Method ini digunakan oleh ArsipController, SuratKeluarController, dan DashboardController.
+     * Membuat instance Google Sheets API dengan scope FULL (baca + tulis).
+     * Digunakan untuk operasi store, update, delete.
      *
-     * @throws \RuntimeException jika file kredensial tidak ditemukan atau env tidak dikonfigurasi
-     * @return array [$service (Sheets), $spreadsheetId (string)]
+     * Membutuhkan:
+     *   - GOOGLE_SERVICE_ACCOUNT_JSON di .env (path relatif ke root project)
+     *   - GOOGLE_SHEET_ID di .env (ID spreadsheet target)
+     *
+     * @return array [Sheets $service, string $spreadsheetId]
+     * @throws \RuntimeException jika kredensial tidak dikonfigurasi/tidak ada
      */
     protected function getSheetService(): array
     {
@@ -127,12 +169,11 @@ abstract class Controller
     }
 
     /**
-     * Buat instance Google Sheets service dengan scope READ-ONLY.
-     * Digunakan untuk halaman dashboard/report yang hanya membaca data.
-     * Lebih aman dari getSheetService() karena tidak bisa menulis.
+     * Membuat instance Google Sheets API dengan scope READ-ONLY.
+     * Digunakan untuk operasi index() dan fetchAndCache - lebih aman dan
+     * tidak memerlukan izin write pada service account.
      *
-     * @throws \RuntimeException jika file kredensial tidak ditemukan
-     * @return array [$service (Sheets), $spreadsheetId (string)]
+     * @return array [Sheets $service, string $spreadsheetId]
      */
     protected function getReadonlySheetService(): array
     {
@@ -153,13 +194,13 @@ abstract class Controller
     }
 
     /**
-     * Dapatkan sheet ID numerik berdasarkan nama sheet.
-     * Digunakan untuk operasi batchUpdate (hapus baris) yang memerlukan numeric sheet ID.
+     * Mengambil ID numerik sheet (bukan nama string) dari spreadsheet.
+     * Diperlukan untuk operasi deleteDimension (hapus baris) via batchUpdate.
      *
-     * @param  Sheets $service        Instance Google Sheets service
-     * @param  string $spreadsheetId  ID spreadsheet
-     * @param  string $sheetName      Nama sheet yang dicari
-     * @return int|null               Sheet ID numerik, atau null jika tidak ditemukan
+     * @param Sheets  $service       Instance Google Sheets
+     * @param string  $spreadsheetId ID spreadsheet
+     * @param string  $sheetName     Nama sheet (misal: 'dbSM', 'dbSK')
+     * @return int|null ID numerik sheet, atau null jika tidak ditemukan
      */
     protected function getSheetId(Sheets $service, string $spreadsheetId, string $sheetName): ?int
     {
@@ -174,10 +215,10 @@ abstract class Controller
     }
 
     /**
-     * Hapus file lokal secara aman dengan logging jika gagal.
-     * Menggantikan penggunaan @unlink() yang menekan error diam-diam.
-     *
-     * @param  string $filePath  Path absolut file yang akan dihapus
+     * Menghapus file dari storage lokal secara aman.
+     * Jika file tidak ada, tidak melakukan apa-apa.
+     * Jika gagal hapus (misal: permission denied), catat ke log warning.
+     * Digunakan oleh rollback saat store() gagal.
      */
     protected function safeDeleteFile(string $filePath): void
     {

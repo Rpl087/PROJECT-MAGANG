@@ -41,7 +41,6 @@
             -webkit-font-smoothing: antialiased;
         }
 
-        /* ── Animated background ────────────────────────────────── */
         body {
             display: flex;
             align-items: center;
@@ -63,7 +62,6 @@
             z-index: 0;
         }
 
-        /* Grid dots */
         body::after {
             content: '';
             position: fixed;
@@ -75,7 +73,6 @@
             z-index: 0;
         }
 
-        /* ── Floating orbs ──────────────────────────────────────── */
         .orb {
             position: fixed;
             border-radius: 50%;
@@ -108,7 +105,6 @@
             to   { transform: translate(30px, 20px) scale(1.08); }
         }
 
-        /* ── Card wrapper ───────────────────────────────────────── */
         .login-wrapper {
             position: relative;
             z-index: 10;
@@ -123,7 +119,6 @@
             to   { opacity: 1; transform: translateY(0) scale(1); }
         }
 
-        /* ── Glass card ─────────────────────────────────────────── */
         .login-card {
             background: var(--glass-bg);
             border: 1px solid var(--glass-border);
@@ -138,7 +133,6 @@
                 inset 0 1px 0 rgba(255,255,255,0.06);
         }
 
-        /* ── Brand / Logo ───────────────────────────────────────── */
         .brand {
             display: flex;
             flex-direction: column;
@@ -185,14 +179,12 @@
             font-weight: 400;
         }
 
-        /* ── Divider ────────────────────────────────────────────── */
         .divider {
             height: 1px;
             background: linear-gradient(90deg, transparent, rgba(59,130,246,0.2), transparent);
             margin-bottom: 28px;
         }
 
-        /* ── Error Alert ────────────────────────────────────────── */
         .alert-login-error {
             display: flex;
             align-items: flex-start;
@@ -216,7 +208,6 @@
         .alert-login-error svg { color: #f87171; flex-shrink: 0; margin-top: 1px; }
         .alert-login-error span { font-size: 0.83rem; color: var(--error-text); line-height: 1.4; }
 
-        /* ── Form ───────────────────────────────────────────────── */
         .form-group {
             margin-bottom: 18px;
         }
@@ -272,7 +263,6 @@
             color: #60a5fa;
         }
 
-        /* Input error state */
         .form-input.input-err {
             border-color: rgba(239,68,68,0.6);
             box-shadow: 0 0 0 3px rgba(239,68,68,0.15);
@@ -287,7 +277,6 @@
             gap: 4px;
         }
 
-        /* Password toggle */
         .pass-toggle {
             position: absolute;
             right: 12px;
@@ -304,7 +293,6 @@
         }
         .pass-toggle:hover { color: #94a3b8; }
 
-        /* ── Remember me ────────────────────────────────────────── */
         .remember-row {
             display: flex;
             align-items: center;
@@ -326,7 +314,6 @@
             user-select: none;
         }
 
-        /* ── Submit Button ──────────────────────────────────────── */
         .btn-login {
             width: 100%;
             padding: 13px 20px;
@@ -366,7 +353,6 @@
 
         .btn-login svg { flex-shrink: 0; }
 
-        /* ── Footer note ────────────────────────────────────────── */
         .login-footer-note {
             margin-top: 24px;
             text-align: center;
@@ -376,7 +362,6 @@
 
         .login-footer-note span { color: #475569; }
 
-        /* ── Forgot password link ───────────────────────────────── */
         .forgot-link {
             display: block;
             text-align: center;
@@ -393,7 +378,6 @@
         }
         .forgot-link:hover { color: #93c5fd; }
 
-        /* ── Reset Modal ─────────────────────────────────────────── */
         .modal-backdrop {
             position: fixed;
             inset: 0;
@@ -463,7 +447,7 @@
             box-shadow: 0 4px 14px rgba(59,130,246,0.35);
         }
         .btn-modal-submit:hover { background: linear-gradient(135deg, #2563eb, #1d4ed8); transform: translateY(-1px); }
-        /* Reset success box */
+
         .reset-success {
             background: rgba(5, 150, 105, 0.12);
             border: 1px solid rgba(5, 150, 105, 0.35);
@@ -475,16 +459,94 @@
         .reset-success-icon { color: #34d399; flex-shrink: 0; margin-top: 1px; }
         .reset-success-text { font-size: 0.83rem; color: #6ee7b7; line-height: 1.5; }
 
-        /* ── Responsive ─────────────────────────────────────────── */
         @media (max-width: 480px) {
             .login-card { padding: 32px 24px 28px; }
             .brand-title { font-size: 1.25rem; }
             .modal-card { padding: 28px 20px 22px; }
         }
+
+        #nav-loading-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 99998;
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 1rem;
+            opacity: 0;
+            transition: opacity 0.15s ease;
+        }
+        #nav-loading-overlay.is-visible {
+            opacity: 1;
+        }
+        .nav-loading-spinner {
+            width: 44px;
+            height: 44px;
+            border: 3px solid transparent;
+            border-top-color: #38bdf8;
+            border-right-color: #38bdf8;
+            border-radius: 50%;
+            animation: navSpinRotate 0.7s linear infinite;
+            position: relative;
+        }
+        .nav-loading-spinner::after {
+            content: '';
+            position: absolute;
+            inset: 4px;
+            border: 2px solid transparent;
+            border-bottom-color: #4f8ef7;
+            border-left-color: #4f8ef7;
+            border-radius: 50%;
+            animation: navSpinRotate 0.5s linear infinite reverse;
+        }
+        @keyframes navSpinRotate {
+            to { transform: rotate(360deg); }
+        }
+        .nav-loading-text {
+            font-size: 0.88rem;
+            font-weight: 500;
+            color: #94a3b8;
+            letter-spacing: 0.01em;
+            animation: navLoadingPulse 1.4s ease-in-out infinite;
+        }
+        @keyframes navLoadingPulse {
+            0%, 100% { opacity: 0.6; }
+            50%       { opacity: 1; }
+        }
+
+        #nav-loading-bar {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            height: 3px;
+            z-index: 99999;
+            background: linear-gradient(90deg, #1e3a5f 0%, #38bdf8 50%, #1e3a5f 100%);
+            background-size: 200% 100%;
+            animation: navBarSlide 1s ease-in-out infinite;
+            border-radius: 0 2px 2px 0;
+            box-shadow: 0 0 10px rgba(56,189,248,0.5);
+        }
+        @keyframes navBarSlide {
+            0%   { width: 0%;   background-position: 0% 0; }
+            30%  { width: 55%;  background-position: 50% 0; }
+            70%  { width: 80%;  background-position: 100% 0; }
+            100% { width: 95%;  background-position: 150% 0; }
+        }
+        #nav-loading-bar.is-active { display: block; }
     </style>
 </head>
 <body>
-    <!-- Floating orbs -->
+
+    <div id="nav-loading-overlay" role="status" aria-label="Memuat halaman...">
+        <div class="nav-loading-spinner" aria-hidden="true"></div>
+        <p class="nav-loading-text" id="nav-loading-msg">Memuat...</p>
+    </div>
+    <div id="nav-loading-bar" aria-hidden="true"></div>
+
     <div class="orb orb-1"></div>
     <div class="orb orb-2"></div>
     <div class="orb orb-3"></div>
@@ -492,7 +554,6 @@
     <div class="login-wrapper">
         <div class="login-card">
 
-            <!-- Brand -->
             <div class="brand">
                 <div class="brand-icon-wrap">
                     <img src="{{ route('image.view', 'komdigi-logo.png') }}"  alt="Logo Komdigi"
@@ -508,7 +569,6 @@
 
             <div class="divider"></div>
 
-            <!-- Error Alert -->
             @if(session('login_error'))
             <div class="alert-login-error" id="login-error-alert">
                 <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -520,11 +580,9 @@
             </div>
             @endif
 
-            <!-- Form Login -->
             <form action="{{ route('login.post') }}" method="POST" id="login-form" novalidate>
                 @csrf
 
-                <!-- Username -->
                 <div class="form-group">
                     <label for="username" class="form-label">Username</label>
                     <div class="input-wrap">
@@ -554,7 +612,6 @@
                     @enderror
                 </div>
 
-                <!-- Password -->
                 <div class="form-group">
                     <label for="password" class="form-label">Password</label>
                     <div class="input-wrap">
@@ -588,13 +645,11 @@
                     @enderror
                 </div>
 
-                <!-- Remember me -->
                 <div class="remember-row">
                     <input type="checkbox" name="remember" id="remember" class="remember-checkbox" value="1">
                     <label for="remember" class="remember-label">Ingat saya di perangkat ini</label>
                 </div>
 
-                <!-- Submit -->
                 <button type="submit" class="btn-login" id="btn-login">
                     <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
@@ -605,7 +660,6 @@
                 </button>
             </form>
 
-            <!-- Lupa Password Link -->
             <button type="button" class="forgot-link" id="btn-forgot-password">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px">
                     <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
@@ -614,17 +668,15 @@
                 Lupa password?
             </button>
 
-            <!-- Footer -->
             <p class="login-footer-note" style="margin-top:16px">
                 <span>Hanya pengelola yang berwenang dapat mengakses sistem ini.</span>
             </p>
         </div>
     </div>
 
-    <!-- ── Reset Password Modal ───────────────────────────────────────────── -->
     <div id="reset-modal" class="modal-backdrop" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="reset-modal-title">
         <div class="modal-card">
-            <!-- Icon -->
+
             <div class="modal-icon">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
@@ -633,7 +685,7 @@
             </div>
 
             @if(session('reset_requested'))
-            <!-- ── State: Permintaan berhasil dikirim ── -->
+
             <h2 class="modal-title" id="reset-modal-title">Permintaan Terkirim</h2>
             <p class="modal-desc">Permintaan reset password Anda telah dicatat. Admin akan segera menindaklanjutinya.</p>
             <div class="reset-success">
@@ -652,7 +704,7 @@
                 Mengerti, Tutup
             </button>
             @else
-            <!-- ── State: Form input username ── -->
+
             <h2 class="modal-title" id="reset-modal-title">Lupa Password</h2>
             <p class="modal-desc">Masukkan username Anda. Permintaan reset akan diteruskan kepada admin untuk ditindaklanjuti secara manual.</p>
 
@@ -703,7 +755,7 @@
 
     <script>
     document.addEventListener('DOMContentLoaded', function () {
-        // Toggle password visibility
+
         const toggle   = document.getElementById('pass-toggle');
         const passInput = document.getElementById('password');
         const eyeIcon  = document.getElementById('eye-icon');
@@ -719,7 +771,6 @@
             });
         }
 
-        // Auto-dismiss error alert after 6s
         const alert = document.getElementById('login-error-alert');
         if (alert) {
             setTimeout(function () {
@@ -730,7 +781,6 @@
             }, 6000);
         }
 
-        // Button loading state on submit
         const form    = document.getElementById('login-form');
         const btnLogin = document.getElementById('btn-login');
         if (form) {
@@ -747,7 +797,6 @@
             });
         }
 
-        // ── Reset Password Modal ────────────────────────────────────────────
         const resetModal  = document.getElementById('reset-modal');
         const btnForgot   = document.getElementById('btn-forgot-password');
         const btnCancel   = document.getElementById('btn-reset-cancel');
@@ -782,21 +831,18 @@
         if (btnCancel) btnCancel.addEventListener('click', closeResetModal);
         if (btnClose)  btnClose.addEventListener('click', closeResetModal);
 
-        // Tutup modal saat klik backdrop
         if (resetModal) {
             resetModal.addEventListener('click', function(e) {
                 if (e.target === resetModal) closeResetModal();
             });
         }
 
-        // Tutup modal dengan Escape
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape' && resetModal && resetModal.style.display !== 'none') {
                 closeResetModal();
             }
         });
 
-        // Loading state pada form reset
         if (resetForm && btnReset) {
             resetForm.addEventListener('submit', function() {
                 btnReset.disabled = true;
@@ -808,7 +854,6 @@
             });
         }
 
-        // Auto-buka modal jika halaman dikembalikan setelah request reset
         @if(session('reset_requested') || $errors->hasBag('reset'))
         openResetModal();
         @endif
@@ -817,6 +862,79 @@
     <style>
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
     </style>
+    <script>
+    (function () {
+        'use strict';
+        var overlay = document.getElementById('nav-loading-overlay');
+        var bar     = document.getElementById('nav-loading-bar');
+        var msg     = document.getElementById('nav-loading-msg');
+
+        function getLoadingMsg(href) {
+            try {
+                var path = new URL(href, location.origin).pathname;
+                if (path === '/' || path.indexOf('arsip') !== -1) return 'Memuat Surat Masuk...';
+                if (path.indexOf('surat-keluar') !== -1) return 'Memuat Surat Keluar...';
+                if (path.indexOf('dashboard/report') !== -1) return 'Memuat Rekap Laporan...';
+                if (path.indexOf('dashboard') !== -1) return 'Memuat Dashboard...';
+                if (path.indexOf('users') !== -1) return 'Memuat Data Pengguna...';
+                if (path.indexOf('tamu/surat-keluar') !== -1) return 'Memuat Surat Keluar...';
+                if (path.indexOf('tamu') !== -1) return 'Memuat Surat Masuk...';
+            } catch (e) {}
+            return 'Memuat...';
+        }
+
+        function showLoading(hrefOrMsg) {
+            if (!overlay || !bar) return;
+            if (msg) {
+                if (hrefOrMsg && (hrefOrMsg.indexOf('/') !== -1 || hrefOrMsg.indexOf('.') !== -1)) {
+                    msg.textContent = getLoadingMsg(hrefOrMsg);
+                } else {
+                    msg.textContent = hrefOrMsg || 'Memproses...';
+                }
+            }
+            overlay.style.display = 'flex';
+            bar.classList.add('is-active');
+            requestAnimationFrame(function () {
+                overlay.classList.add('is-visible');
+            });
+        }
+
+        document.addEventListener('click', function (e) {
+            var link = e.target.closest('a[href]');
+            if (!link) return;
+            var href = link.getAttribute('href');
+            if (!href || href.startsWith('#') || href.startsWith('javascript:') ||
+                href.startsWith('mailto:') || href.startsWith('tel:') ||
+                link.target === '_blank' || link.hasAttribute('download') ||
+                link.origin !== location.origin) return;
+            if (e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return;
+
+            e.preventDefault();
+            showLoading(href);
+            setTimeout(function () {
+                location.href = href;
+            }, 120);
+        });
+
+        var loginForm = document.getElementById('login-form');
+        if (loginForm) {
+            loginForm.addEventListener('submit', function (e) {
+                setTimeout(function () {
+                    if (!e.defaultPrevented) {
+                        showLoading('Memproses masuk...');
+                    }
+                }, 0);
+            });
+        }
+
+        window.addEventListener('pageshow', function () {
+            if (overlay) {
+                overlay.classList.remove('is-visible');
+                overlay.style.display = 'none';
+            }
+            if (bar) bar.classList.remove('is-active');
+        });
+    })();
+    </script>
 </body>
 </html>
-

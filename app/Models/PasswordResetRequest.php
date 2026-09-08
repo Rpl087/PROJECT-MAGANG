@@ -19,17 +19,11 @@ class PasswordResetRequest extends Model
         'resolved_at' => 'datetime',
     ];
 
-    /**
-     * Scope: permintaan yang belum diselesaikan.
-     */
     public function scopePending($query)
     {
         return $query->where('is_resolved', false)->latest();
     }
 
-    /**
-     * Tandai permintaan sebagai sudah diselesaikan.
-     */
     public function resolve(): void
     {
         $this->update([
@@ -38,10 +32,6 @@ class PasswordResetRequest extends Model
         ]);
     }
 
-    /**
-     * Relasi: permintaan ini milik user berdasarkan username.
-     * Digunakan untuk eager loading nama user di tampilan admin.
-     */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class, 'username', 'name');

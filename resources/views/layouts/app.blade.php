@@ -7,19 +7,19 @@
     <title>@yield('title', 'Arsip Surat') — BPSDMP</title>
     <link rel="icon" type="image/png" href="{{ route('image.view', 'komdigi-logo.png') }}">
     <link rel="shortcut icon" type="image/png" href="{{ route('image.view', 'komdigi-logo.png') }}">
-    {{-- Preconnect untuk font Google (non-blocking) --}}
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    {{-- Google Fonts: non-blocking via media trick (mencegah render-blocking / FOUT) --}}
+
     <link rel="preload" as="style"
           href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
           onload="this.rel='stylesheet'">
     <noscript>
         <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap">
     </noscript>
-    {{-- CSS Utama (render-blocking secara sengaja agar tidak ada FOUC dari design system) --}}
+
     <link rel="stylesheet" href="{{ asset('css/app.css') }}?v={{ @filemtime(public_path('css/app.css')) ?: '1' }}">
-    {{-- CSS dari child views (tabel, modal, flatpickr, dll.) — diinjek di <head> agar tidak FOUC --}}
+
     @stack('styles')
     <style>
         .header-user {
@@ -61,11 +61,8 @@
             color: #b91c1c;
         }
 
-        /* ══════════════════════════════════════════════════════════
-           BURGER BUTTON — tampil di semua ukuran layar, semua menu
-           ══════════════════════════════════════════════════════════ */
         .burger-btn {
-            display: flex; /* SELALU tampil — global di semua halaman */
+            display: flex;
             align-items: center;
             justify-content: center;
             width: 38px;
@@ -91,15 +88,11 @@
             transition: transform 0.3s ease, opacity 0.3s ease, width 0.3s ease;
             transform-origin: center;
         }
-        /* Animasi X saat drawer mobile terbuka */
+
         .burger-btn.is-open .burger-bar:nth-child(1) { transform: translateY(6px) rotate(45deg); }
         .burger-btn.is-open .burger-bar:nth-child(2) { opacity: 0; transform: scaleX(0); }
         .burger-btn.is-open .burger-bar:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
-        /* is-collapsed: tidak ada animasi — burger selalu tampil sebagai ☰ */
 
-        /* ══════════════════════════════════════════════════════════
-           DESKTOP (>768px): Sidebar collapse via burger
-           ══════════════════════════════════════════════════════════ */
         .sidebar {
             transition: transform 0.32s cubic-bezier(0.4,0,0.2,1);
             will-change: transform;
@@ -113,19 +106,14 @@
             will-change: margin-left;
         }
 
-        /* Kompensasi saat header tersembunyi (scroll ke bawah) */
         body.header-is-hidden .layout-body {
             padding-top: 0;
         }
 
-        /* State: sidebar tersembunyi (desktop) */
         body.sidebar-collapsed .sidebar   { transform: translateX(calc(-1 * var(--sidebar-width, 240px))); }
         body.sidebar-collapsed .main-content { margin-left: 0 !important; }
         body.sidebar-collapsed .footer       { margin-left: 0 !important; }
 
-        /* ══════════════════════════════════════════════════════════
-           CENTERING — content di split-screen desktop
-           ══════════════════════════════════════════════════════════ */
         .main-content-wrap {
             max-width: 980px;
             margin-left: auto;
@@ -134,31 +122,24 @@
         }
         body.sidebar-collapsed .main-content-wrap { max-width: 1080px; }
 
-        /* ══════════════════════════════════════════════════════════
-           SPLIT-SCREEN DESKTOP (769px - 1100px)
-           Auto-collapse sidebar agar konten punya ruang cukup
-           ══════════════════════════════════════════════════════════ */
         @media (min-width: 769px) and (max-width: 1100px) {
-            /* Auto collapse sidebar di split-screen */
+
             .sidebar { transform: translateX(calc(-1 * var(--sidebar-width, 240px))); }
             .main-content { margin-left: 0 !important; }
             .footer       { margin-left: 0 !important; }
-            /* Burger tampil dalam mode ‘collapsed’ secara default */
+
             .burger-btn { border-color: var(--color-primary, #1e3a5f); }
-            /* Padding lebih kecil — extend konten ke kiri */
+
             .main-content { padding-left: 1rem !important; padding-right: 1rem !important; }
             .main-content-wrap { max-width: 100%; }
         }
-        /* Override: jika user membuka sidebar di split-screen */
+
         @media (min-width: 769px) and (max-width: 1100px) {
             body.sidebar-open .sidebar { transform: translateX(0); }
             body.sidebar-open .main-content { margin-left: var(--sidebar-width, 240px) !important; }
             body.sidebar-open .footer       { margin-left: var(--sidebar-width, 240px) !important; }
         }
 
-        /* ══════════════════════════════════════════════════════════
-           OVERLAY — untuk drawer mobile
-           ══════════════════════════════════════════════════════════ */
         .sidebar-overlay {
             display: none;
             position: fixed; inset: 0;
@@ -170,16 +151,12 @@
         }
         .sidebar-overlay.is-visible { opacity: 1; pointer-events: auto; }
 
-        /* ══════════════════════════════════════════════════════════
-           MOBILE (≤768px): Sidebar jadi DRAWER dari kiri
-           ══════════════════════════════════════════════════════════ */
         @media (max-width: 768px) {
-            /* Aktifkan overlay */
-            .sidebar-overlay { display: block; pointer-events: none; }
-            /* drawer-footer-fixed: visible di mobile, dikontrol JS (display:none/block) */
-            .drawer-footer-fixed { display: none; } /* JS akan set display:block saat openDrawer */
 
-            /* ── Sidebar = drawer fixed dari kiri ── */
+            .sidebar-overlay { display: block; pointer-events: none; }
+
+            .drawer-footer-fixed { display: none; }
+
             .sidebar {
                 position: fixed !important;
                 top: var(--header-height, 64px) !important; left: 0 !important;
@@ -193,22 +170,19 @@
                 transform: translateX(-100%) !important;
                 transition: transform 0.3s cubic-bezier(0.4,0,0.2,1) !important;
                 overflow: hidden !important;
-                /* overflow:hidden diperlukan agar tidak ada scroll horizontal,
-                   tapi footer absolute bisa tampil karena sidebar = fixed container */ 
+
                 display: flex !important;
                 flex-direction: column !important;
             }
-            /* Drawer terbuka */
+
             .sidebar.is-open { transform: translateX(0) !important; }
 
-            /* ── Label "Menu": selalu di atas, tidak bisa dikecilkan ── */
             .sidebar-label {
                 display: block !important;
                 flex-shrink: 0 !important;
                 margin-bottom: 0.5rem !important;
             }
 
-            /* ── Nav: mengisi sisa ruang, scroll internal jika item terlalu banyak ── */
             .sidebar-nav {
                 flex: 1 !important;
                 min-height: 0 !important;
@@ -225,10 +199,8 @@
             }
             .sidebar-link-icon { display: flex !important; }
 
-            /* ── Drawer footer mobile: FIXED terpisah dari sidebar ── */
-            /* Ini satu-satunya cara andal agar tidak terpotong overflow:hidden sidebar */
             .drawer-footer-fixed {
-                display: none; /* disembunyikan secara default */
+                display: none;
                 position: fixed !important;
                 bottom: 0 !important;
                 left: 0 !important;
@@ -238,16 +210,16 @@
                 padding-bottom: max(1rem, env(safe-area-inset-bottom, 1rem)) !important;
                 border-top: 1px solid var(--color-border, #e2e5ea) !important;
                 border-right: 1px solid var(--color-border, #e2e5ea) !important;
-                z-index: 91 !important; /* di atas sidebar (z-index:90) */
+                z-index: 91 !important;
                 pointer-events: auto !important;
                 transform: translateX(-100%) !important;
                 transition: transform 0.3s cubic-bezier(0.4,0,0.2,1) !important;
             }
-            /* Tampil & slide masuk bersamaan dengan drawer */
+
             .drawer-footer-fixed.is-open {
                 transform: translateX(0) !important;
             }
-            /* ── Drawer footer desktop: sembunyikan di mobile (gunakan drawer-footer-fixed) ── */
+
             #drawer-footer-desktop {
                 display: none !important;
             }
@@ -257,18 +229,16 @@
                 pointer-events: auto !important;
             }
 
-            /* ── Main content: tanpa margin kiri ── */
             .main-content { margin-left: 0 !important; padding-left: 1rem !important; padding-right: 1rem !important; }
             .footer { margin-left: 0 !important; }
             .main-content-wrap { max-width: 100%; }
-            /* Header */
+
             .header-inner { padding: 0 12px !important; gap: 8px; }
             .nav-label { display: none; }
             .brand-subtitle { display: none; }
             .theme-toggle { display: inline-flex !important; flex-shrink: 0; }
         }
 
-        /* Drawer user-info: tampil di sidebar */
         .drawer-user-info {
             display: flex;
             align-items: center; gap: 8px; padding: 8px 4px;
@@ -286,10 +256,8 @@
         }
         .btn-logout-drawer:hover { background: rgba(239,68,68,0.22); border-color: rgba(239,68,68,0.5); color: #b91c1c; }
 
-        /* Sidebar flex-column agar footer ke bawah (desktop) */
         .sidebar { display: flex; flex-direction: column; }
 
-        /* ── Header-left: burger + brand berdampingan ── */
         .header-left {
             display: flex;
             align-items: center;
@@ -297,17 +265,14 @@
             min-width: 0;
         }
 
-        /* Drawer footer — global: flex-shrink:0 agar selalu tampil */
         .drawer-footer {
             flex-shrink: 0;
             padding-top: 16px;
             border-top: 1px solid var(--color-border, #e2e5ea);
         }
 
-        /* drawer-footer-fixed: hanya tampil di mobile via JS */
         .drawer-footer-fixed { display: none; }
 
-            /* Mode display/kiosk: navbar dan dashboard terkunci tepat satu viewport. */
             body.navbar-only .burger-btn,
             body.navbar-only .sidebar,
             body.navbar-only .sidebar-overlay,
@@ -351,15 +316,14 @@
 
     </style>
 
-    {{-- ── Page Transition (fade antar halaman) + Loading Overlay ── --}}
     <style>
-    /* Fade-out saat navigasi keluar */
+
     body.page-leaving {
         opacity: 0;
         transition: opacity 0.15s ease;
         pointer-events: none;
     }
-    /* Fade-in saat halaman baru tiba */
+
     body {
         animation: pageFadeIn 0.2s ease both;
     }
@@ -367,21 +331,18 @@
         from { opacity: 0; }
         to   { opacity: 1; }
     }
-    /* Toast container tidak ikut fade */
+
     #toast-container {
         animation: none !important;
         opacity: 1 !important;
     }
 
-    /* ══════════════════════════════════════════════════════════
-       NAVIGATION LOADING OVERLAY — muncul segera saat link diklik
-       ══════════════════════════════════════════════════════════ */
     #nav-loading-overlay {
         display: none;
         position: fixed;
         inset: 0;
         z-index: 99998;
-        background: rgba(var(--color-bg-rgb, 248,250,252), 0.82);
+        background: rgba(15, 23, 42, 0.85);
         backdrop-filter: blur(4px);
         -webkit-backdrop-filter: blur(4px);
         align-items: center;
@@ -391,9 +352,6 @@
         opacity: 0;
         transition: opacity 0.15s ease;
     }
-    [data-theme="dark"] #nav-loading-overlay {
-        background: rgba(15,23,42,0.85);
-    }
     #nav-loading-overlay.is-visible {
         opacity: 1;
     }
@@ -401,8 +359,8 @@
         width: 44px;
         height: 44px;
         border: 3px solid transparent;
-        border-top-color: var(--color-primary, #1e3a5f);
-        border-right-color: var(--color-primary, #1e3a5f);
+        border-top-color: #38bdf8;
+        border-right-color: #38bdf8;
         border-radius: 50%;
         animation: navSpinRotate 0.7s linear infinite;
         position: relative;
@@ -421,9 +379,9 @@
         to { transform: rotate(360deg); }
     }
     .nav-loading-text {
-        font-size: 0.85rem;
+        font-size: 0.88rem;
         font-weight: 500;
-        color: var(--color-text-muted, #64748b);
+        color: #94a3b8;
         letter-spacing: 0.01em;
         animation: navLoadingPulse 1.4s ease-in-out infinite;
     }
@@ -431,18 +389,18 @@
         0%, 100% { opacity: 0.6; }
         50%       { opacity: 1; }
     }
-    /* Top progress bar tipis saat navigasi */
+
     #nav-loading-bar {
         display: none;
         position: fixed;
         top: 0; left: 0;
         height: 3px;
         z-index: 99999;
-        background: linear-gradient(90deg, var(--color-primary, #1e3a5f) 0%, #4f8ef7 50%, var(--color-primary, #1e3a5f) 100%);
+        background: linear-gradient(90deg, #1e3a5f 0%, #38bdf8 50%, #1e3a5f 100%);
         background-size: 200% 100%;
         animation: navBarSlide 1s ease-in-out infinite;
         border-radius: 0 2px 2px 0;
-        box-shadow: 0 0 10px rgba(79,142,247,0.5);
+        box-shadow: 0 0 10px rgba(56,189,248,0.5);
     }
     @keyframes navBarSlide {
         0%   { width: 0%;   background-position: 0% 0; }
@@ -453,9 +411,8 @@
     #nav-loading-bar.is-active { display: block; }
     </style>
 
-
     <style>
-    /* Toast container: pojok kanan bawah */
+
     #toast-container {
         position: fixed;
         bottom: 1.5rem;
@@ -481,7 +438,7 @@
         line-height: 1.45;
         pointer-events: auto;
         cursor: default;
-        /* Slide-in dari kanan */
+
         transform: translateX(120%);
         opacity: 0;
         transition: transform 0.35s cubic-bezier(0.34,1.56,0.64,1), opacity 0.3s ease;
@@ -496,21 +453,21 @@
         opacity: 0;
         transition: transform 0.3s ease, opacity 0.3s ease;
     }
-    /* Sukses */
+
     .toast-success {
         background: #059669;
         border-color: #047857;
         color: #ffffff;
     }
     .toast-success .toast-icon { color: #a7f3d0; flex-shrink: 0; margin-top: 1px; }
-    /* Error */
+
     .toast-error {
         background: #dc2626;
         border-color: #b91c1c;
         color: #ffffff;
     }
     .toast-error .toast-icon { color: #fecaca; flex-shrink: 0; margin-top: 1px; }
-    /* Body & close */
+
     .toast-body { flex: 1; }
     .toast-title { font-weight: 700; margin-bottom: 2px; font-size: 0.82rem; letter-spacing: 0.01em; text-transform: uppercase; opacity: 0.75; }
     .toast-msg { font-size: 0.9rem; }
@@ -520,7 +477,7 @@
         transition: opacity 0.2s;
     }
     .toast-close:hover { opacity: 1; }
-    /* Progress bar */
+
     .toast-progress {
         position: absolute;
         bottom: 0; left: 0;
@@ -543,8 +500,8 @@
     }
     </style>
 </head>
-<body class="@hasSection('navbarOnly') navbar-only @endif">
-    {{-- Inisialisasi tema sebelum render (mencegah flash of wrong theme) --}}
+<body class="@hasSection('navbarOnly') navbar-only @endif @if(request()->routeIs('dashboard.index')) sidebar-collapsed @endif">
+
     <script>
         (function(){
             var saved = localStorage.getItem('theme');
@@ -553,15 +510,15 @@
             }
         })();
     </script>
-    {{-- Page Loading Bar: tampil selama halaman belum fully loaded, hilang di DOMContentLoaded --}}
+
     <div id="page-loading-bar" role="progressbar" aria-label="Memuat halaman..."></div>
 
-    {{-- ── Navigation Loading Overlay — muncul segera saat link navigasi diklik ── --}}
     <div id="nav-loading-overlay" role="status" aria-label="Memuat halaman...">
         <div class="nav-loading-spinner" aria-hidden="true"></div>
         <p class="nav-loading-text" id="nav-loading-msg">Memuat halaman...</p>
     </div>
     <div id="nav-loading-bar" aria-hidden="true"></div>
+
     <script>
     (function () {
         'use strict';
@@ -577,7 +534,8 @@
                 if (path.indexOf('dashboard/report') !== -1) return 'Memuat Rekap Laporan...';
                 if (path.indexOf('dashboard') !== -1) return 'Memuat Dashboard...';
                 if (path.indexOf('users') !== -1) return 'Memuat Data Pengguna...';
-                if (path.indexOf('tamu') !== -1) return 'Memuat Mode Tamu...';
+                if (path.indexOf('tamu/surat-keluar') !== -1) return 'Memuat Surat Keluar...';
+                if (path.indexOf('tamu') !== -1) return 'Memuat Surat Masuk...';
             } catch (e) {}
             return 'Memuat halaman...';
         }
@@ -598,7 +556,6 @@
             });
         }
 
-        // Intercept semua klik link internal — tampilkan loading overlay seragam
         document.addEventListener('click', function (e) {
             var link = e.target.closest('a[href]');
             if (!link) return;
@@ -610,20 +567,17 @@
             if (e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return;
             if (link.hasAttribute('data-confirm-nav')) return;
             if (link.classList.contains('sidebar-link-active')) return;
-            
-            // Exclude PDF/view/image links
             if (link.classList.contains('btn-pdf')) return;
-            if (/\/(pdf|view|image|file)\//i.test(href)) return;
+            if (/\/(pdf|image|view|download)\//i.test(link.pathname)) return;
 
             e.preventDefault();
             showLoading(href);
             document.body.classList.add('page-leaving');
-            requestAnimationFrame(function () {
+            setTimeout(function () {
                 location.href = href;
-            });
+            }, 120);
         });
 
-        // Intercept semua form submit — tampilkan loading overlay
         document.addEventListener('submit', function (e) {
             var form = e.target;
             if (!form || form.tagName !== 'FORM') return;
@@ -634,19 +588,20 @@
             }, 0);
         }, true);
 
-        // Sembunyikan overlay saat halaman selesai dimuat (bfcache / back)
         window.addEventListener('pageshow', function () {
-            if (overlay) { overlay.classList.remove('is-visible'); overlay.style.display = 'none'; }
+            if (overlay) {
+                overlay.classList.remove('is-visible');
+                overlay.style.display = 'none';
+            }
             if (bar) bar.classList.remove('is-active');
             document.body.classList.remove('page-leaving');
         });
     })();
     </script>
 
-    <!-- Header -->
     <header class="header" id="main-header">
         <div class="header-inner">
-            <!-- Kiri: Burger + Brand -->
+
             <div class="header-left">
                 <button type="button" class="burger-btn" id="burger-btn" aria-label="Buka menu navigasi" aria-expanded="false" aria-controls="main-sidebar">
                     <span class="burger-icon" aria-hidden="true">
@@ -665,10 +620,9 @@
                 </div>
             </div>
 
-            <!-- Kanan: Status + Theme Toggle -->
             <nav class="header-nav">
                 @php
-                    $clientIp       = request()->ip();
+$clientIp       = request()->ip();
                     $internalSubnet = config('network.internal_subnet', '192.168.252.0/22');
                     $guestSubnet    = config('network.guest_subnet', '10.0.0.0/24');
                     $isLocalhost    = in_array($clientIp, ['127.0.0.1', '::1', 'localhost']);
@@ -693,14 +647,13 @@
                         $netLabel = 'Sistem Pengarsipan Digital';
                         $netBadgeClass = 'badge-net-local';
                     }
-                @endphp
+@endphp
 
                 <div class="network-badge {{ $netBadgeClass }}" title="Terkoneksi dari IP: {{ $clientIp }}">
                     <span class="net-dot"></span>
                     <span class="net-text">{{ $netLabel }}</span>
                 </div>
 
-                {{-- ── Realtime Clock (Global) ── --}}
                 <div class="header-clock" id="header-clock" aria-label="Jam dan tanggal saat ini">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                         <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
@@ -710,13 +663,12 @@
                     <span id="header-clock-date"></span>
                 </div>
 
-                {{-- Dark / Light Toggle --}}
                 <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Toggle dark mode" title="Ganti tema">
-                    <!-- Moon icon (tampil di light mode) -->
+
                     <svg class="icon-moon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
                     </svg>
-                    <!-- Sun icon (tampil di dark mode) -->
+
                     <svg class="icon-sun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <circle cx="12" cy="12" r="5"/>
                         <line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
@@ -729,11 +681,8 @@
         </div>
     </header>
 
-    <!-- Overlay (mobile/tablet: klik area luar drawer untuk menutup) -->
     <div class="sidebar-overlay" id="sidebar-overlay"></div>
 
-    <!-- Toast Notification Container -->
-    {{-- Pre-render toast dari session flash agar tampil tanpa bergantung JS dinamis --}}
     <div id="toast-container" aria-live="polite" aria-atomic="false">
         @if(session('success'))
         <div class="toast toast-success toast-show" role="alert" id="flash-toast-success">
@@ -775,10 +724,8 @@
         @endif
     </div>
 
-    <!-- Body: Sidebar + Content -->
     <div class="layout-body">
 
-        <!-- Sidebar / Mobile Drawer -->
         <aside class="sidebar" id="main-sidebar" aria-label="Menu navigasi">
             <p class="sidebar-label">Menu</p>
             <nav class="sidebar-nav" id="sidebar-nav">
@@ -822,7 +769,6 @@
                 @endif
             </nav>
 
-            <!-- Drawer Footer Desktop: di dalam sidebar (disembunyikan di mobile) -->
             <div class="drawer-footer" id="drawer-footer-desktop">
                 <div class="drawer-user-info">
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -845,10 +791,6 @@
             </div>
         </aside>
 
-        <!-- ═══════════════════════════════════════════════════════
-             Drawer Footer Mobile: FIXED terpisah dari sidebar
-             Tidak terpengaruh overflow:hidden sidebar
-             ═══════════════════════════════════════════════════════ -->
         <div class="drawer-footer-fixed" id="drawer-footer-fixed">
             <div class="drawer-user-info">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -870,7 +812,6 @@
             </form>
         </div>
 
-        <!-- Main Content -->
         <main class="main-content">
             <div class="main-content-wrap">
                 @yield('content')
@@ -879,14 +820,9 @@
 
     </div>
 
-
-
-
-    {{-- ── Modal Konfirmasi Navigasi ke Dashboard / Report ── --}}
-
     <div id="modal-nav-confirm" class="modal-overlay" style="display:none;">
         <div id="modal-nav-confirm-box" class="modal-box" style="max-width:420px;width:90%;text-align:left;">
-            {{-- Icon --}}
+
             <div style="
                 width:52px;height:52px;border-radius:14px;
                 background:rgba(59,130,246,0.13);
@@ -898,19 +834,19 @@
                     <polyline points="9 22 9 12 15 12 15 22"/>
                 </svg>
             </div>
-            {{-- Title --}}
+
             <h4 id="modal-nav-confirm-title" style="
                 margin:0 0 .45rem;
                 font-size:1.05rem; font-weight:700;
                 color:var(--color-text,#1e293b);
             ">Buka Dashboard?</h4>
-            {{-- Description --}}
+
             <p id="modal-nav-confirm-desc" style="
                 margin:0 0 1.5rem;
                 font-size:.875rem; line-height:1.55;
                 color:var(--color-text-muted,#64748b);
             ">Anda akan diarahkan ke halaman Dashboard. Pastikan semua perubahan sudah tersimpan sebelum berpindah.</p>
-            {{-- Actions --}}
+
             <div style="display:flex;gap:.65rem;justify-content:flex-end;">
                 <button type="button" id="modal-nav-cancel" class="btn btn-secondary">Batal</button>
                 <button type="button" id="modal-nav-confirm-btn" class="btn btn-primary" style="background:#3b82f6;border-color:#2563eb;">
@@ -923,7 +859,6 @@
         </div>
     </div>
 
-    <!-- Footer -->
     <footer class="footer" id="main-footer">
         <div class="footer-inner">
             <p>&copy; {{ date('Y') }} BPSDMP — Sistem Arsip Surat Digital</p>
@@ -931,12 +866,7 @@
     </footer>
 
     <script>
-    // ══════════════════════════════════════════════════════════════════
-    //  BURGER — Global, semua halaman, semua ukuran layar
-    //  Desktop >1100px  : toggle sidebar collapse (margin-left)
-    //  Split-screen 769-1100px : toggle sidebar collapse juga
-    //  Mobile ≤0768px  : toggle drawer (is-open + overlay)
-    // ══════════════════════════════════════════════════════════════════
+
     (function () {
         var btn         = document.getElementById('burger-btn');
         var sidebar     = document.getElementById('main-sidebar');
@@ -948,33 +878,38 @@
         function isMobile() { return window.innerWidth <= 768; }
         function isSplitScreen() { return window.innerWidth > 768 && window.innerWidth <= 1100; }
 
-        // ── Inisialisasi state desktop berdasarkan localStorage ──
         function initDesktopState() {
+            var isDashboard = window.location.pathname.indexOf('dashboard') !== -1 && window.location.pathname.indexOf('report') === -1;
+            if (isDashboard) {
+                body.classList.add('sidebar-collapsed');
+                return;
+            }
             if (localStorage.getItem(STORAGE) === 'true') {
                 body.classList.add('sidebar-collapsed');
             } else {
                 body.classList.remove('sidebar-collapsed');
             }
-            // Burger selalu tampil sebagai ☰ di desktop
         }
 
-        // Split-screen: default collapsed, kecuali user pernah buka
         function initSplitScreenState() {
+            var isDashboard = window.location.pathname.indexOf('dashboard') !== -1 && window.location.pathname.indexOf('report') === -1;
+            if (isDashboard) {
+                body.classList.remove('sidebar-open');
+                return;
+            }
             if (localStorage.getItem('splitSidebarOpen') === 'true') {
                 body.classList.add('sidebar-open');
             } else {
                 body.classList.remove('sidebar-open');
             }
-            // Burger selalu tampil sebagai ☰ di split-screen
         }
 
-        // ── Open / Close drawer (mobile) ──
         function openDrawer() {
             sidebar.classList.add('is-open');
             if (overlay) overlay.classList.add('is-visible');
             if (drawerFooter) {
                 drawerFooter.style.display = 'block';
-                // Trigger reflow sebelum menambah class agar transisi berjalan
+
                 drawerFooter.getBoundingClientRect();
                 drawerFooter.classList.add('is-open');
             }
@@ -987,7 +922,7 @@
             if (overlay) overlay.classList.remove('is-visible');
             if (drawerFooter) {
                 drawerFooter.classList.remove('is-open');
-                // Sembunyikan setelah transisi selesai (300ms)
+
                 setTimeout(function () {
                     if (!drawerFooter.classList.contains('is-open')) {
                         drawerFooter.style.display = 'none';
@@ -995,13 +930,12 @@
                 }, 320);
             }
             btn.classList.remove('is-open');
-            // Mobile: pastikan burger button TIDAK menampilkan panah ← (is-collapsed hanya untuk desktop)
+
             if (isMobile()) btn.classList.remove('is-collapsed');
             btn.setAttribute('aria-expanded', 'false');
             body.style.overflow = '';
         }
 
-        // ── Inisialisasi saat load ──
         if (!isMobile()) {
             if (isSplitScreen()) {
                 initSplitScreenState();
@@ -1009,25 +943,24 @@
                 initDesktopState();
             }
         } else {
-            // Mobile: pastikan burger button selalu tampil sebagai ☰, bukan ←
+
             if (btn) btn.classList.remove('is-collapsed');
         }
 
-        // ── Klik burger ──
         if (btn) {
             btn.addEventListener('click', function () {
                 if (isMobile()) {
-                    // Mobile: toggle drawer
+
                     sidebar.classList.contains('is-open') ? closeDrawer() : openDrawer();
 
                 } else if (isSplitScreen()) {
-                    // Split-screen: toggle sidebar-open (sidebar tersembunyi by default)
+
                     var isOpen = body.classList.toggle('sidebar-open');
                     btn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
                     localStorage.setItem('splitSidebarOpen', isOpen);
 
                 } else {
-                    // Desktop lebar: toggle sidebar-collapsed
+
                     var isCollapsed = body.classList.toggle('sidebar-collapsed');
                     btn.setAttribute('aria-expanded', isCollapsed ? 'false' : 'true');
                     localStorage.setItem(STORAGE, isCollapsed);
@@ -1035,10 +968,8 @@
             });
         }
 
-        // ── Overlay klik = tutup drawer ──
         if (overlay) overlay.addEventListener('click', closeDrawer);
 
-        // ── Tutup drawer saat link diklik (mobile) ──
         if (sidebar) {
             sidebar.querySelectorAll('.sidebar-link').forEach(function (link) {
                 link.addEventListener('click', function () {
@@ -1047,7 +978,6 @@
             });
         }
 
-        // ── Escape = tutup drawer ──
         document.addEventListener('keydown', function (e) {
             if (e.key === 'Escape' && sidebar && sidebar.classList.contains('is-open')) {
                 closeDrawer();
@@ -1055,31 +985,30 @@
             }
         });
 
-        // ── Resize: transisi antar mode ──
         var resizeTimer;
         window.addEventListener('resize', function () {
-            // Debounce resize agar tidak firing tiap pixel
+
             clearTimeout(resizeTimer);
             resizeTimer = setTimeout(function () {
                 if (isMobile()) {
-                    // Pindah ke mobile: bersihkan state desktop, pastikan burger tetap burger
+
                     body.classList.remove('sidebar-collapsed', 'sidebar-open');
                     if (btn) btn.classList.remove('is-collapsed');
-                    // Pastikan overlay tertutup saat pindah ke mobile
+
                     if (overlay) overlay.classList.remove('is-visible');
                     closeDrawer();
                 } else if (isSplitScreen()) {
-                    // Pindah ke split-screen: tutup drawer, inisialisasi split-screen
+
                     closeDrawer();
                     body.classList.remove('sidebar-collapsed');
-                    // Pastikan overlay bersih
+
                     if (overlay) overlay.classList.remove('is-visible');
                     initSplitScreenState();
                 } else {
-                    // Pindah ke desktop lebar: tutup drawer, inisialisasi desktop
+
                     closeDrawer();
                     body.classList.remove('sidebar-open');
-                    // Pastikan overlay bersih & drawer footer tersembunyi
+
                     if (overlay) overlay.classList.remove('is-visible');
                     if (drawerFooter) { drawerFooter.classList.remove('is-open'); drawerFooter.style.display = 'none'; }
                     initDesktopState();
@@ -1090,7 +1019,7 @@
     </script>
 
     <script>
-        // ── Dark / Light Theme Toggle ─────────────────────────────
+
         (function () {
             var btn  = document.getElementById('theme-toggle');
             var root = document.documentElement;
@@ -1112,7 +1041,7 @@
     </script>
 
     <script>
-        // ── Global Realtime Clock (Header) ──────────────────────
+
         (function () {
             var BULAN = ['Januari','Februari','Maret','April','Mei','Juni',
                          'Juli','Agustus','September','Oktober','November','Desember'];
@@ -1131,7 +1060,7 @@
     </script>
 
     <script>
-        // ── Toast Notification API (global) ──────────────────────────
+
         window.showToast = function (message, type, title) {
             type  = type  || 'success';
             title = title || (type === 'success' ? 'Berhasil' : 'Gagal');
@@ -1158,7 +1087,6 @@
             var container = document.getElementById('toast-container');
             container.appendChild(toast);
 
-            // Trigger slide-in
             requestAnimationFrame(function () {
                 requestAnimationFrame(function () { toast.classList.add('toast-show'); });
             });
@@ -1169,19 +1097,14 @@
                 setTimeout(function () { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 350);
             }
 
-            // Auto-dismiss 5 detik
             var timer = setTimeout(dismissToast, 5000);
 
-            // Tombol close manual
             toast.querySelector('.toast-close').addEventListener('click', function () {
                 clearTimeout(timer);
                 dismissToast();
             });
         };
 
-        // ── Tampilkan flash session sebagai Toast ─────────────────────
-        // Dipanggil SEGERA (tidak menunggu DOMContentLoaded) dengan requestAnimationFrame
-        // untuk memastikan toast muncul meski body masih dalam pageFadeIn animation.
         (function () {
             function dismissToast(toast) {
                 toast.classList.add('toast-hide');
@@ -1191,15 +1114,15 @@
             function initPreRenderedToast(toastId, closeId) {
                 var toast = document.getElementById(toastId);
                 if (!toast) return;
-                // Double rAF: tunggu 2 frame render agar CSS transition berjalan
+
                 requestAnimationFrame(function () {
                     requestAnimationFrame(function () {
                         toast.classList.add('toast-show');
                     });
                 });
-                // Auto-dismiss setelah 5 detik
+
                 var timer = setTimeout(function () { dismissToast(toast); }, 5500);
-                // Tombol close manual
+
                 var closeBtn = document.getElementById(closeId);
                 if (closeBtn) {
                     closeBtn.addEventListener('click', function () {
@@ -1214,25 +1137,19 @@
 
         document.addEventListener('DOMContentLoaded', function () {
 
-            // ── Sembunyikan Page Loading Bar ──────────────────────────────
             (function () {
                 var bar = document.getElementById('page-loading-bar');
                 if (!bar) return;
                 bar.classList.add('is-done');
-                // Hapus dari DOM setelah transisi selesai
+
                 setTimeout(function () {
                     if (bar.parentNode) bar.parentNode.removeChild(bar);
                 }, 400);
             })();
 
-            // ── Scroll Reveal — Bidirectional (fade in/out saat scroll) ────────
-            // PENTING: Elemen menggunakan class .pre-hide yang diset di HTML
-            // (opacity:0 dari CSS), sehingga tidak pernah ada kondisi
-            // "terlihat dulu, disembunyikan JS, terlihat lagi" (FOUC lama).
-            // JS hanya menambah/hapus .is-visible saat elemen masuk/keluar viewport.
             (function () {
                 if (!window.IntersectionObserver) {
-                    // Fallback: langsung tampilkan semua jika IO tidak tersedia
+
                     document.querySelectorAll('.pre-hide').forEach(function (el) {
                         el.classList.add('is-visible');
                     });
@@ -1242,7 +1159,7 @@
                 var observer = new IntersectionObserver(function (entries) {
                     entries.forEach(function (entry) {
                         if (entry.isIntersecting) {
-                            // Elemen masuk viewport → fade IN dan tetap tampil
+
                             entry.target.classList.add('is-visible');
                             observer.unobserve(entry.target);
                         }
@@ -1257,18 +1174,16 @@
                 });
             })();
 
-            // ── Auto-hide header on scroll ────────────────────────
             var header  = document.getElementById('main-header');
             var lastY   = window.scrollY;
-            var OFFSET  = 60;   // px pertama: header tidak disembunyikan
-            var DELTA   = 12;   // minimum scroll delta sebelum trigger hide/show
+            var OFFSET  = 60;
+            var DELTA   = 12;
             var hidden  = false;
 
             function handleScroll() {
                 var y     = window.scrollY;
                 var delta = y - lastY;
 
-                // Selalu tampilkan saat di atas halaman
                 if (y <= OFFSET) {
                     if (hidden) {
                         header.classList.remove('is-hidden');
@@ -1279,18 +1194,17 @@
                     return;
                 }
 
-                // Hanya trigger jika delta cukup besar (menghindari micro-jitter)
                 if (Math.abs(delta) < DELTA) return;
 
                 if (delta > 0) {
-                    // Scroll ke bawah → sembunyikan
+
                     if (!hidden) {
                         header.classList.add('is-hidden');
                         document.body.classList.add('header-is-hidden');
                         hidden = true;
                     }
                 } else {
-                    // Scroll ke atas → tampilkan langsung
+
                     if (hidden) {
                         header.classList.remove('is-hidden');
                         document.body.classList.remove('header-is-hidden');
@@ -1301,12 +1215,11 @@
                 lastY = y;
             }
 
-            // Langsung di scroll event (tanpa ticking/rAF) agar responsif
             window.addEventListener('scroll', handleScroll, { passive: true });
         });
     </script>
     <script>
-    // ── Modal Konfirmasi Navigasi ke Dashboard / Report ──────────────────────
+
     (function () {
         var modal     = document.getElementById('modal-nav-confirm');
         var modalBox  = document.getElementById('modal-nav-confirm-box');
@@ -1323,14 +1236,13 @@
             if (titleEl) titleEl.textContent = title;
             if (descEl)  descEl.textContent  = desc;
 
-            // Tampilkan overlay dengan smooth open
             modal.style.display = 'flex';
             requestAnimationFrame(function () {
                 requestAnimationFrame(function () {
                     modal.classList.add('is-open');
                 });
             });
-            // Fokus ke tombol batal agar aksesibel
+
             if (cancelBtn) setTimeout(function () { cancelBtn.focus(); }, 260);
             document.body.style.overflow = 'hidden';
         }
@@ -1346,14 +1258,13 @@
             }, 240);
         }
 
-        // Intercept klik pada link dengan data-confirm-nav
         document.querySelectorAll('a[data-confirm-nav]').forEach(function (link) {
             link.addEventListener('click', function (e) {
-                // Abaikan jika sudah di halaman yg sama (link aktif)
+
                 if (link.classList.contains('sidebar-link-active')) return;
 
                 e.preventDefault();
-                e.stopPropagation(); // cegah page-leaving transition global
+                e.stopPropagation();
 
                 var href  = link.getAttribute('href');
                 var title = link.getAttribute('data-confirm-title') || 'Pindah halaman?';
@@ -1362,23 +1273,20 @@
             });
         });
 
-        // Tombol Batal
         if (cancelBtn) {
             cancelBtn.addEventListener('click', closeModal);
         }
 
-        // Tombol Ya, Lanjutkan — navigasi sebenarnya
         if (confirmBtn) {
             confirmBtn.addEventListener('click', function () {
                 if (!pendingHref) return;
                 var target = pendingHref;
                 pendingHref = null;
                 document.body.style.overflow = '';
-                // Tutup modal dulu, tampilkan loading overlay, lalu navigasi
+
                 modal.classList.remove('is-open');
                 setTimeout(function () {
                     modal.style.display = 'none';
-                    // Tampilkan loading overlay via fungsi global
                     var loadingOverlay = document.getElementById('nav-loading-overlay');
                     var loadingBar = document.getElementById('nav-loading-bar');
                     var loadingMsg = document.getElementById('nav-loading-msg');
@@ -1387,23 +1295,19 @@
                         loadingOverlay.style.display = 'flex';
                         if (loadingBar) loadingBar.classList.add('is-active');
                         requestAnimationFrame(function () {
-                            requestAnimationFrame(function () {
-                                loadingOverlay.classList.add('is-visible');
-                            });
+                            loadingOverlay.classList.add('is-visible');
                         });
                     }
                     document.body.classList.add('page-leaving');
-                    setTimeout(function () { location.href = target; }, 160);
-                }, 220);
+                    setTimeout(function () { location.href = target; }, 120);
+                }, 200);
             });
         }
 
-        // Klik overlay = tutup
         modal.addEventListener('click', function (e) {
             if (e.target === modal) closeModal();
         });
 
-        // Escape = tutup
         document.addEventListener('keydown', function (e) {
             if (e.key === 'Escape' && modal && modal.style.display === 'flex') {
                 closeModal();
@@ -1412,11 +1316,8 @@
     })();
     </script>
 
-    {{-- ── Script dari child views (modal, file upload, flatpickr, dll.) ── --}}
     @stack('scripts')
 
-    {{-- ── Realtime Password Reset Notification via SSE (khusus admin) ── --}}
-    {{-- Admin mendapat notifikasi toast realtime saat internship submit permintaan reset password. --}}
     @auth
     @if(Auth::user()->isAdmin())
     <style>
@@ -1459,7 +1360,6 @@
         var sseUrl  = '{{ route("sse.reset-requests") }}';
         var pollUrl = '{{ route("api.reset-requests-version") }}';
 
-        // ── Update badge di header ────────────────────────────────────────────
         function updateBadge(count) {
             var badge = document.getElementById('reset-badge');
             if (!badge) return;
@@ -1471,9 +1371,8 @@
             }
         }
 
-        // ── Tampilkan toast notifikasi ────────────────────────────────────────
         function showResetToast(pendingCount) {
-            // Hapus toast lama jika ada
+
             var old = document.getElementById('reset-notify-toast');
             if (old) old.remove();
 
@@ -1499,7 +1398,6 @@
                 '<button id="reset-toast-close" style="background:none;border:none;color:#64748b;cursor:pointer;padding:4px;font-size:1.1rem;line-height:1;flex-shrink:0">&times;</button>'
             ].join('');
 
-            // Klik toast → buka halaman kelola pengguna
             toast.addEventListener('click', function(e) {
                 if (e.target.id !== 'reset-toast-close') {
                     window.location.href = '{{ route("admin.users.index") }}';
@@ -1508,20 +1406,17 @@
 
             document.body.appendChild(toast);
 
-            // Tombol tutup
             document.getElementById('reset-toast-close').addEventListener('click', function(e) {
                 e.stopPropagation();
                 toast.remove();
             });
 
-            // Auto-hilang setelah 8 detik
             setTimeout(function() { if (toast.parentNode) toast.remove(); }, 8000);
         }
 
-        // ── Proses event dari SSE / polling ───────────────────────────────────
         function handleUpdate(data) {
             updateBadge(data.pending || 0);
-            // Tampilkan toast hanya jika ada perubahan versi (bukan inisialisasi)
+
             if (currentVersion !== null && data.version !== currentVersion && data.pending > 0) {
                 showResetToast(data.pending);
             }
@@ -1529,7 +1424,6 @@
             currentPending = data.pending || 0;
         }
 
-        // ── Koneksi SSE ───────────────────────────────────────────────────────
         function connectSSE() {
             if (!window.EventSource) { startPolling(); return; }
 
@@ -1558,7 +1452,6 @@
             }
         }
 
-        // ── Fallback: Polling setiap 15 detik ────────────────────────────────
         function startPolling() {
             setInterval(function() {
                 fetch(pollUrl, { credentials: 'same-origin' })

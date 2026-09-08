@@ -5,6 +5,10 @@
 
     RewriteEngine On
 
+    # Redirect jika request menyertakan prefix folder project-magangv1
+    RewriteRule ^project-magangv1/public/?(.*)$ /$1 [R=301,L,QSA]
+    RewriteRule ^project-magangv1/?(.*)$ /$1 [R=301,L,QSA]
+
     # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .
     RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]

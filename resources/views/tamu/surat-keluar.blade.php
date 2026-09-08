@@ -70,7 +70,6 @@
         @keyframes pulse-badge { 0%,100%{opacity:1} 50%{opacity:0.7} }
         .topbar-spacer { flex: 1; }
 
-        /* ── TOPBAR CLOCK ── */
         .topbar-clock {
             display: inline-flex; align-items: center; gap: 5px;
             font-size: 0.75rem; font-weight: 600;
@@ -79,7 +78,6 @@
         .topbar-clock svg { color: var(--accent); flex-shrink: 0; }
         @media (max-width: 640px) { .topbar-clock { display: none; } }
 
-        /* ── DATE BADGE ── */
         .tamu-date-badge {
             display: inline-flex; align-items: center; gap: 5px;
             padding: 5px 12px;
@@ -198,9 +196,102 @@
             .topbar-title { display: none; }
             .page-title { font-size: 1.1rem; }
         }
+
+        body.page-leaving {
+            opacity: 0;
+            transition: opacity 0.15s ease;
+            pointer-events: none;
+        }
+
+        body {
+            animation: pageFadeIn 0.2s ease both;
+        }
+        @keyframes pageFadeIn {
+            from { opacity: 0; }
+            to   { opacity: 1; }
+        }
+
+        #nav-loading-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 99998;
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 1rem;
+            opacity: 0;
+            transition: opacity 0.15s ease;
+        }
+        #nav-loading-overlay.is-visible {
+            opacity: 1;
+        }
+        .nav-loading-spinner {
+            width: 44px;
+            height: 44px;
+            border: 3px solid transparent;
+            border-top-color: #38bdf8;
+            border-right-color: #38bdf8;
+            border-radius: 50%;
+            animation: navSpinRotate 0.7s linear infinite;
+            position: relative;
+        }
+        .nav-loading-spinner::after {
+            content: '';
+            position: absolute;
+            inset: 4px;
+            border: 2px solid transparent;
+            border-bottom-color: #4f8ef7;
+            border-left-color: #4f8ef7;
+            border-radius: 50%;
+            animation: navSpinRotate 0.5s linear infinite reverse;
+        }
+        @keyframes navSpinRotate {
+            to { transform: rotate(360deg); }
+        }
+        .nav-loading-text {
+            font-size: 0.88rem;
+            font-weight: 500;
+            color: #94a3b8;
+            letter-spacing: 0.01em;
+            animation: navLoadingPulse 1.4s ease-in-out infinite;
+        }
+        @keyframes navLoadingPulse {
+            0%, 100% { opacity: 0.6; }
+            50%       { opacity: 1; }
+        }
+
+        #nav-loading-bar {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            height: 3px;
+            z-index: 99999;
+            background: linear-gradient(90deg, #1e3a5f 0%, #38bdf8 50%, #1e3a5f 100%);
+            background-size: 200% 100%;
+            animation: navBarSlide 1s ease-in-out infinite;
+            border-radius: 0 2px 2px 0;
+            box-shadow: 0 0 10px rgba(56,189,248,0.5);
+        }
+        @keyframes navBarSlide {
+            0%   { width: 0%;   background-position: 0% 0; }
+            30%  { width: 55%;  background-position: 50% 0; }
+            70%  { width: 80%;  background-position: 100% 0; }
+            100% { width: 95%;  background-position: 150% 0; }
+        }
+        #nav-loading-bar.is-active { display: block; }
     </style>
 </head>
 <body>
+
+    <div id="nav-loading-overlay" role="status" aria-label="Memuat halaman...">
+        <div class="nav-loading-spinner" aria-hidden="true"></div>
+        <p class="nav-loading-text" id="nav-loading-msg">Memuat Surat Keluar...</p>
+    </div>
+    <div id="nav-loading-bar" aria-hidden="true"></div>
 
     <header class="topbar">
         <a href="{{ route('tamu.index') }}" class="topbar-logo">
@@ -213,7 +304,7 @@
             Mode Baca Saja
         </span>
         <div class="topbar-spacer"></div>
-        {{-- Live date/time di topbar --}}
+
         <div class="topbar-clock" id="topbar-clock-sk-tamu">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
             <span id="sk-tamu-clock">--:--:--</span>
@@ -307,7 +398,9 @@
                         </thead>
                         <tbody>
                             @foreach($rows as $item)
-                            @php $d = $item['data']; @endphp
+                            @php
+$d = $item['data'];
+@endphp
                             <tr>
                                 <td class="no-col">{{ $loop->iteration }}</td>
                                 <td class="muted">{{ $d[1] ?? '-' }}</td>
@@ -318,7 +411,9 @@
                                 <td class="muted">{{ $d[7] ?? '-' }}</td>
                                 <td class="muted" style="text-align:center">{{ $d[8] ?? '-' }}</td>
                                 <td>
-                                    @php $tingkat = $d[9] ?? '-'; @endphp
+                                    @php
+$tingkat = $d[9] ?? '-';
+@endphp
                                     @if(strtolower($tingkat) === 'asli')
                                         <span class="badge badge-green">{{ $tingkat }}</span>
                                     @elseif(str_contains(strtolower($tingkat), 'fotokopi') || str_contains(strtolower($tingkat), 'foto kopi'))
@@ -329,7 +424,9 @@
                                 </td>
                                 <td class="muted">{{ $d[10] ?? '-' }}</td>
                                 <td>
-                                    @php $klas = $d[11] ?? '-'; @endphp
+                                    @php
+$klas = $d[11] ?? '-';
+@endphp
                                     @if(str_contains(strtolower($klas), 'rahasia'))
                                         <span class="badge badge-red">{{ $klas }}</span>
                                     @elseif(str_contains(strtolower($klas), 'biasa'))
@@ -364,7 +461,7 @@
     </main>
 
     <script>
-        // Pencarian real-time + Collapse logic > 5 data
+
         const searchInput    = document.getElementById('searchInput');
         const table          = document.getElementById('arsipTable');
         const collapseBar    = document.getElementById('collapse-bar-sk-tamu');
@@ -441,7 +538,6 @@
 
         updateSKTamuCollapse();
 
-        // Live clock & date (realtime)
         (function() {
             var BIDS = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
             var HIDS = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
@@ -457,34 +553,74 @@
                 if (dateEl)  dateEl.textContent  = s;
                 if (badgeEl) badgeEl.textContent  = s;
             }
-    {{-- Navigation Loading Overlay --}}
-    <div id="nav-loading-overlay" style="display:none;position:fixed;inset:0;z-index:99998;background:rgba(15,23,42,0.85);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);align-items:center;justify-content:center;flex-direction:column;gap:1rem;opacity:0;transition:opacity 0.15s ease;">
-        <div style="width:44px;height:44px;border:3px solid transparent;border-top-color:#f59e0b;border-right-color:#f59e0b;border-radius:50%;animation:spinRotate 0.7s linear infinite;position:relative;"></div>
-        <p style="font-size:0.85rem;font-weight:500;color:#8b92a8;" id="nav-loading-msg">Memuat halaman...</p>
-    </div>
-    <div id="nav-loading-bar" style="display:none;position:fixed;top:0;left:0;height:3px;z-index:99999;background:linear-gradient(90deg,#f59e0b 0%,#fbbf24 50%,#f59e0b 100%);background-size:200% 100%;animation:navBarSlide 1s ease-in-out infinite;border-radius:0 2px 2px 0;"></div>
-    <style>@keyframes spinRotate { to { transform: rotate(360deg); } } @keyframes navBarSlide { 0% { width:0%; } 50% { width:70%; } 100% { width:100%; } }</style>
-    <script>
+            tick();
+            setInterval(tick, 1000);
+        })();
+
         (function () {
             'use strict';
             var overlay = document.getElementById('nav-loading-overlay');
             var bar     = document.getElementById('nav-loading-bar');
             var msg     = document.getElementById('nav-loading-msg');
+
+            function getLoadingMsg(href) {
+                try {
+                    var path = new URL(href, location.origin).pathname;
+                    if (path === '/' || path.indexOf('arsip') !== -1) return 'Memuat Surat Masuk...';
+                    if (path.indexOf('surat-keluar') !== -1) return 'Memuat Surat Keluar...';
+                    if (path.indexOf('dashboard/report') !== -1) return 'Memuat Rekap Laporan...';
+                    if (path.indexOf('dashboard') !== -1) return 'Memuat Dashboard...';
+                    if (path.indexOf('users') !== -1) return 'Memuat Data Pengguna...';
+                    if (path.indexOf('tamu/surat-keluar') !== -1) return 'Memuat Surat Keluar...';
+                    if (path.indexOf('tamu') !== -1) return 'Memuat Surat Masuk...';
+                    if (path.indexOf('login') !== -1) return 'Memuat Login...';
+                } catch (e) {}
+                return 'Memuat halaman...';
+            }
+
+            function showLoading(hrefOrMsg) {
+                if (!overlay || !bar) return;
+                if (msg) {
+                    if (hrefOrMsg && (hrefOrMsg.indexOf('/') !== -1 || hrefOrMsg.indexOf('.') !== -1)) {
+                        msg.textContent = getLoadingMsg(hrefOrMsg);
+                    } else {
+                        msg.textContent = hrefOrMsg || 'Memproses...';
+                    }
+                }
+                overlay.style.display = 'flex';
+                bar.classList.add('is-active');
+                requestAnimationFrame(function () {
+                    overlay.classList.add('is-visible');
+                });
+            }
+
             document.addEventListener('click', function (e) {
                 var link = e.target.closest('a[href]');
                 if (!link) return;
                 var href = link.getAttribute('href');
-                if (!href || href.startsWith('#') || href.startsWith('javascript:') || link.target === '_blank' || link.origin !== location.origin) return;
+                if (!href || href.startsWith('#') || href.startsWith('javascript:') ||
+                    href.startsWith('mailto:') || href.startsWith('tel:') ||
+                    link.target === '_blank' || link.hasAttribute('download') ||
+                    link.origin !== location.origin) return;
                 if (e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return;
                 if (link.classList.contains('active')) return;
+                if (/\/(pdf|image|view|download)\//i.test(link.pathname)) return;
+
                 e.preventDefault();
-                if (overlay && bar) {
-                    if (msg) msg.textContent = href.indexOf('surat-keluar') !== -1 ? 'Memuat Surat Keluar (Tamu)...' : 'Memuat Surat Masuk (Tamu)...';
-                    overlay.style.display = 'flex';
-                    bar.style.display = 'block';
-                    requestAnimationFrame(function() { overlay.style.opacity = '1'; });
+                showLoading(href);
+                document.body.classList.add('page-leaving');
+                setTimeout(function () {
+                    location.href = href;
+                }, 120);
+            });
+
+            window.addEventListener('pageshow', function () {
+                if (overlay) {
+                    overlay.classList.remove('is-visible');
+                    overlay.style.display = 'none';
                 }
-                requestAnimationFrame(function () { location.href = href; });
+                if (bar) bar.classList.remove('is-active');
+                document.body.classList.remove('page-leaving');
             });
         })();
     </script>

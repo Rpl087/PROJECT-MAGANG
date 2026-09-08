@@ -8,35 +8,60 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Google\Service\Sheets;
 
+/**
+ * ============================================================
+ * ARSIP CONTROLLER - Surat Masuk (dbSM)
+ * ============================================================
+ *
+ * Mengelola CRUD arsip surat masuk yang tersimpan di Google Sheets (sheet: dbSM).
+ *
+ * STRUKTUR KOLOM GOOGLE SHEETS (dbSM) - 18 kolom (A s/d R):
+ *   [A]  timestamp           = waktu input data
+ *   [B]  kode_klasifikasi    = misal: KP, PR, HK
+ *   [C]  kode_surat          = nomor surat
+ *   [D]  uraian_berkas       = uraian isi berkas
+ *   [E]  kurun_waktu         = tahun dokumen
+ *   [F]  jumlah_folder       = jumlah folder fisik
+ *   [G]  nomor_item_arsip    = nomor urut item
+ *   [H]  uraian_informasi_arsip
+ *   [I]  tanggal_surat       = index 8 (0-based)
+ *   [J]  jumlah_lembar       = index 9
+ *   [K]  tingkat_perkembangan
+ *   [L]  lokasi_simpan
+ *   [M]  klasifikasi_keamanan
+ *   [N]  tingkat_akses
+ *   [O]  retensi_aktif
+ *   [P]  retensi_inaktif
+ *   [Q]  retensi_keterangan
+ *   [R]  link_pdf / nama_file_lokal  = index 17
+ *
+ * ALUR STORE (tambah data):
+ *   1. Validasi input form
+ *   2. Format jumlah_lembar otomatis (formatJumlahLembar)
+ *   3. Upload PDF ke Google Drive + simpan backup lokal (uploads/)
+ *   4. Append baris baru ke sheet dbSM
+ *   5. Invalidate cache SheetsCache
+ *   6. Jika gagal di langkah 4/5 → rollback (hapus file lokal & Drive)
+ *
+ * PENYORTIRAN:
+ *   - Data diurutkan berdasarkan kode klasifikasi (KODE_KLASIFIKASI_ORDER)
+ *   - Baris tanpa tanggal (kolom I kosong) diabaikan/dilewati
+ *
+ * CATATAN INDEX:
+ *   - $rowIndex adalah indeks baris di PHP array (0 = header)
+ *   - sheetRowNumber = $rowIndex + 1 (karena Sheets mulai dari baris 1)
+ */
 class ArsipController extends Controller
 {
-    // KODE_KLASIFIKASI_ORDER, KODE_MAP, sortByKlasifikasi(), applyKodeMapFallback()
-    // diwarisi dari Controller base class (tidak lagi duplikat di sini).
-
-    // getSheetService(), getSheetId(), escapeFormula(), safeDeleteFile() juga dari base class.
 
     /**
-     * Petakan satu baris raw dbSM (A–R, 18 kolom) ke format tampilan (0–16, 17 kolom).
+     * Memetakan ulang kolom raw dbSM ke format yang dipakai oleh view.
      *
-     * Mapping kolom dbSM → tampilan:
-     *   dbSM[0]  (A: Timestamp)        → [0]  Timestamp/NO
-     *   dbSM[1]  (B: Kode Klas)  +
-     *   dbSM[2]  (C: Kode Surat)       → [1]  Kode Gabungan ("KP 04.01")
-     *   dbSM[3]  (D: Uraian Berkas)    → [2]
-     *   dbSM[4]  (E: Kurun Waktu)      → [3]
-     *   dbSM[5]  (F: Jumlah Folder)    → [4]
-     *   dbSM[6]  (G: Nomor Item)       → [5]
-     *   dbSM[7]  (H: Uraian Arsip)     → [6]
-     *   dbSM[8]  (I: Tanggal Surat)    → [7]
-     *   dbSM[9]  (J: Jumlah Lembar)    → [8]
-     *   dbSM[10] (K: Tingkat Perkembangan) → [9]
-     *   dbSM[11] (L: Lokasi Simpan)    → [10]
-     *   dbSM[12] (M: Klas Keamanan)    → [11]
-     *   dbSM[13] (N: Tingkat Akses)    → [12]
-     *   dbSM[14] (O: Retensi Aktif)    → [13]
-     *   dbSM[15] (P: Retensi Inaktif)  → [14]
-     *   dbSM[16] (Q: Retensi Ket)      → [15]
-     *   dbSM[17] (R: Link Folder/PDF)  → [16]
+     * Perbedaan utama: kolom kode_klasifikasi (B) dan kode_surat (C) digabung
+     * menjadi satu string 'kode_klas kode_surat' di index [1] hasil mapped.
+     * Kolom lainnya tetap sama urutan index-nya.
+     *
+     * Dipanggil saat fetchAndCacheDbsm() memproses baris dari Sheets.
      */
     private function mapDbsmRow(array $row): array
     {
@@ -44,32 +69,36 @@ class ArsipController extends Controller
         $kodeSurat = trim($row[2] ?? '');
 
         return [
-            $row[0]  ?? '',  // [0]  Timestamp
+            $row[0]  ?? '',
             ($kodeKlas !== '' && $kodeSurat !== '')
                 ? "{$kodeKlas} {$kodeSurat}"
-                : ($kodeKlas ?: $kodeSurat),    // [1]  Kode Gabungan
-            $row[3]  ?? '',  // [2]  Uraian Berkas
-            $row[4]  ?? '',  // [3]  Kurun Waktu
-            $row[5]  ?? '',  // [4]  Jumlah Folder
-            $row[6]  ?? '',  // [5]  Nomor Item
-            $row[7]  ?? '',  // [6]  Uraian Arsip
-            $row[8]  ?? '',  // [7]  Tanggal Surat
-            $row[9]  ?? '',  // [8]  Jumlah Lembar
-            $row[10] ?? '',  // [9]  Tingkat Perkembangan
-            $row[11] ?? '',  // [10] Lokasi Simpan
-            $row[12] ?? '',  // [11] Klas Keamanan
-            $row[13] ?? '',  // [12] Tingkat Akses
-            $row[14] ?? '',  // [13] Retensi Aktif
-            $row[15] ?? '',  // [14] Retensi Inaktif
-            $row[16] ?? '',  // [15] Retensi Keterangan
-            $row[17] ?? '',  // [16] Link Folder/PDF
+                : ($kodeKlas ?: $kodeSurat),
+            $row[3]  ?? '',
+            $row[4]  ?? '',
+            $row[5]  ?? '',
+            $row[6]  ?? '',
+            $row[7]  ?? '',
+            $row[8]  ?? '',
+            $row[9]  ?? '',
+            $row[10] ?? '',
+            $row[11] ?? '',
+            $row[12] ?? '',
+            $row[13] ?? '',
+            $row[14] ?? '',
+            $row[15] ?? '',
+            $row[16] ?? '',
+            $row[17] ?? '',
         ];
     }
 
     /**
-     * Ambil & cache data dbSM dari Google Sheets, dengan mapping kolom ke format tampilan.
+     * Mengambil semua data dbSM dari Google Sheets dan menyimpannya di cache.
+     * Cache berlaku selama SheetsCache::TTL_TABLE detik (default: 300 detik / 5 menit).
      *
-     * @return array  Array baris yang sudah di-mapping (index 0 = header row asli)
+     * Admin mendapat cache terpisah (TTL_ADMIN_MICRO = 15 detik) agar data
+     * lebih segar saat admin melakukan perubahan.
+     *
+     * Cache otomatis di-reset setiap kali ada operasi store/update/destroy.
      */
     private function fetchAndCacheDbsm(): array
     {
@@ -77,7 +106,7 @@ class ArsipController extends Controller
             SheetsCache::KEY_SURAT_MASUK,
             SheetsCache::TTL_TABLE,
             function () {
-                // INFO-01 fix: gunakan getReadonlySheetService() — hanya baca data, tidak perlu scope write
+
                 [$service, $spreadsheetId] = $this->getReadonlySheetService();
                 $response = $service->spreadsheets_values->get($spreadsheetId, 'dbSM!A:R');
                 $dbRows   = $response->getValues() ?? [];
@@ -86,7 +115,7 @@ class ArsipController extends Controller
                     return [];
                 }
 
-                $mappedRows = [$dbRows[0]]; // Simpan header asli di index 0
+                $mappedRows = [$dbRows[0]];
                 foreach ($dbRows as $i => $row) {
                     if ($i === 0) continue;
                     $mappedRows[] = $this->mapDbsmRow($row);
@@ -97,16 +126,9 @@ class ArsipController extends Controller
     }
 
     /**
-     * Tampilkan daftar surat masuk dari Google Sheets + form input.
-     * - Admin      : membaca dari sheet "dbSM" (sumber data asli)
-     * - Internship : hanya menampilkan form input (rows kosong, tanpa tabel)
-     *
-     * Struktur SURAT MASUK setelah mapping (index 0–16):
-     *   [0]=Timestamp | [1]=Kode Klas+Surat | [2]=Uraian Berkas | [3]=Kurun Waktu
-     *   [4]=Jumlah Folder | [5]=Nomor Item | [6]=Uraian Arsip
-     *   [7]=Tanggal Surat | [8]=Jumlah Lembar | [9]=Tingkat Perkembangan
-     *   [10]=Lokasi Simpan | [11]=Klas Keamanan | [12]=Tingkat Akses
-     *   [13]=Retensi Aktif | [14]=Retensi Inaktif | [15]=Retensi Ket | [16]=Link PDF
+     * Menampilkan halaman utama arsip surat masuk.
+     * Dapat difilter berdasarkan bulan dan tahun via query string.
+     * Baris tanpa tanggal surat (kolom I kosong) tidak ditampilkan.
      */
     public function index(Request $request)
     {
@@ -114,25 +136,22 @@ class ArsipController extends Controller
         $fetchError = null;
         $isAdmin    = auth()->user()?->hasAdminAccess() ?? false;
 
-        if ($isAdmin) {
-            try {
-                $allRows = $this->fetchAndCacheDbsm();
+        // Semua user yang sudah login (admin maupun internship) bisa melihat data
+        try {
+            $allRows = $this->fetchAndCacheDbsm();
 
-                foreach ($allRows as $i => $row) {
-                    if ($i === 0) continue;
-                    $tanggal = trim($row[7] ?? '');
-                    if (empty($tanggal)) continue;
-                    $rows[] = ['index' => $i, 'data' => $row];
-                }
-                $this->sortByKlasifikasi($rows);
-            } catch (\Exception $e) {
-                $fetchError = 'Gagal memuat data dari Google Sheets: ' . $e->getMessage();
-                // Hapus cache yang mungkin korup agar request berikutnya retry ke API
-                SheetsCache::forget(SheetsCache::KEY_SURAT_MASUK);
+            foreach ($allRows as $i => $row) {
+                if ($i === 0) continue;
+                $tanggal = trim($row[7] ?? '');
+                if (empty($tanggal)) continue;
+                $rows[] = ['index' => $i, 'data' => $row];
             }
+            $this->sortByKlasifikasi($rows);
+        } catch (\Exception $e) {
+            $fetchError = 'Gagal memuat data dari Google Sheets: ' . $e->getMessage();
+            SheetsCache::forget(SheetsCache::KEY_SURAT_MASUK);
         }
 
-        // Filter bulan/tahun dari request
         $filterBulan = $request->get('bulan', '');
         $filterTahun = $request->get('tahun', '');
 
@@ -140,8 +159,9 @@ class ArsipController extends Controller
     }
 
     /**
-     * Tampilkan daftar surat masuk dalam mode READ-ONLY untuk tamu (WiFi Tamu).
-     * Tidak memerlukan autentikasi. Hanya menampilkan data tanpa form input atau tombol hapus.
+     * Menampilkan halaman arsip surat masuk untuk tamu (read-only, tanpa login).
+     * Data sama dengan index() tapi menggunakan view 'tamu.index' yang
+     * tidak memiliki tombol tambah/edit/hapus.
      */
     public function indexGuest()
     {
@@ -149,7 +169,7 @@ class ArsipController extends Controller
         $fetchError = null;
 
         try {
-            // Gunakan cache yang sama dengan admin untuk efisiensi
+
             $allRows = $this->fetchAndCacheDbsm();
 
             foreach ($allRows as $i => $row) {
@@ -167,21 +187,17 @@ class ArsipController extends Controller
         return view('tamu.index', compact('rows', 'fetchError'));
     }
 
-    /**
-     * Hapus baris surat masuk dari sheet "dbSM".
-     * - PDF link (kolom R, index 17) digunakan sebagai unique identifier untuk menghindari
-     *   penghapusan baris yang salah akibat pergeseran index setelah batchUpdate lain.
-     * - Operasi akan dibatalkan jika PDF link tidak ditemukan atau kosong
-     *   (data tanpa PDF link tidak dapat dihapus secara aman).
-     *
-     * @param int $rowIndex  Row index (0-based di array) dari dbSM
-     */
     public function destroy(int $rowIndex)
     {
+        // Validasi: baris 0 adalah header, tidak boleh dihapus
+        if ($rowIndex < 1) {
+            return redirect()->route('arsip.index')
+                ->with('error', 'Indeks baris tidak valid.');
+        }
+
         try {
             [$service, $spreadsheetId] = $this->getSheetService();
 
-            // ── Ambil data dari dbSM untuk mendapatkan PDF link sebagai unique identifier ──
             $dbsmResponse = $service->spreadsheets_values->get($spreadsheetId, 'dbSM!A:R');
             $dbsmRows     = $dbsmResponse->getValues() ?? [];
             $targetRow    = $dbsmRows[$rowIndex] ?? null;
@@ -191,32 +207,9 @@ class ArsipController extends Controller
                     ->with('error', 'Data tidak ditemukan di sheet dbSM.');
             }
 
-            // PDF link ada di kolom R (index 17) di sheet dbSM — digunakan sebagai unique identifier jika ada
-            $pdfLink      = trim($targetRow[17] ?? '');
-            $dbsmRowIndex = null;
+            // Ambil link PDF dari baris yang akan dihapus
+            $pdfLink = trim($targetRow[17] ?? '');
 
-            // Priority 1: Cari baris di dbSM yang cocok berdasarkan PDF link jika tidak kosong
-            if (!empty($pdfLink)) {
-                foreach ($dbsmRows as $i => $row) {
-                    if ($i === 0) continue; // skip header
-                    if (trim($row[17] ?? '') === $pdfLink) {
-                        $dbsmRowIndex = $i;
-                        break;
-                    }
-                }
-            }
-
-            // Priority 2 (Fallback): Gunakan $rowIndex jika valid di dbSM (misal data tanpa PDF link)
-            if ($dbsmRowIndex === null && isset($dbsmRows[$rowIndex]) && $rowIndex > 0) {
-                $dbsmRowIndex = $rowIndex;
-            }
-
-            if ($dbsmRowIndex === null) {
-                return redirect()->route('arsip.index')
-                    ->with('error', 'Gagal menghapus: data tidak ditemukan di sheet dbSM.');
-            }
-
-            // ── Hapus baris dari dbSM ─────────────────────────────────────────────
             $sheetId = $this->getSheetId($service, $spreadsheetId, 'dbSM');
 
             if ($sheetId === null) {
@@ -224,13 +217,14 @@ class ArsipController extends Controller
                     ->with('error', 'Sheet "dbSM" tidak ditemukan di Spreadsheet.');
             }
 
+            // Gunakan $rowIndex langsung — sudah merupakan indeks baris yang benar di sheet
             $requests = [[
                 'deleteDimension' => [
                     'range' => [
                         'sheetId'    => $sheetId,
                         'dimension'  => 'ROWS',
-                        'startIndex' => $dbsmRowIndex,
-                        'endIndex'   => $dbsmRowIndex + 1,
+                        'startIndex' => $rowIndex,
+                        'endIndex'   => $rowIndex + 1,
                     ],
                 ],
             ]];
@@ -238,12 +232,10 @@ class ArsipController extends Controller
             $body = new Sheets\BatchUpdateSpreadsheetRequest(['requests' => $requests]);
             $service->spreadsheets->batchUpdate($spreadsheetId, $body);
 
-            // Hapus file mentah dari folder lokal uploads/ dan dari Google Drive jika ada
             if (!empty($pdfLink)) {
                 GoogleDriveService::deleteFile($pdfLink);
             }
 
-            // Invalidasi cache agar halaman menampilkan data terbaru
             SheetsCache::forgetSuratMasuk();
 
             return redirect()->route('arsip.index')
@@ -254,21 +246,10 @@ class ArsipController extends Controller
         }
     }
 
-    /**
-     * Simpan data surat masuk ke Google Spreadsheet (sheet: dbSM).
-     *
-     * Struktur kolom dbSM (A–R):
-     *   A=Timestamp | B=Kode Klas | C=Kode Surat | D=Uraian Berkas
-     *   E=Kurun Waktu | F=Jumlah Folder | G=Nomor Item | H=Uraian Arsip
-     *   I=Tanggal Surat | J=Jumlah Lembar | K=Tingkat Perkembangan
-     *   L=Lokasi Simpan | M=Klas Keamanan | N=Tingkat Akses
-     *   O=Retensi Aktif | P=Retensi Inaktif | Q=Retensi Ket | R=Link Folder
-     */
     public function store(Request $request)
     {
         $storedFilePath = null;
 
-        // Validasi input sesuai kolom dbSM
         $validated = $request->validate([
             'kode_klasifikasi'        => 'required|string|max:255',
             'kode_surat'              => 'required|string|max:255',
@@ -307,15 +288,14 @@ class ArsipController extends Controller
             'surat_masuk.required'             => 'File Surat Masuk (PDF) wajib diunggah.',
         ]);
 
-        // ── Server-side kodeMap fallback (dari base Controller::applyKodeMapFallback()) ──
         $this->applyKodeMapFallback($validated);
+        $validated['jumlah_lembar'] = $this->formatJumlahLembar($validated['jumlah_lembar']);
 
         try {
             [$service, $spreadsheetId] = $this->getSheetService();
 
             $sheetRange = 'dbSM!A:R';
 
-            // ── Upload file PDF ke Google Drive & Backup Lokal ke uploads/ ────
             $file         = $request->file('surat_masuk');
             $uploadResult = GoogleDriveService::uploadAndBackup($file, $validated['kode_klasifikasi']);
             $linkFolder   = $uploadResult['driveLink'];
@@ -349,15 +329,20 @@ class ArsipController extends Controller
 
             $service->spreadsheets_values->append($spreadsheetId, $sheetRange, $body, $params);
 
-            // Invalidasi cache agar data baru langsung terlihat
             SheetsCache::forgetSuratMasuk();
 
             return redirect()->route('arsip.index')
                 ->with('success', 'Data surat masuk berhasil diarsipkan ke Spreadsheet!');
         } catch (\Exception $e) {
-            // Hapus file orphan yang sudah ter-upload ke uploads/ agar tidak menumpuk
+
+            // Rollback: hapus file lokal
             if ($storedFilePath !== null) {
                 $this->safeDeleteFile(base_path('uploads/' . $storedFilePath));
+            }
+
+            // Rollback: hapus file dari Google Drive jika upload Drive sudah berhasil
+            if (!empty($linkFolder) && str_starts_with($linkFolder, 'http')) {
+                GoogleDriveService::deleteFile($linkFolder);
             }
 
             return redirect()->route('arsip.index')
@@ -365,12 +350,6 @@ class ArsipController extends Controller
         }
     }
 
-    /**
-     * Ambil data satu baris Surat Masuk dari sheet dbSM (by rowIndex)
-     * dan kembalikan sebagai JSON untuk pre-fill modal edit.
-     *
-     * @param int $rowIndex  Row index (0-based di array) dari dbSM
-     */
     public function edit(int $rowIndex)
     {
         try {
@@ -389,36 +368,29 @@ class ArsipController extends Controller
             return response()->json([
                 'rowIndex'                => $rowIndex,
                 'dbsmIndex'               => $rowIndex,
-                'kode_klasifikasi'        => $dbsmRow[1]  ?? '',   // B
-                'kode_surat'              => $dbsmRow[2]  ?? '',   // C
-                'uraian_informasi_berkas' => $dbsmRow[3]  ?? '',   // D
-                'kurun_waktu'             => $dbsmRow[4]  ?? '',   // E
-                'jumlah_folder'           => $dbsmRow[5]  ?? '',   // F
-                'nomor_item_arsip'        => $dbsmRow[6]  ?? '',   // G
-                'uraian_informasi_arsip'  => $dbsmRow[7]  ?? '',   // H
-                'tanggal_surat'           => $dbsmRow[8]  ?? '',   // I
-                'jumlah_lembar'           => $dbsmRow[9]  ?? '',   // J
-                'tingkat_perkembangan'    => $dbsmRow[10] ?? '',   // K
-                'lokasi_simpan'           => $dbsmRow[11] ?? '',   // L
-                'klasifikasi_keamanan'    => $dbsmRow[12] ?? '',   // M
-                'tingkat_akses'           => $dbsmRow[13] ?? '',   // N
-                'retensi_aktif'           => $dbsmRow[14] ?? '',   // O
-                'retensi_inaktif'         => $dbsmRow[15] ?? '',   // P
-                'retensi_keterangan'      => $dbsmRow[16] ?? '',   // Q
-                'pdf_filename'            => $pdfFilename,         // R
+                'kode_klasifikasi'        => $dbsmRow[1]  ?? '',
+                'kode_surat'              => $dbsmRow[2]  ?? '',
+                'uraian_informasi_berkas' => $dbsmRow[3]  ?? '',
+                'kurun_waktu'             => $dbsmRow[4]  ?? '',
+                'jumlah_folder'           => $dbsmRow[5]  ?? '',
+                'nomor_item_arsip'        => $dbsmRow[6]  ?? '',
+                'uraian_informasi_arsip'  => $dbsmRow[7]  ?? '',
+                'tanggal_surat'           => $dbsmRow[8]  ?? '',
+                'jumlah_lembar'           => $this->formatJumlahLembar($dbsmRow[9] ?? ''),
+                'tingkat_perkembangan'    => $dbsmRow[10] ?? '',
+                'lokasi_simpan'           => $dbsmRow[11] ?? '',
+                'klasifikasi_keamanan'    => $dbsmRow[12] ?? '',
+                'tingkat_akses'           => $dbsmRow[13] ?? '',
+                'retensi_aktif'           => $dbsmRow[14] ?? '',
+                'retensi_inaktif'         => $dbsmRow[15] ?? '',
+                'retensi_keterangan'      => $dbsmRow[16] ?? '',
+                'pdf_filename'            => $pdfFilename,
             ]);
         } catch (\Exception $e) {
             return response()->json(['error' => 'Gagal memuat data: ' . $e->getMessage()], 500);
         }
     }
 
-    /**
-     * Update data surat masuk di Google Sheets (sheet: dbSM).
-     * Mencari baris di dbSM berdasarkan dbsmIndex yang dikirim dari modal edit.
-     *
-     * @param Request $request
-     * @param int     $rowIndex  Row index dari dbSM (untuk redirect)
-     */
     public function update(Request $request, int $rowIndex)
     {
         $validated = $request->validate([
@@ -442,14 +414,15 @@ class ArsipController extends Controller
             'pdf_filename'            => 'nullable|string|max:255',
         ]);
 
+        $validated['jumlah_lembar'] = $this->formatJumlahLembar($validated['jumlah_lembar']);
+
         try {
             [$service, $spreadsheetId] = $this->getSheetService();
 
             $dbsmIndex      = (int) $validated['dbsm_index'];
-            // Baris di Google Sheets dimulai dari 1 (row 1 = header)
+
             $sheetRowNumber = $dbsmIndex + 1;
 
-            // Pertahankan link PDF lama jika input pdf_filename dari form bernilai kosong
             $pdfFilename = trim($validated['pdf_filename'] ?? '');
             if (empty($pdfFilename)) {
                 $existingRange    = "dbSM!R{$sheetRowNumber}";
@@ -458,12 +431,10 @@ class ArsipController extends Controller
                 $pdfFilename      = trim($existingValues[0][0] ?? '');
             }
 
-            // Bila kode_klasifikasi di-edit, ubah nama file PDF fisik di /uploads & Google Drive
             if (!empty($pdfFilename)) {
                 $pdfFilename = GoogleDriveService::renameFile($pdfFilename, $validated['kode_klasifikasi']);
             }
 
-            // Mulai dari kolom B agar timestamp di kolom A TIDAK tertimpa
             $range = "dbSM!B{$sheetRowNumber}:R{$sheetRowNumber}";
 
             $values = [[
@@ -491,7 +462,6 @@ class ArsipController extends Controller
 
             $service->spreadsheets_values->update($spreadsheetId, $range, $body, $params);
 
-            // Invalidasi cache agar perubahan langsung terlihat
             SheetsCache::forgetSuratMasuk();
 
             return redirect()->route('arsip.index')
@@ -501,5 +471,23 @@ class ArsipController extends Controller
                 ->with('error', 'Gagal memperbarui data: ' . $e->getMessage())
                 ->withInput();
         }
+    }
+
+    /**
+     * Memastikan nilai jumlah_lembar selalu memiliki akhiran ' Lembar'.
+     */
+    private function formatJumlahLembar(string $value): string
+    {
+        $val = trim($value);
+        if ($val === '') {
+            return $val;
+        }
+        if (ctype_digit($val)) {
+            return $val . ' Lembar';
+        }
+        if (preg_match('/^(\d+)\s*lembar$/i', $val, $matches)) {
+            return $matches[1] . ' Lembar';
+        }
+        return $val;
     }
 }

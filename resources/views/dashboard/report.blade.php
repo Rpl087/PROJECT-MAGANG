@@ -11,7 +11,7 @@
             <p class="page-description">Rekapitulasi surat masuk &amp; keluar</p>
         </div>
         <div class="report-actions no-print" style="display:flex;align-items:center;gap:.75rem;">
-            {{-- tombol: TIDAK pakai onclick, JS handler yang handle --}}
+
             <button type="button" class="btn-report-print" id="btn-print">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
@@ -30,13 +30,10 @@
 </div>
 @endif
 
-{{-- ── Print Header / Kop Surat (hanya tampil saat print) ──────────────── --}}
 <div class="print-header" id="print-header-wrap">
 
-    {{-- ── Garis atas tebal biru (identitas instansi) ── --}}
     <div class="print-kop-topbar"></div>
 
-    {{-- ── KOP SURAT: Logo kiri + teks instansi kanan (sama persis dengan dashboard/print.blade.php) ── --}}
     <div class="print-kop">
         <div class="print-kop-logo">
             <img class="print-logo-image"
@@ -55,19 +52,16 @@
         </div>
     </div>
 
-    {{-- ── Garis pembatas ganda kop surat ── --}}
     <div class="print-kop-divider">
         <div class="print-kop-line-thick"></div>
         <div class="print-kop-line-thin"></div>
     </div>
 
-    {{-- ── Judul Dokumen ── --}}
     <div class="print-doc-title-block">
         <div class="print-title">LAPORAN REKAPITULASI ARSIP SURAT</div>
         <div class="print-doc-jenis" id="print-doc-jenis">Rekap Bulanan</div>
     </div>
 
-    {{-- ── Metadata: tanggal cetak, jenis laporan ── --}}
     <table class="print-meta-table">
         <tbody>
             <tr>
@@ -87,12 +81,9 @@
         </tbody>
     </table>
 
-    {{-- ── Garis bawah pembatas header-konten ── --}}
     <div class="print-divider"></div>
 </div>
 
-
-{{-- ── TAB NAVIGASI (hanya layar, tidak tercetak) ─────────────────────── --}}
 <div class="report-tabs no-print">
     <button class="report-tab active" data-tab="bulanan">Rekap Bulanan</button>
     <button class="report-tab" data-tab="tahunan">Rekap Tahunan</button>
@@ -101,16 +92,15 @@
     <button class="report-tab" data-tab="surat-keluar">Surat Keluar</button>
 </div>
 
-{{-- ── REKAP BULANAN PER TAHUN ─────────────────────────────────────────── --}}
 <div class="report-section" id="tab-bulanan">
-    {{-- Filter Tahun --}}
+
     <div class="report-filter-bar no-print">
         <div class="filter-group" style="display:flex;align-items:center;gap:.4rem;">
             <label for="filter-tahun-bulanan" style="font-size:.82rem;font-weight:600;color:var(--color-text-muted);">Filter Tahun:</label>
             <select id="filter-tahun-bulanan" class="filter-select" style="min-width:110px;">
                 <option value="">Semua Tahun</option>
                 @php
-                    $tahun5 = [];
+$tahun5 = [];
                     $now5 = (int) date('Y');
                     for ($y = $now5; $y >= $now5 - 4; $y--) {
                         if (isset($rekapPerTahun[$y])) $tahun5[] = $y;
@@ -119,7 +109,7 @@
                         if (!in_array($y, $tahun5)) $tahun5[] = $y;
                     }
                     rsort($tahun5);
-                @endphp
+@endphp
                 @foreach($tahun5 as $ty)
                 <option value="{{ $ty }}">{{ $ty }}</option>
                 @endforeach
@@ -151,9 +141,9 @@
                     <tbody>
                         @foreach($rekap['rows'] as $i => $row)
                         @php
-                            $monthKey = $year . '-' . str_pad($row['bulan_no'], 2, '0', STR_PAD_LEFT);
+$monthKey = $year . '-' . str_pad($row['bulan_no'], 2, '0', STR_PAD_LEFT);
                             $monthDetails = $klasifikasiPerBulan[$monthKey] ?? [];
-                        @endphp
+@endphp
                         <tr class="row-bulan {{ ($row['bulan_no'] == $currentMonth && $year == $currentYear) ? 'row-active' : '' }} {{ $row['total'] == 0 ? 'row-empty' : 'row-bulan-expandable' }}" data-month-key="{{ $monthKey }}" @if($row['total'] > 0) title="Klik untuk lihat detail per kode klasifikasi" @endif>
                             <td class="td-no">{{ $i + 1 }}</td>
                             <td class="td-bulan">@if($row['total'] > 0)<span class="bulan-toggle-icon no-print" aria-hidden="true">&#9654;</span>@endif {{ $row['bulan'] }} @if($row['bulan_no'] == $currentMonth && $year == $currentYear)<span class="badge-month">Berjalan</span>@endif</td>
@@ -176,24 +166,23 @@
         @endforeach
     @endif
 
-    {{-- ── TABEL DETAIL PRINT — Rekap Bulanan (hanya muncul saat @media print) ── --}}
     <div class="print-only" id="print-detail-bulanan">
         <div class="print-detail-section-title">Detail Arsip Surat &mdash; Rekap Bulanan</div>
         @php
-            $bulanNamesPrint = [
+$bulanNamesPrint = [
                 1=>'Januari',2=>'Februari',3=>'Maret',4=>'April',5=>'Mei',6=>'Juni',
                 7=>'Juli',8=>'Agustus',9=>'September',10=>'Oktober',11=>'November',12=>'Desember'
             ];
-            // Pre-group data per bulan+tahun agar header bulan bisa disisipkan
+
             $groupedBulanan = [];
             foreach ($printDetailBulanan as $det) {
                 $groupKey = $det['tahun'] . '-' . str_pad($det['bulan'], 2, '0', STR_PAD_LEFT);
                 $groupedBulanan[$groupKey][] = $det;
             }
-            // Urutkan group key secara ascending (sudah urut karena data urut tanggal)
+
             ksort($groupedBulanan);
             $noUrut = 1;
-        @endphp
+@endphp
         @if(!empty($printDetailBulanan))
         <table class="print-detail-table" id="print-detail-table-bulanan">
             <thead>
@@ -208,18 +197,18 @@
             <tbody>
                 @foreach($groupedBulanan as $groupKey => $groupRows)
                 @php
-                    $firstRow  = $groupRows[0];
+$firstRow  = $groupRows[0];
                     $tahunGrup = $firstRow['tahun'];
                     $bulanGrup = $firstRow['bulan'];
                     $bulanLabelGrup = strtoupper(($bulanNamesPrint[$bulanGrup] ?? '-') . ' ' . $tahunGrup);
-                @endphp
-                {{-- Baris pemisah nama bulan --}}
+@endphp
+
                 <tr class="pd-month-header pd-row-bulanan" data-print-year="{{ $tahunGrup }}">
                     <td colspan="5" class="pd-month-label">
                         <span class="pd-month-icon">&#9632;</span> {{ $bulanLabelGrup }}
                     </td>
                 </tr>
-                {{-- Baris data surat dalam bulan ini --}}
+
                 @foreach($groupRows as $det)
                 <tr class="pd-row-bulanan" data-print-year="{{ $det['tahun'] }}">
                     <td class="pd-no">{{ $noUrut++ }}</td>
@@ -243,9 +232,8 @@
     </div>
 </div>
 
-{{-- ── REKAP TAHUNAN ─────────────────────────────────────────────────── --}}
 <div class="report-section" id="tab-tahunan" style="display:none;">
-    {{-- Filter Tahun --}}
+
     <div class="report-filter-bar no-print">
         <div class="filter-group" style="display:flex;align-items:center;gap:.4rem;">
             <label for="filter-tahun-tahunan" style="font-size:.82rem;font-weight:600;color:var(--color-text-muted);">Filter Tahun:</label>
@@ -281,7 +269,7 @@
                 </thead>
                 <tbody>
                     @forelse($rekapTahunan as $i => $row)
-                    {{-- Baris tahun utama --}}
+
                     <tr class="row-tahun {{ $row['tahun'] == $currentYear ? 'row-active' : '' }}"
                         data-year="{{ $row['tahun'] }}"
                         style="cursor:pointer;"
@@ -298,7 +286,7 @@
                         <td class="td-num"><span class="count-sk">{{ $row['sk_count'] }}</span></td>
                         <td class="td-num"><strong>{{ $row['total'] }}</strong></td>
                     </tr>
-                    {{-- Baris detail klasifikasi (tersembunyi default) --}}
+
                     <tr class="row-kode-detail" id="detail-{{ $row['tahun'] }}">
                         <td colspan="5" style="padding:0;">
                             <div class="kode-detail-wrap">
@@ -349,19 +337,17 @@
         </div>
     </div>
 
-    {{-- ── TABEL DETAIL PRINT — Rekap Tahunan (hanya muncul saat @media print) ─ --}}
     <div class="print-only" id="print-detail-tahunan">
         <div class="print-detail-section-title">Detail Arsip Surat &mdash; Rekap Tahunan</div>
         @php
-            // Pre-group data per tahun agar header tahun bisa disisipkan
-            $groupedTahunan = [];
+$groupedTahunan = [];
             foreach ($printDetailBulanan as $det) {
                 $groupedTahunan[$det['tahun']][] = $det;
             }
-            // Urutkan descending (tahun terbaru dulu)
+
             krsort($groupedTahunan);
             $noUrutThn = 1;
-        @endphp
+@endphp
         @if(!empty($printDetailBulanan))
         <table class="print-detail-table" id="print-detail-table-tahunan">
             <thead>
@@ -375,13 +361,13 @@
             </thead>
             <tbody>
                 @foreach($groupedTahunan as $tahunGrp => $tahunRows)
-                {{-- Baris pemisah nama tahun --}}
+
                 <tr class="pd-year-header pd-row-tahunan" data-print-year="{{ $tahunGrp }}">
                     <td colspan="5" class="pd-year-label">
                         <span class="pd-year-icon">&#9632;</span> TAHUN {{ $tahunGrp }}
                     </td>
                 </tr>
-                {{-- Baris data surat dalam tahun ini --}}
+
                 @foreach($tahunRows as $det)
                 <tr class="pd-row-tahunan" data-print-year="{{ $det['tahun'] }}">
                     <td class="pd-no">{{ $noUrutThn++ }}</td>
@@ -405,9 +391,8 @@
     </div>
 </div>
 
-{{-- ── REKAP PER KLASIFIKASI ───────────────────────────────────────────── --}}
 <div class="report-section" id="tab-klasifikasi" style="display:none;">
-    {{-- Filter Tahun --}}
+
     <div class="report-filter-bar no-print">
         <div class="filter-group" style="display:flex;align-items:center;gap:.4rem;">
             <label for="filter-tahun-klasifikasi" style="font-size:.82rem;font-weight:600;color:var(--color-text-muted);">Filter Tahun:</label>
@@ -467,18 +452,16 @@
         </div>
     </div>
 
-    {{-- ── TABEL DETAIL PRINT — Per Klasifikasi (hanya muncul saat @media print) ─ --}}
     <div class="print-only" id="print-detail-klasifikasi">
         <div class="print-detail-section-title">Detail Arsip Surat &mdash; Per Kode Klasifikasi</div>
         @php
-            // Pre-group data per kode_prefix agar header kode klasifikasi bisa disisipkan
-            $groupedKlasifikasi = [];
+$groupedKlasifikasi = [];
             foreach ($printDetailKlasifikasi as $det) {
                 $prefixKey = $det['kode_prefix'] ?? preg_replace('/[^A-Za-z]/', '', $det['kode'] ?? '');
                 $prefixKey = strtoupper(substr($prefixKey, 0, 2)) ?: '-';
                 $groupedKlasifikasi[$prefixKey][] = $det;
             }
-            // Urutkan berdasarkan urutan KODE_KLASIFIKASI standar
+
             $kodeOrderKlas = ['PR','KP','OT','KU','HK','UM','PL','UP','HM','PW','LT','DL','DT','KI'];
             $sortedKlasGrp = [];
             foreach ($kodeOrderKlas as $k) {
@@ -488,7 +471,7 @@
                 if (!isset($sortedKlasGrp[$k])) $sortedKlasGrp[$k] = $v;
             }
             $noUrutKls = 1;
-        @endphp
+@endphp
         @if(!empty($printDetailKlasifikasi))
         <table class="print-detail-table" id="print-detail-table-klasifikasi">
             <thead>
@@ -502,8 +485,10 @@
             </thead>
             <tbody>
                 @foreach($sortedKlasGrp as $kodePrefix => $klasRows)
-                @php $kodeCount = count($klasRows); @endphp
-                {{-- Baris pemisah kode klasifikasi --}}
+                @php
+$kodeCount = count($klasRows);
+@endphp
+
                 <tr class="pd-kode-header pd-row-klasifikasi" data-print-year="" data-print-kode="{{ $kodePrefix }}">
                     <td colspan="5" class="pd-kode-header-label">
                         <span class="pd-kode-header-icon">&#9632;</span>
@@ -511,7 +496,7 @@
                         <span class="pd-kode-header-count">({{ $kodeCount }} arsip)</span>
                     </td>
                 </tr>
-                {{-- Baris data surat dalam kode klasifikasi ini --}}
+
                 @foreach($klasRows as $det)
                 <tr class="pd-row-klasifikasi" data-print-year="{{ $det['tahun'] }}" data-print-kode="{{ $det['kode_prefix'] ?? $kodePrefix }}">
                     <td class="pd-no">{{ $noUrutKls++ }}</td>
@@ -535,7 +520,6 @@
     </div>
 </div>
 
-{{-- ── TAB SURAT MASUK ─────────────────────────────────────────────── --}}
 <div class="report-section" id="tab-surat-masuk" style="display:none;">
     <div class="report-filter-bar no-print">
         <div class="filter-group" style="display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;">
@@ -604,11 +588,10 @@
         </div>
     </div>
 
-    {{-- Print detail Surat Masuk --}}
     <div class="print-only" id="print-detail-surat-masuk">
         <div class="print-detail-section-title">Daftar Arsip Surat Masuk</div>
         @php
-            $noSM = 1;
+$noSM = 1;
             $bulanNamesSM = [1=>'Januari',2=>'Februari',3=>'Maret',4=>'April',5=>'Mei',6=>'Juni',
                              7=>'Juli',8=>'Agustus',9=>'September',10=>'Oktober',11=>'November',12=>'Desember'];
             $groupedSM = [];
@@ -617,7 +600,7 @@
                 $groupedSM[$gKey][] = $det;
             }
             ksort($groupedSM);
-        @endphp
+@endphp
         @if(!empty($printDetailSM))
         <table class="print-detail-table" id="print-detail-table-surat-masuk">
             <thead>
@@ -631,9 +614,9 @@
             <tbody>
                 @foreach($groupedSM as $gKey => $gRows)
                 @php
-                    $fRow = $gRows[0];
+$fRow = $gRows[0];
                     $lblSM = strtoupper(($bulanNamesSM[$fRow['bulan']] ?? '-') . ' ' . $fRow['tahun']);
-                @endphp
+@endphp
                 <tr class="pd-month-header pd-row-sm" data-print-year="{{ $fRow['tahun'] }}">
                     <td colspan="4" class="pd-month-label">
                         <span class="pd-month-icon">&#9632;</span> {{ $lblSM }}
@@ -661,7 +644,6 @@
     </div>
 </div>
 
-{{-- ── TAB SURAT KELUAR ───────────────────────────────────────────── --}}
 <div class="report-section" id="tab-surat-keluar" style="display:none;">
     <div class="report-filter-bar no-print">
         <div class="filter-group" style="display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;">
@@ -730,11 +712,10 @@
         </div>
     </div>
 
-    {{-- Print detail Surat Keluar --}}
     <div class="print-only" id="print-detail-surat-keluar">
         <div class="print-detail-section-title">Daftar Arsip Surat Keluar</div>
         @php
-            $noSK = 1;
+$noSK = 1;
             $bulanNamesSK = [1=>'Januari',2=>'Februari',3=>'Maret',4=>'April',5=>'Mei',6=>'Juni',
                              7=>'Juli',8=>'Agustus',9=>'September',10=>'Oktober',11=>'November',12=>'Desember'];
             $groupedSK = [];
@@ -743,7 +724,7 @@
                 $groupedSK[$gKey][] = $det;
             }
             ksort($groupedSK);
-        @endphp
+@endphp
         @if(!empty($printDetailSK))
         <table class="print-detail-table" id="print-detail-table-surat-keluar">
             <thead>
@@ -757,9 +738,9 @@
             <tbody>
                 @foreach($groupedSK as $gKey => $gRows)
                 @php
-                    $fRow = $gRows[0];
+$fRow = $gRows[0];
                     $lblSK = strtoupper(($bulanNamesSK[$fRow['bulan']] ?? '-') . ' ' . $fRow['tahun']);
-                @endphp
+@endphp
                 <tr class="pd-month-header pd-row-sk" data-print-year="{{ $fRow['tahun'] }}">
                     <td colspan="4" class="pd-month-label">
                         <span class="pd-month-icon">&#9632;</span> {{ $lblSK }}
@@ -787,7 +768,6 @@
     </div>
 </div>
 
-{{-- ── Modal Konfirmasi Cetak ─────────────────────────────────────────────── --}}
 <div id="modal-cetak" class="modal-overlay" role="dialog" aria-modal="true">
     <div class="modal-box" style="max-width:420px;">
         <div class="modal-icon-print">
@@ -820,25 +800,19 @@
 
 @push('styles')
 <style>
-/* ═══════════════════════════════════════════════════
-   MODAL KONFIRMASI CETAK — Theme-Aware (Light + Dark)
-   ═══════════════════════════════════════════════════ */
 
-/* ── Overlay backdrop ──────────────────────────────────── */
-/* Light mode: lapisan gelap semi-transparan */
 #modal-cetak.modal-overlay {
     background: rgba(15, 23, 42, 0.50);
     backdrop-filter: blur(10px) saturate(130%);
     -webkit-backdrop-filter: blur(10px) saturate(130%);
 }
-/* Dark mode: lebih pekat */
+
 [data-theme="dark"] #modal-cetak.modal-overlay {
     background: rgba(5, 8, 18, 0.72);
     backdrop-filter: blur(12px) saturate(120%);
     -webkit-backdrop-filter: blur(12px) saturate(120%);
 }
 
-/* ── Modal Box ─────────────────────────────────────────── */
 #modal-cetak .modal-box {
     background: var(--color-surface, #ffffff);
     border: 1px solid var(--color-border, #e2e5ea);
@@ -855,7 +829,7 @@
     position: relative;
     overflow: hidden;
 }
-/* Dark mode: surface lebih gelap */
+
 [data-theme="dark"] #modal-cetak .modal-box {
     background: var(--color-surface, #1a1d27);
     border-color: var(--color-border, #2d3148);
@@ -865,7 +839,6 @@
         0 8px 24px rgba(0,0,0,.35);
 }
 
-/* Garis gradient di atas modal */
 #modal-cetak .modal-box::before {
     content: '';
     position: absolute;
@@ -880,7 +853,6 @@
     to   { opacity: 1; transform: translateY(0)    scale(1);   }
 }
 
-/* ── Icon Print ───────────────────────────────────────── */
 #modal-cetak .modal-icon-print {
     width: 62px;
     height: 62px;
@@ -907,7 +879,6 @@
     background: rgba(99,102,241,.18);
 }
 
-/* ── Title ──────────────────────────────────────────────── */
 #modal-cetak .modal-title-print {
     font-size: 1.0625rem;
     font-weight: 700;
@@ -916,7 +887,6 @@
     letter-spacing: -.01em;
 }
 
-/* ── Description ────────────────────────────────────────── */
 #modal-cetak .modal-desc-print {
     font-size: .875rem;
     color: var(--color-text-secondary, #64748b);
@@ -928,7 +898,6 @@
     font-weight: 600;
 }
 
-/* ── Actions Row ────────────────────────────────────────── */
 #modal-cetak .modal-actions-print {
     display: flex;
     gap: .75rem;
@@ -936,7 +905,6 @@
     flex-wrap: wrap;
 }
 
-/* Batal button */
 #modal-cetak-cancel {
     padding: .58rem 1.4rem;
     border-radius: .5rem;
@@ -958,7 +926,6 @@
     color: var(--color-text, #e2e8f0);
 }
 
-/* Ya, Cetak button */
 #modal-cetak-confirm {
     display: inline-flex;
     align-items: center;
@@ -982,11 +949,6 @@
 }
 #modal-cetak-confirm:active { transform: translateY(0); }
 
-/* ═══════════════════════════════════════════════════
-   REPORT PAGE STYLES — Full Overhaul
-   ═══════════════════════════════════════════════════ */
-
-/* ── Tombol Cetak (Header) ────────────────────────── */
 .report-actions { display:flex; gap:.75rem; align-items:center; }
 .btn-report-print {
     display: inline-flex; align-items: center; gap: .5rem;
@@ -1005,7 +967,6 @@
 }
 .btn-report-print:active { transform: translateY(0); }
 
-/* ── Tab Navigasi ───────────────────────────────── */
 .report-tabs {
     display: flex;
     gap: .25rem;
@@ -1041,11 +1002,10 @@
     box-shadow: 0 2px 10px rgba(99,102,241,.35);
 }
 
-/* ── Tab Section Transitions ──────────────────────── */
 .report-section {
     transition: none;
 }
-/* ── Sortable Column Header ─────────────────────────────── */
+
 .th-sortable {
     user-select: none;
 }
@@ -1082,7 +1042,6 @@
     pointer-events: none;
 }
 
-/* ── Report Card ─────────────────────────────── */
 .report-card {
     background: var(--color-surface, #1a2236);
     border: 1px solid var(--color-border, #2a3347);
@@ -1139,7 +1098,6 @@
     letter-spacing: .02em;
 }
 
-/* ── Filter Bar ────────────────────────────────── */
 .report-filter-bar {
     display: flex;
     align-items: center;
@@ -1167,7 +1125,6 @@
 .filter-select:focus { border-color: #6366f1; box-shadow: 0 0 0 2px rgba(99,102,241,.2); }
 .filter-select option { background: var(--color-surface, #1a2236); }
 
-/* ── Report Table ────────────────────────────── */
 .report-table {
     width: 100%;
     border-collapse: collapse;
@@ -1227,7 +1184,6 @@
     color: #818cf8;
 }
 
-/* ── Count Badges ────────────────────────────── */
 .count-sm {
     display: inline-flex; align-items: center; justify-content: center;
     min-width: 30px; padding: .18rem .5rem; border-radius: .35rem;
@@ -1246,11 +1202,9 @@
 }
 .count-zero { color: var(--color-text-muted); opacity: .35; font-size: .85rem; }
 
-/* ── Row States ───────────────────────────────── */
 .row-active td { background: rgba(99,102,241,.07) !important; }
 .row-empty td  { opacity: .4; }
 
-/* ── Badges ─────────────────────────────────────── */
 .badge-month {
     display: inline-block;
     padding: .1rem .45rem;
@@ -1275,7 +1229,6 @@
     letter-spacing: .02em;
 }
 
-/* ── Empty State ──────────────────────────────── */
 .report-empty {
     display: flex; flex-direction: column; align-items: center; gap: .75rem;
     padding: 3.5rem 1rem; color: var(--color-text-muted); text-align: center;
@@ -1283,11 +1236,9 @@
 .report-empty svg { opacity: .25; }
 .report-empty span { font-size: .9rem; font-weight: 500; }
 
-/* ── Alert ───────────────────────────────────────── */
 .alert { display:flex; align-items:center; gap:.5rem; padding:.8rem 1rem; border-radius:.5rem; font-size:.84rem; }
 .alert-error { background:rgba(239,68,68,.08); color:#f87171; border:1px solid rgba(239,68,68,.2); }
 
-/* ── Accordion Rekap Tahunan ─────────────────────── */
 .row-tahun { cursor: pointer; transition: background .15s; }
 .row-tahun:hover td { background: rgba(99,102,241,.08) !important; }
 .row-tahun.expanded td { background: rgba(99,102,241,.07) !important; }
@@ -1339,7 +1290,6 @@
 .bulan-toggle-icon { display:inline-block; width:.8rem; color:#6366f1; font-size:.65rem; margin-right:.35rem; transition:transform .2s ease; }
 .detail-code-count { font-size:.75rem; color:var(--color-primary); }
 
-/* ── Print Header ─────────────────────────────── */
 .print-header,
 .print-signature,
 .print-only { display: none !important; }
@@ -1354,7 +1304,7 @@
 @page {
     size: A4 portrait;
     margin: 15mm 18mm 20mm 18mm;
-    /* Nomor halaman di footer */
+
     @bottom-center {
         content: "Halaman " counter(page) " dari " counter(pages);
         font-size: 7.5pt;
@@ -1363,7 +1313,7 @@
 }
 
 @media print {
-    /* ── Reset scrollbar ── */
+
     ::-webkit-scrollbar,
     ::-webkit-scrollbar-thumb,
     ::-webkit-scrollbar-track,
@@ -1376,7 +1326,6 @@
         -ms-overflow-style: none !important;
     }
 
-    /* ── Elemen UI disembunyikan ── */
     .no-print,
     .sidebar, .header, .footer,
     .sidebar-overlay, .drawer-footer-fixed,
@@ -1384,13 +1333,12 @@
     .report-tabs, .page-header,
     #report-page-header,
     .report-filter-bar,
-    /* Sembunyikan semua report-card (tabel ringkasan) dari semua tab */
+
     .report-section .report-card,
     .report-section .report-empty {
         display: none !important;
     }
 
-    /* ── Base layout ── */
     * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
     html, body {
         display: block !important;
@@ -1408,7 +1356,6 @@
         background-image: none !important; box-shadow: none !important;
     }
 
-/* ── Kelas helper saat proses cetak aktif ── */
 html.report-printing, body.report-printing { display: block !important; overflow: visible !important; }
 html.report-printing::-webkit-scrollbar,
 body.report-printing::-webkit-scrollbar,
@@ -1422,15 +1369,11 @@ body.report-printing *::-webkit-scrollbar {
     .layout-body { display: block !important; }
     .report-section { margin-bottom: 0; }
 
-    /* ════════════════════════════════════════════
-       KOP SURAT — Government Letterhead
-       ════════════════════════════════════════════ */
     .print-header {
         display: block !important;
         margin-bottom: .75rem;
     }
 
-    /* Garis atas biru tebal */
     .print-kop-topbar {
         display: block !important;
         height: 5pt;
@@ -1439,7 +1382,6 @@ body.report-printing *::-webkit-scrollbar {
         border-radius: 0;
     }
 
-    /* Layout kop: logo kiri | garis pemisah | teks kanan (sama dengan dashboard/print.blade.php) */
     .print-kop {
         display: flex !important;
         align-items: center;
@@ -1464,7 +1406,7 @@ body.report-printing *::-webkit-scrollbar {
         object-fit: contain !important;
     }
     .print-kop-separator {
-        display: none !important; /* border-right pada logo sudah cukup */
+        display: none !important;
     }
     .print-kop-text {
         flex: 1;
@@ -1497,7 +1439,6 @@ body.report-printing *::-webkit-scrollbar {
         font-family: 'Arial', 'Helvetica', sans-serif !important;
     }
 
-    /* Garis pembatas ganda kop surat */
     .print-kop-divider {
         display: block !important;
         margin: .4rem 0 .5rem;
@@ -1514,7 +1455,6 @@ body.report-printing *::-webkit-scrollbar {
         background: #1e3a5f !important;
     }
 
-    /* Judul Dokumen — kotak tengah */
     .print-doc-title-block {
         display: block !important;
         text-align: center;
@@ -1540,7 +1480,6 @@ body.report-printing *::-webkit-scrollbar {
         font-family: 'Times New Roman', Times, serif !important;
     }
 
-    /* Tabel metadata (dicetak pada, jenis, sistem) */
     .print-meta-table {
         display: table !important;
         width: 100%;
@@ -1560,7 +1499,6 @@ body.report-printing *::-webkit-scrollbar {
     .pmt-val  { padding: .06rem .25rem; vertical-align: top; }
     .pmt-spacer { width: 20px; }
 
-    /* Garis bawah header */
     .print-divider {
         display: block !important;
         border: none !important;
@@ -1568,9 +1506,6 @@ body.report-printing *::-webkit-scrollbar {
         margin: .5rem 0 .75rem !important;
     }
 
-    /* ════════════════════════════════════════════
-       TABEL DETAIL ARSIP — Office Document Style
-       ════════════════════════════════════════════ */
     .print-only {
         display: block !important;
         margin-top: 0;
@@ -1620,14 +1555,14 @@ body.report-printing *::-webkit-scrollbar {
         font-size: 8.5pt !important;
         line-height: 1.45;
     }
-    /* Baris ganjil putih, genap abu muda */
+
     .print-detail-table tbody tr:nth-child(odd) td {
         background: #fff !important;
     }
     .print-detail-table tbody tr:nth-child(even) td {
         background: #eef2f7 !important;
     }
-    /* Baris total */
+
     .print-detail-table tfoot td {
         background: #d9e2ef !important;
         border: 1pt solid #333333 !important;
@@ -1638,7 +1573,6 @@ body.report-printing *::-webkit-scrollbar {
         font-style: italic;
     }
 
-    /* Kolom widths */
     .pd-no    { width: 22px !important; text-align: center !important; font-weight: 700; }
     .pd-tahun { width: 38px !important; text-align: center !important; }
     .pd-bulan { width: 64px !important; }
@@ -1647,7 +1581,6 @@ body.report-printing *::-webkit-scrollbar {
     .pd-uraian { }
     .pd-jenis { width: 32px !important; text-align: center !important; }
 
-    /* Badge kode → teks biasa saat print */
     .pd-kode-badge {
         display: inline !important;
         background: none !important;
@@ -1658,7 +1591,7 @@ body.report-printing *::-webkit-scrollbar {
         color: #000 !important;
         letter-spacing: .01em;
     }
-    /* Badge jenis SM/SK */
+
     .pd-jenis-badge {
         display: inline-block;
         border-radius: 2px;
@@ -1679,8 +1612,6 @@ body.report-printing *::-webkit-scrollbar {
     }
     .pd-empty { font-size: 9pt; color: #555; font-style: italic; text-align: center; padding: 1rem; }
 
-    /* ── Baris pemisah bulan (Rekap Bulanan)
-       Spesifisitas (0,2,3) = seri dengan nth-child, tapi SETELAH → source order menang ── */
     .print-detail-table tbody tr.pd-month-header td {
         background: #1e3a5f !important;
         color: #fff !important;
@@ -1707,7 +1638,6 @@ body.report-printing *::-webkit-scrollbar {
         opacity: .85;
     }
 
-    /* ── Baris pemisah tahun (Rekap Tahunan) ── */
     .print-detail-table tbody tr.pd-year-header td {
         background: #1e3a5f !important;
         color: #fff !important;
@@ -1734,7 +1664,6 @@ body.report-printing *::-webkit-scrollbar {
         opacity: .85;
     }
 
-    /* ── Baris pemisah kode klasifikasi (Per Klasifikasi) ── */
     .print-detail-table tbody tr.pd-kode-header td {
         background: #1a5c3a !important;
         color: #fff !important;
@@ -1783,9 +1712,6 @@ body.report-printing *::-webkit-scrollbar {
         vertical-align: middle;
     }
 
-    /* ════════════════════════════════════════════
-       TANDA TANGAN
-       ════════════════════════════════════════════ */
     .print-signature {
         display: block !important;
         margin-top: 2rem;
@@ -1806,19 +1732,16 @@ body.report-printing *::-webkit-scrollbar {
     .sig-space { height: 55px; }
     .sig-box p { margin: .1rem 0; }
 
-    /* ── Fix animasi pre-hide ── */
     .pre-hide, .pre-hide.is-visible, .pre-hide:not(.is-visible) {
         opacity: 1 !important; transform: none !important;
         transition: none !important; visibility: visible !important;
     }
 
-    /* ── Accordion detail: tampil saat print tapi kita hide semua report-card dg JS ── */
     .row-kode-detail.print-row-hidden { display: none !important; }
     tr.print-row-hidden { display: none !important; }
     tr.print-hidden { display: none !important; }
     .no-print { display: none !important; }
 }
-
 
 </style>
 @endpush
@@ -1832,7 +1755,6 @@ document.addEventListener('DOMContentLoaded', function () {
     function formatDateID(d) { return HARI_ID[d.getDay()]+', '+d.getDate()+' '+BULAN_ID[d.getMonth()]+' '+d.getFullYear(); }
     function formatDateShortID(d) { return d.getDate()+' '+BULAN_ID[d.getMonth()]+' '+d.getFullYear(); }
 
-    // ── Tab Navigation ────────────────────────────────────────────────
     var tabs     = document.querySelectorAll('.report-tab');
     var sections = document.querySelectorAll('.report-section');
 
@@ -1849,10 +1771,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (sec.id === 'tab-' + target) {
                     sec.style.display = '';
                     sec.classList.remove('tab-leaving');
-                    // Force reflow so animation restarts
+
                     sec.offsetHeight;
                     sec.classList.add('tab-entering');
-                    // Remove animation class after it ends
+
                     setTimeout(function() { sec.classList.remove('tab-entering'); }, 280);
                 } else {
                     sec.style.display = 'none';
@@ -1871,30 +1793,25 @@ document.addEventListener('DOMContentLoaded', function () {
 
     tabs.forEach(function(tab) {
         tab.addEventListener('click', function() {
-            // Hapus active dari semua, lalu tambah ke yang diklik
+
             tabs.forEach(function(t) { t.classList.remove('active'); });
             this.classList.add('active');
             showTab(this.dataset.tab);
         });
     });
 
-    // Set active class ke tab pertama pada load (sudah ada 'active' di HTML, tapi pastikan)
     var initActiveTab = document.querySelector('.report-tab.active');
     if (!initActiveTab && tabs.length > 0) {
         tabs[0].classList.add('active');
     }
 
-
-    // ── Print: cetak HANYA tab yang sedang aktif ─────────────────────────
     function preparePrint() {
         document.documentElement.classList.add('report-printing');
         document.body.classList.add('report-printing');
 
-        // Dapatkan tab aktif
         var activeTab = document.querySelector('.report-tab.active');
         var activeId  = activeTab ? activeTab.dataset.tab : 'bulanan';
 
-        // Tampilkan HANYA section yang aktif
         sections.forEach(function(sec) {
             if (sec.id === 'tab-' + activeId) {
                 sec.style.display      = 'block';
@@ -1906,21 +1823,19 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
 
-        // ── Tampilkan tabel detail print yang sesuai dengan tab aktif ──────
         var pdBulanan       = document.getElementById('print-detail-bulanan');
         var pdTahunan       = document.getElementById('print-detail-tahunan');
         var pdKlasifikasi   = document.getElementById('print-detail-klasifikasi');
         var pdSuratMasuk    = document.getElementById('print-detail-surat-masuk');
         var pdSuratKeluar   = document.getElementById('print-detail-surat-keluar');
 
-        // Sembunyikan semua dulu, lalu tampilkan yang sesuai
         [pdBulanan, pdTahunan, pdKlasifikasi, pdSuratMasuk, pdSuratKeluar].forEach(function(el) {
             if (el) el.classList.add('print-hidden');
         });
 
         if (activeId === 'bulanan') {
             if (pdBulanan) pdBulanan.classList.remove('print-hidden');
-            // Jika ada filter tahun aktif di tab bulanan, filter baris detail juga
+
             var selBln = document.getElementById('filter-tahun-bulanan');
             var filterBln = selBln ? selBln.value : '';
             if (pdBulanan && filterBln) {
@@ -1939,7 +1854,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         } else if (activeId === 'tahunan') {
             if (pdTahunan) pdTahunan.classList.remove('print-hidden');
-            // Jika ada filter tahun aktif di tab tahunan, filter baris detail juga
+
             var selThn = document.getElementById('filter-tahun-tahunan');
             var filterThn = selThn ? selThn.value : '';
             if (pdTahunan && filterThn) {
@@ -1961,7 +1876,7 @@ document.addEventListener('DOMContentLoaded', function () {
             var selKls    = document.getElementById('filter-tahun-klasifikasi');
             var filterKls = selKls ? selKls.value : '';
             if (pdKlasifikasi && filterKls) {
-                // Step 1: Filter baris DATA — tampilkan hanya yang sesuai tahun
+
                 pdKlasifikasi.querySelectorAll('tr.pd-row-klasifikasi:not(.pd-kode-header)').forEach(function(tr) {
                     var rowYear = tr.getAttribute('data-print-year') || '';
                     if (rowYear && rowYear !== filterKls) {
@@ -1970,7 +1885,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         tr.classList.remove('print-hidden');
                     }
                 });
-                // Step 2: Sembunyikan pd-kode-header jika SEMUA data di bawahnya tersembunyi
+
                 var kodeHeaders = pdKlasifikasi.querySelectorAll('tr.pd-kode-header');
                 kodeHeaders.forEach(function(headerTr) {
                     var sibling = headerTr.nextElementSibling;
@@ -1989,7 +1904,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     }
                 });
             } else if (pdKlasifikasi) {
-                // Tanpa filter: tampilkan semua
+
                 pdKlasifikasi.querySelectorAll('tr.pd-row-klasifikasi').forEach(function(tr) {
                     tr.classList.remove('print-hidden');
                 });
@@ -2032,8 +1947,6 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         }
 
-        // ── Update total di tfoot sesuai baris yang visible (mengikuti filter tahun) ──
-        // Bulanan
         if (pdBulanan && !pdBulanan.classList.contains('print-hidden')) {
             var visibleBln = pdBulanan.querySelectorAll(
                 'tr.pd-row-bulanan:not(.pd-month-header):not(.print-hidden)'
@@ -2041,7 +1954,7 @@ document.addEventListener('DOMContentLoaded', function () {
             var tfootBln = pdBulanan.querySelector('tr.pd-tfoot td');
             if (tfootBln) tfootBln.textContent = 'Total: ' + visibleBln + ' arsip surat';
         }
-        // Tahunan
+
         if (pdTahunan && !pdTahunan.classList.contains('print-hidden')) {
             var visibleThn = pdTahunan.querySelectorAll(
                 'tr.pd-row-tahunan:not(.pd-year-header):not(.print-hidden)'
@@ -2049,7 +1962,7 @@ document.addEventListener('DOMContentLoaded', function () {
             var tfootThn = pdTahunan.querySelector('tr.pd-tfoot td');
             if (tfootThn) tfootThn.textContent = 'Total: ' + visibleThn + ' arsip surat';
         }
-        // Klasifikasi
+
         if (pdKlasifikasi && !pdKlasifikasi.classList.contains('print-hidden')) {
             var visibleKls = pdKlasifikasi.querySelectorAll(
                 'tr.pd-row-klasifikasi:not(.pd-kode-header):not(.print-hidden)'
@@ -2057,7 +1970,7 @@ document.addEventListener('DOMContentLoaded', function () {
             var tfootKls = pdKlasifikasi.querySelector('tr.pd-tfoot td');
             if (tfootKls) tfootKls.textContent = 'Total: ' + visibleKls + ' arsip surat';
         }
-        // Surat Masuk
+
         if (pdSuratMasuk && !pdSuratMasuk.classList.contains('print-hidden')) {
             var visibleSM = pdSuratMasuk.querySelectorAll(
                 'tr.pd-row-sm:not(.pd-month-header):not(.print-hidden)'
@@ -2065,7 +1978,7 @@ document.addEventListener('DOMContentLoaded', function () {
             var tfootSM = pdSuratMasuk.querySelector('tr.pd-tfoot td');
             if (tfootSM) tfootSM.textContent = 'Total: ' + visibleSM + ' surat masuk';
         }
-        // Surat Keluar
+
         if (pdSuratKeluar && !pdSuratKeluar.classList.contains('print-hidden')) {
             var visibleSK = pdSuratKeluar.querySelectorAll(
                 'tr.pd-row-sk:not(.pd-month-header):not(.print-hidden)'
@@ -2074,20 +1987,18 @@ document.addEventListener('DOMContentLoaded', function () {
             if (tfootSK) tfootSK.textContent = 'Total: ' + visibleSK + ' surat keluar';
         }
 
-        // ── Tandai baris yang disembunyikan oleh filter agar tetap hidden saat print ──
-        // Rekap Tahunan: mark hidden rows & their detail
         document.querySelectorAll('#tabel-tahunan tbody tr').forEach(function(tr) {
             if (tr.style.display === 'none') {
                 tr.classList.add('print-row-hidden');
             } else {
                 tr.classList.remove('print-row-hidden');
-                // Jika detail row dari baris visible, buka saat print
+
                 if (tr.classList.contains('row-kode-detail')) {
                     tr.classList.remove('print-row-hidden');
                 }
             }
         });
-        // Detail row accordion ikut hidden jika parent tahun hidden
+
         document.querySelectorAll('#tabel-tahunan tbody .row-tahun').forEach(function(tr) {
             var yr = tr.getAttribute('data-year');
             var detail = document.getElementById('detail-' + yr);
@@ -2100,14 +2011,12 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
 
-        // ── Update teks tanggal cetak & jenis laporan di kop surat ──
         var n = new Date();
         var dateStr = formatDateID(n) + ', ' + pad(n.getHours()) + ':' + pad(n.getMinutes()) + ' WITA';
 
         var metaDate = document.getElementById('print-meta-date');
         if (metaDate) metaDate.textContent = dateStr;
 
-        // Label jenis laporan per tab
         var jenisMap = {
             'bulanan'       : 'Rekap Bulanan Per Tahun',
             'tahunan'       : 'Rekap Tahunan (Semua Tahun)',
@@ -2137,7 +2046,7 @@ document.addEventListener('DOMContentLoaded', function () {
             sec.style.display      = (sec.id === 'tab-' + activeId) ? '' : 'none';
             sec.style.marginBottom = '';
         });
-        // Hapus semua class print-row-hidden dan print-hidden setelah print selesai
+
         document.querySelectorAll('.print-row-hidden').forEach(function(el) {
             el.classList.remove('print-row-hidden');
         });
@@ -2146,12 +2055,9 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // beforeprint/afterprint events
     window.addEventListener('beforeprint', preparePrint);
     window.addEventListener('afterprint',  restoreAfterPrint);
 
-    // Chromium pada beberapa perangkat tidak selalu memicu afterprint.
-    // Pulihkan tampilan ketika media print berakhir atau tab kembali fokus.
     if (window.matchMedia) {
         var printMedia = window.matchMedia('print');
         var handlePrintMedia = function(e) {
@@ -2166,7 +2072,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    // ── Modal Konfirmasi Cetak ───────────────────────────────────────────
     var TAB_LABELS = {
         bulanan:       'Rekap Bulanan',
         tahunan:       'Rekap Tahunan',
@@ -2198,7 +2103,6 @@ document.addEventListener('DOMContentLoaded', function () {
         document.body.style.overflow = '';
     }
 
-    // Tombol Cetak Laporan (satu-satunya tombol cetak)
     var btnPrint = document.getElementById('btn-print');
     if (btnPrint) {
         btnPrint.addEventListener('click', function() {
@@ -2217,23 +2121,21 @@ document.addEventListener('DOMContentLoaded', function () {
     if (modalCetakOk) {
         modalCetakOk.addEventListener('click', function() {
             closeModalCetak();
-            // Sedikit delay agar modal benar-benar hilang dulu sebelum print dialog muncul
+
             setTimeout(function() {
                 window.print();
             }, 80);
         });
     }
 
-    // ── Inisialisasi: sembunyikan semua detail row saat halaman load ──────────
     document.querySelectorAll('.row-kode-detail').forEach(function(tr) {
         tr.style.display = 'none';
     });
 
-    // ── Smooth accordion toggle helper ─────────────────────────────────────
     function openDetailRow(detailTr, icon) {
         var wrap = detailTr.querySelector('.kode-detail-wrap');
         detailTr.style.display = 'table-row';
-        // Force reflow so transition fires
+
         detailTr.offsetHeight;
         if (wrap) {
             wrap.style.maxHeight = wrap.scrollHeight + 200 + 'px';
@@ -2251,7 +2153,7 @@ document.addEventListener('DOMContentLoaded', function () {
             wrap.style.padding   = '0 1.75rem';
         }
         if (icon) icon.style.transform = '';
-        // Hide the tr after transition ends
+
         setTimeout(function() {
             if (wrap && wrap.style.maxHeight === '0px') {
                 detailTr.style.display = 'none';
@@ -2259,7 +2161,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }, 360);
     }
 
-    // ── Accordion Rekap Tahunan ──────────────────────────────────────────
     document.querySelectorAll('.row-tahun').forEach(function(row) {
         row.addEventListener('click', function() {
             var year   = this.getAttribute('data-year');
@@ -2279,7 +2180,6 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-    // Accordion rincian kode klasifikasi per bulan
     document.querySelectorAll('.row-bulan-expandable').forEach(function(row) {
         row.addEventListener('click', function() {
             var key    = this.getAttribute('data-month-key');
@@ -2298,7 +2198,7 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
     });
-    // ── Filter Tahun: Tab Bulanan ────────────────────────────────────────
+
     var selTahunBulanan = document.getElementById('filter-tahun-bulanan');
     if (selTahunBulanan) {
         selTahunBulanan.addEventListener('change', function() {
@@ -2309,7 +2209,6 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // ── Filter Tahun: Tab Tahunan ────────────────────────────────────────
     var selTahunTahunan = document.getElementById('filter-tahun-tahunan');
     if (selTahunTahunan) {
         selTahunTahunan.addEventListener('change', function() {
@@ -2321,7 +2220,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 var detail = document.getElementById('detail-' + yr);
                 if (detail && !show) detail.style.display = 'none';
             });
-            // Update tfoot label jika ada filter
+
             var tfootLabel = document.querySelector('#tabel-tahunan tfoot .tfoot-label');
             if (tfootLabel) {
                 tfootLabel.textContent = tahun ? ('TOTAL TAHUN ' + tahun) : 'TOTAL KESELURUHAN';
@@ -2329,8 +2228,6 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // ── Filter Tahun: Tab Klasifikasi ────────────────────────────────────
-    // Data per tahun di-embed sebagai JSON dari PHP untuk rendering dinamis
     var REKAP_KLAS_PER_TAHUN = @json($rekapKlasifikasiPerTahun ?? []);
     var REKAP_KLAS_ALL       = @json($rekapKlasifikasi ?? []);
     var KODE_ORDER = ['PR','KP','OT','KU','HK','UM','PL','UP','HM','PW','LT','DL','DT','KI'];
@@ -2348,7 +2245,6 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!tbodyKlas) return;
         var rows = tahun ? (REKAP_KLAS_PER_TAHUN[tahun] || []) : REKAP_KLAS_ALL;
 
-        // Sort berdasarkan KODE_ORDER
         rows = rows.slice().sort(function(a, b) {
             var ia = KODE_ORDER.indexOf(a.kode);
             var ib = KODE_ORDER.indexOf(b.kode);
@@ -2375,7 +2271,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         tbodyKlas.innerHTML = html;
 
-        // Update judul & badge
         if (klasTitle) klasTitle.textContent = 'Rekap Per Kode Klasifikasi' + (tahun ? ' Tahun ' + tahun : ' (Semua Tahun)');
         if (klasBadge) klasBadge.textContent = rows.length + ' Kode';
         if (klasTfootLbl) klasTfootLbl.textContent = tahun ? 'TOTAL TAHUN ' + tahun : 'TOTAL SEMUA KLASIFIKASI';
@@ -2390,22 +2285,16 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // ── Live Clock ────────────────────────────────────────────────────
-
-
-    // ── Helper: sort & filter tabel surat masuk / keluar ────────────────
     function applySuratFilter(tbodyId, filterTahun, sortDir, totalElId, badgeId) {
         var tbody = document.getElementById(tbodyId);
         if (!tbody) return;
         var rows = Array.from(tbody.querySelectorAll('tr[data-ts]'));
 
-        // Filter berdasarkan tahun
         rows.forEach(function(tr) {
             var rowTahun = tr.getAttribute('data-tahun') || '';
             tr.style.display = (!filterTahun || rowTahun === filterTahun) ? '' : 'none';
         });
 
-        // Sort berdasarkan data-ts (timestamp)
         var visibleRows = rows.filter(function(tr) { return tr.style.display !== 'none'; });
         visibleRows.sort(function(a, b) {
             var tsA = parseInt(a.getAttribute('data-ts')) || 0;
@@ -2413,14 +2302,12 @@ document.addEventListener('DOMContentLoaded', function () {
             return sortDir === 'asc' ? tsA - tsB : tsB - tsA;
         });
 
-        // Re-append in sorted order & re-number
         visibleRows.forEach(function(tr, i) {
             tbody.appendChild(tr);
             var tdNo = tr.querySelector('.td-no');
             if (tdNo) tdNo.textContent = i + 1;
         });
 
-        // Update badge & total count
         var count = visibleRows.length;
         var totalEl = document.getElementById(totalElId);
         if (totalEl) totalEl.textContent = count;
@@ -2428,7 +2315,6 @@ document.addEventListener('DOMContentLoaded', function () {
         if (badge) badge.textContent = count + ' Surat';
     }
 
-    // ── Filter + Sort: Tab Surat Masuk ───────────────────────────────────
     var selTahunSM = document.getElementById('filter-tahun-sm');
     var selSortSM  = document.getElementById('sort-sm');
     var sortIconSM = document.getElementById('sort-icon-sm');
@@ -2436,7 +2322,7 @@ document.addEventListener('DOMContentLoaded', function () {
     function updateSM() {
         var tahun   = selTahunSM ? selTahunSM.value : '';
         var sortDir = selSortSM  ? selSortSM.value  : 'asc';
-        // Update sort icon
+
         if (sortIconSM) sortIconSM.innerHTML = sortDir === 'asc' ? '&#9650;' : '&#9660;';
         applySuratFilter('tbody-surat-masuk', tahun, sortDir, 'sm-total', 'sm-badge');
     }
@@ -2444,7 +2330,6 @@ document.addEventListener('DOMContentLoaded', function () {
     if (selTahunSM) selTahunSM.addEventListener('change', updateSM);
     if (selSortSM)  selSortSM.addEventListener('change',  updateSM);
 
-    // Klik header kolom Tanggal untuk toggle sort
     var thSortSM = document.querySelector('#tabel-surat-masuk .th-sortable');
     if (thSortSM) {
         thSortSM.addEventListener('click', function() {
@@ -2454,7 +2339,6 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // ── Filter + Sort: Tab Surat Keluar ──────────────────────────────────
     var selTahunSK = document.getElementById('filter-tahun-sk');
     var selSortSK  = document.getElementById('sort-sk');
     var sortIconSK = document.getElementById('sort-icon-sk');
@@ -2478,7 +2362,6 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // Init: sembunyikan header/sig di layar
     restoreAfterPrint();
 });
 </script>

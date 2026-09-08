@@ -14,7 +14,6 @@
     </div>
 </div>
 
-{{-- ── TABEL DAFTAR SURAT MASUK (hanya tampil untuk admin) ────────────────────── --}}
 @if($isAdmin ?? false)
 <div class="form-container pre-hide" style="margin-bottom:2rem;">
     <div class="form-section" style="margin-bottom:0;">
@@ -35,7 +34,6 @@
             </div>
         @endif
 
-        {{-- ── Filter Bulan, Tahun & Kode Klasifikasi ── --}}
         <div class="table-filter-bar" id="filter-bar-sm">
             <div class="filter-group">
                 <label for="filter-bulan-sm" class="filter-label">Filter Bulan:</label>
@@ -60,13 +58,13 @@
                 <select id="filter-tahun-sm" class="filter-select">
                     <option value="">Semua Tahun</option>
                     @php
-                        $tahunList = [];
+$tahunList = [];
                         foreach($rows as $item) {
                             $t = trim($item['data'][7] ?? '');
                             if(preg_match('/(\d{4})/', $t, $m)) $tahunList[$m[1]] = true;
                         }
                         krsort($tahunList);
-                    @endphp
+@endphp
                     @foreach($tahunList as $thn => $_)
                     <option value="{{ $thn }}">{{ $thn }}</option>
                     @endforeach
@@ -77,7 +75,7 @@
                 <select id="filter-kode-sm" class="filter-select">
                     <option value="">Semua Kode</option>
                     @php
-                        $kodeList = [];
+$kodeList = [];
                         foreach($rows as $item) {
                             $k = trim($item['data'][1] ?? '');
                             if ($k !== '' && !str_starts_with($k, '#')) {
@@ -85,7 +83,7 @@
                                 $kodeList[$kp] = true;
                             }
                         }
-                        // Urutkan berdasarkan urutan prioritas kode klasifikasi
+
                         $kodePriorityOrderSM = ['PR','KP','OT','KU','HK','UM','PL','UP','HM','PW','LT','DL','DT','KI'];
                         $kodeListSorted = [];
                         foreach ($kodePriorityOrderSM as $pk) {
@@ -94,7 +92,7 @@
                         foreach ($kodeList as $kk => $_) {
                             if (!isset($kodeListSorted[$kk])) $kodeListSorted[$kk] = true;
                         }
-                    @endphp
+@endphp
                     @foreach($kodeListSorted as $kd => $_)
                     <option value="{{ $kd }}">{{ $kd }}</option>
                     @endforeach
@@ -104,7 +102,6 @@
             <div class="filter-count" id="filter-count-sm"></div>
         </div>
 
-        {{-- ── Skeleton Loader (tampil 1 tick sebelum tabel asli muncul) ── --}}
         <div id="table-skeleton-sm" class="skeleton-table-wrapper" aria-hidden="true">
             <div class="skeleton-header">
                 <div class="skeleton-header-cell"></div>
@@ -126,7 +123,6 @@
             @endfor
         </div>
 
-        {{-- ── Tabel Sesungguhnya (hidden sampai skeleton diremove) ── --}}
         <div id="table-content-sm" style="overflow-x:auto; margin-top:.5rem; display:none;">
             <table class="arsip-table" id="arsip-table-sm">
                 <thead>
@@ -142,25 +138,22 @@
                 <tbody id="tbody-sm">
                     @forelse($rows as $no => $item)
                         @php
-                            $d           = $item['data'];
-                            // Indeks kolom sesuai struktur SURAT MASUK (A–Q):
-                            // A(0)=NO | B(1)=Kode Klas | C(2)=Uraian Berkas | D(3)=Kurun Waktu
-                            // E(4)=Jumlah Folder | F(5)=Nomor Item | G(6)=Uraian Arsip
-                            // H(7)=Tanggal Surat | I(8)=Jumlah Lembar | ... | Q(16)=Link Folder
-                            $tanggal      = $d[7]  ?? '-';  // H: Tanggal Surat
-                            $kodeKlasRaw  = $d[1]  ?? '';   // B: Kode Klasifikasi
+$d           = $item['data'];
+
+                            $tanggal      = $d[7]  ?? '-';
+                            $kodeKlasRaw  = $d[1]  ?? '';
                             $kodeKlas     = (str_starts_with($kodeKlasRaw, '#') || $kodeKlasRaw === '') ? '—' : $kodeKlasRaw;
                             $kodePrefix   = preg_match('/^([A-Za-z]+)/', $kodeKlasRaw, $km) ? strtoupper($km[1]) : '';
-                            $uraian       = $d[2]  ?? '-';  // C: Uraian Berkas
-                            $rawLink      = trim($d[16] ?? '');  // Q: Link Folder (filename atau URL lama)
-                            // Generate URL dinamis jika berupa filename; gunakan apa adanya jika sudah URL
+                            $uraian       = $d[2]  ?? '-';
+                            $rawLink      = trim($d[16] ?? '');
+
                             $pdfUrl = '';
                             if ($rawLink !== '') {
                                 $pdfUrl = str_starts_with($rawLink, 'http')
-                                    ? $rawLink  // URL lama (legacy) — tetap dipakai
+                                    ? $rawLink
                                     : route('pdf.view', ['type' => 'surat-masuk', 'filename' => $rawLink]);
                             }
-                            // Parse bulan & tahun untuk filter
+
                             $bulanNum = '';
                             $tahunNum = '';
                             if (preg_match('/(\d{1,2})\s+\w+\s+(\d{4})/', $tanggal, $dm)) {
@@ -174,7 +167,7 @@
                             } elseif (preg_match('/(\d{1,2})\/(\d{1,2})\/(\d{4})/', $tanggal, $dm)) {
                                 $bulanNum = (int)$dm[2]; $tahunNum = $dm[3];
                             }
-                        @endphp
+@endphp
                         <tr data-bulan="{{ $bulanNum }}" data-tahun="{{ $tahunNum }}" data-kode="{{ $kodePrefix }}">
                             <td class="td-center td-no row-no">{{ $no + 1 }}</td>
                             <td class="td-nowrap">{{ $tanggal }}</td>
@@ -231,12 +224,11 @@
                     </svg>
                 </button>
             </div>
-        </div>{{-- /#table-content-sm --}}
+        </div>
     </div>
 </div>
 @endif
 
-{{-- Modal Konfirmasi Hapus --}}
 <div id="modal-hapus" class="modal-overlay" style="display:none;">
     <div class="modal-box">
         <div class="modal-icon">
@@ -251,7 +243,6 @@
     </div>
 </div>
 
-{{-- Modal Edit Surat Masuk --}}
 <div id="modal-edit-sm" class="modal-overlay" style="display:none;">
     <div class="modal-box" style="max-width:640px;width:95%;max-height:90vh;overflow-y:auto;">
         <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1.25rem;">
@@ -294,7 +285,7 @@
                         <option value="KI">KI</option>
                         <option value="__lainnya__">Lainnya (isi manual)...</option>
                     </select>
-                    {{-- Input custom kode edit modal SM --}}
+
                     <input type="text" id="edit-sm-kode-klasifikasi-custom"
                            class="edit-field-input"
                            placeholder="Kode kustom (2 huruf, contoh: XX)"
@@ -387,7 +378,6 @@
     </div>
 </div>
 
-{{-- ── FORM INPUT SURAT MASUK ───────────────────────────────────────────── --}}
 @if($isAdmin ?? false)
 <div class="sm-form-divider">
     <div class="sm-form-divider-line"></div>
@@ -399,11 +389,9 @@
 </div>
 @endif
 
-
 <form action="{{ route('arsip.store') }}" method="POST" enctype="multipart/form-data" class="form-container" id="arsip-form">
     @csrf
 
-    {{-- Section 1: Informasi Utama --}}
     <div class="form-section pre-hide">
         <div class="section-header">
             <div class="section-number">01</div>
@@ -436,8 +424,10 @@
                     <option value="KI" {{ old('kode_klasifikasi') == 'KI' ? 'selected' : '' }}>KI</option>
                     <option value="__lainnya__" {{ !in_array(old('kode_klasifikasi'), ['','PR','KP','OT','KU','HK','UM','PL','UP','HM','PW','LT','DL','DT','KI']) && old('kode_klasifikasi') ? 'selected' : '' }}>Lainnya (isi manual)...</option>
                 </select>
-                {{-- Input custom kode — tampil saat pilih "Lainnya" --}}
-                @php $oldKodeSM = old('kode_klasifikasi'); $isCustomKodeSM = $oldKodeSM && !in_array($oldKodeSM, ['','PR','KP','OT','KU','HK','UM','PL','UP','HM','PW','LT','DL','DT','KI','__lainnya__']); @endphp
+
+                @php
+$oldKodeSM = old('kode_klasifikasi'); $isCustomKodeSM = $oldKodeSM && !in_array($oldKodeSM, ['','PR','KP','OT','KU','HK','UM','PL','UP','HM','PW','LT','DL','DT','KI','__lainnya__']);
+@endphp
                 <input type="text" id="kode_klasifikasi_custom_sm"
                        class="form-input mt-1"
                        placeholder="Contoh: XX (2 huruf)"
@@ -462,11 +452,10 @@
             <div class="form-group">
                 <label for="tanggal_surat" class="form-label">Tanggal Surat <span class="required">*</span></label>
                 @php
-                    // Tanggal hari ini dalam format Indonesia (misal: 7 Juli 2026)
-                    $_bulanID = ['','Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+$_bulanID = ['','Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
                     $_todaySM = now()->day . ' ' . $_bulanID[now()->month] . ' ' . now()->year;
-                @endphp
-                {{-- flatpickr wrap mode: klik input ATAU ikon = buka kalender --}}
+@endphp
+
                 <div class="date-input-wrap" id="tanggal-wrap-sm">
                     <input type="text" name="tanggal_surat" id="tanggal_surat"
                            class="form-input @error('tanggal_surat') input-error @enderror"
@@ -505,7 +494,6 @@
         </div>
     </div>
 
-    {{-- Section 2: Detail Arsip --}}
     <div class="form-section pre-hide">
         <div class="section-header">
             <div class="section-number">02</div>
@@ -599,7 +587,6 @@
         </div>
     </div>
 
-    {{-- Section 3: Keamanan & Retensi --}}
     <div class="form-section pre-hide">
         <div class="section-header">
             <div class="section-number">03</div>
@@ -655,7 +642,6 @@
         </div>
     </div>
 
-    {{-- Submit Button --}}
     <div class="form-actions pre-hide">
         <button type="button" class="btn btn-secondary" id="btn-reset">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -683,7 +669,6 @@
 </noscript>
 <style>
 
-/* ── Form Divider (pemisah tabel & form) ─── */
 .sm-form-divider {
     display: flex;
     align-items: center;
@@ -711,7 +696,6 @@
     letter-spacing: .01em;
 }
 
-/* ── Filter Bar ─────────────────────────────────────── */
 .table-filter-bar {
     display: flex; flex-wrap: wrap; align-items: center;
     gap: .6rem; padding: .75rem 1rem;
@@ -737,7 +721,6 @@
 .filter-reset:hover { border-color: var(--color-primary); color: var(--color-primary); }
 .filter-count { font-size: .78rem; color: var(--color-text-muted); margin-left: auto; }
 
-/* ── Tabel Arsip ───────────────────────────────────────── */
 .arsip-table { width:100%; border-collapse:collapse; font-size:.875rem; }
 .arsip-table th {
     background: var(--color-primary);
@@ -778,7 +761,7 @@
     background: var(--color-primary-light); color: var(--color-primary); font-weight:600; white-space:nowrap;
     border: 1px solid var(--color-border);
 }
-/* Badge kosong / tidak ada data */
+
 .badge-kode-empty {
     background: transparent;
     color: var(--color-text-muted);
@@ -808,13 +791,11 @@
 }
 .btn-edit-sm:hover { background:rgba(59,130,246,.22); }
 
-/* ── Modal ────────────────────────────────────────────── */
-/* .modal-overlay: didefinisikan di app.css secara global */
 .modal-box {
     background:var(--color-surface, #1a2236); border:1px solid var(--color-border,#2a3347);
     border-radius:1rem; padding:2rem; max-width:420px; width:90%; text-align:center;
     box-shadow:0 20px 60px rgba(0,0,0,.5);
-    /* Transisi dikelola oleh app.css .modal-overlay.is-open .modal-box */
+
 }
 
 .modal-icon {
@@ -834,13 +815,12 @@
 .alert { display:flex; align-items:center; gap:.5rem; padding:.75rem 1rem; border-radius:.5rem; font-size:.875rem; }
 .alert-error { background:rgba(239,68,68,.1); color:#f87171; border:1px solid rgba(239,68,68,.2); }
 
-/* ── Flatpickr — wrap mode ───────────────────────────── */
 .date-input-wrap { position: relative; }
 .date-input-wrap .form-input { padding-right: 2.5rem; cursor: pointer; }
 .date-icon {
     position: absolute; right: .75rem; top: 50%; transform: translateY(-50%);
     color: var(--color-text-muted);
-    pointer-events: auto;   /* icon bisa diklik! */
+    pointer-events: auto;
     display: flex;
     cursor: pointer;
     z-index: 1;
@@ -856,7 +836,6 @@
 <script>
 document.addEventListener('DOMContentLoaded', function () {
 
-    // ── Skeleton → Tabel ───────────────────────────────────────────────
     (function () {
         var skeleton = document.getElementById('table-skeleton-sm');
         var content  = document.getElementById('table-content-sm');
@@ -869,13 +848,12 @@ document.addEventListener('DOMContentLoaded', function () {
                 content.classList.add('table-content-ready');
                 setTimeout(function () {
                     if (skeleton.parentNode) skeleton.parentNode.removeChild(skeleton);
-                    applyFilter(); // init filter setelah tabel muncul
+                    applyFilter();
                 }, 220);
             });
         });
     })();
 
-    // ── Modal Hapus ──────────────────────────────
     const modal       = document.getElementById('modal-hapus');
     const modalLabel  = document.getElementById('modal-label');
     const modalCancel = document.getElementById('modal-cancel');
@@ -890,7 +868,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (modalLabel) modalLabel.textContent = label;
         modal.style.display = 'flex';
         document.body.style.overflow = 'hidden';
-        // Trigger smooth open
+
         requestAnimationFrame(function () {
             requestAnimationFrame(function () {
                 modal.classList.add('is-open');
@@ -902,7 +880,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!modal) return;
         modal.classList.remove('is-open');
         pendingForm = null;
-        // Hide after transition ends
+
         setTimeout(function () {
             if (!modal.classList.contains('is-open')) {
                 modal.style.display = 'none';
@@ -926,7 +904,6 @@ document.addEventListener('DOMContentLoaded', function () {
         if (e.key === 'Escape' && modal && modal.style.display === 'flex') closeModal();
     });
 
-    // ── File Upload ──────────────────────────────────────────────
     const zone        = document.getElementById('upload-zone');
     const input       = document.getElementById('surat_masuk');
     const placeholder = document.getElementById('upload-placeholder');
@@ -989,7 +966,6 @@ document.addEventListener('DOMContentLoaded', function () {
         if (window._fpSM) window._fpSM.clear();
     });
 
-    // ── Filter Bulan & Tahun ─────────────────────────────────────
     const selBulan  = document.getElementById('filter-bulan-sm');
     const selTahun  = document.getElementById('filter-tahun-sm');
     const btnReset  = document.getElementById('filter-reset-sm');
@@ -1029,7 +1005,6 @@ document.addEventListener('DOMContentLoaded', function () {
             matchingRows.forEach(tr => tr.style.display = '');
         }
 
-        // Renumber visible rows
         let no = 1;
         allRows.forEach(tr => {
             if (tr.style.display !== 'none') {
@@ -1081,13 +1056,10 @@ document.addEventListener('DOMContentLoaded', function () {
         applyFilter();
     });
 
-    // Inisialisasi collapse awal saat load
     applyFilter();
 
-    // ── Sort per Klasifikasi ─────────────────────────────────────
-    // Urutan prioritas kode klasifikasi
     const KODE_ORDER = ['PR','KP','OT','KU','HK','UM','PL','UP','HM','PW','LT','DL','DT','KI'];
-    let sortDir = ''; // '' = no sort, 'asc' = ascending, 'desc' = descending
+    let sortDir = '';
 
     function kodeRank(kode) {
         const idx = KODE_ORDER.indexOf(kode.toUpperCase());
@@ -1097,12 +1069,11 @@ document.addEventListener('DOMContentLoaded', function () {
     const thKode = document.getElementById('th-kode-sm');
     if (thKode && tbody) {
         thKode.addEventListener('click', function () {
-            // Cycle: none → asc → desc → none
+
             if (sortDir === '') sortDir = 'asc';
             else if (sortDir === 'asc') sortDir = 'desc';
             else sortDir = '';
 
-            // Update visual indicator
             document.querySelectorAll('.th-sortable').forEach(th => {
                 th.classList.remove('sort-asc', 'sort-desc');
             });
@@ -1111,7 +1082,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
             const rows = Array.from(tbody.querySelectorAll('tr[data-kode]'));
             if (sortDir === '') {
-                // Kembalikan ke urutan semula (berdasarkan data-original-order)
+
                 rows.sort(function (a, b) {
                     return parseInt(a.dataset.originalOrder || 0) - parseInt(b.dataset.originalOrder || 0);
                 });
@@ -1123,17 +1094,15 @@ document.addEventListener('DOMContentLoaded', function () {
                 });
             }
             rows.forEach(function (row) { tbody.appendChild(row); });
-            applyFilter(); // reapply filter after sort
+            applyFilter();
         });
 
-        // Simpan urutan asli
         const rows = tbody.querySelectorAll('tr[data-kode]');
         rows.forEach(function (row, i) {
             row.dataset.originalOrder = i;
         });
     }
 
-    // Sortable Tanggal
     const thTanggal = document.querySelector('#arsip-table-sm th[data-col="tanggal"]');
     let sortTanggalDir = '';
     if (thTanggal && tbody) {
@@ -1159,7 +1128,7 @@ document.addEventListener('DOMContentLoaded', function () {
             applyFilter();
         });
     }
-    // ── Modal Edit Surat Masuk ────────────────────────────────────
+
     const modalEditSM       = document.getElementById('modal-edit-sm');
     const formEditSM        = document.getElementById('form-edit-sm');
     const editSMLoading     = document.getElementById('modal-edit-sm-loading');
@@ -1174,10 +1143,10 @@ document.addEventListener('DOMContentLoaded', function () {
         formEditSM.style.display    = 'none';
         editSMLoading.style.display = 'block';
         editSMError.style.display   = 'none';
-        if (modal && modal.classList) modal.classList.remove('is-open'); // reset hapus modal jika masih open
+        if (modal && modal.classList) modal.classList.remove('is-open');
         modalEditSM.style.display   = 'flex';
         document.body.style.overflow = 'hidden';
-        // Trigger smooth open
+
         requestAnimationFrame(function () {
             requestAnimationFrame(function () {
                 modalEditSM.classList.add('is-open');
@@ -1190,9 +1159,9 @@ document.addEventListener('DOMContentLoaded', function () {
         .then(function(r) { return r.json(); })
         .then(function(data) {
             if (data.error) { throw new Error(data.error); }
-            // Set action URL
+
             formEditSM.action = "{{ url('/arsip') }}/" + rowIndex;
-            // Fill fields
+
             document.getElementById('edit-sm-dbsm-index').value           = data.dbsmIndex || '';
             document.getElementById('edit-sm-pdf-filename').value          = data.pdf_filename || '';
             document.getElementById('edit-sm-kode-klasifikasi').value      = data.kode_klasifikasi || '';
@@ -1203,7 +1172,7 @@ document.addEventListener('DOMContentLoaded', function () {
             document.getElementById('edit-sm-nomor-item').value            = data.nomor_item_arsip || '';
             document.getElementById('edit-sm-tanggal').value               = data.tanggal_surat || '';
             document.getElementById('edit-sm-uraian-arsip').value          = data.uraian_informasi_arsip || '';
-            document.getElementById('edit-sm-jumlah-lembar').value         = data.jumlah_lembar || '';
+            document.getElementById('edit-sm-jumlah-lembar').value         = (window.formatJumlahLembarStr ? window.formatJumlahLembarStr(data.jumlah_lembar || '') : (data.jumlah_lembar || ''));
             var tingkatVal = data.tingkat_perkembangan || '';
             var tingkatNormalized = tingkatVal.trim().toLowerCase();
             if (tingkatNormalized === 'asli') {
@@ -1215,7 +1184,7 @@ document.addEventListener('DOMContentLoaded', function () {
             }
             document.getElementById('edit-sm-tingkat-perkembangan').value  = tingkatVal;
             document.getElementById('edit-sm-lokasi-simpan').value         = data.lokasi_simpan || '';
-            // Isi kode klasifikasi: cek apakah ada di dropdown standar
+
             var kodeRaw    = (data.kode_klasifikasi || '').trim();
             var kodeForMap = kodeRaw.replace(/[^A-Za-z]/g,'').toUpperCase().slice(0,2);
             var mapData    = window.KODE_MAP && window.KODE_MAP[kodeForMap] ? window.KODE_MAP[kodeForMap] : null;
@@ -1225,12 +1194,12 @@ document.addEventListener('DOMContentLoaded', function () {
             var editKodeHintEl   = document.getElementById('edit-sm-kode-custom-hint');
             if (editKodeSelEl) {
                 if (stdKodes.indexOf(kodeForMap) !== -1) {
-                    // Kode standar — pilih dari dropdown
+
                     editKodeSelEl.value = kodeForMap;
                     if (editKodeCustEl) { editKodeCustEl.style.display = 'none'; editKodeCustEl.value = ''; }
                     if (editKodeHintEl) editKodeHintEl.style.display = 'none';
                 } else if (kodeRaw !== '') {
-                    // Kode kustom — pilih "Lainnya", isi custom input
+
                     editKodeSelEl.value = '__lainnya__';
                     if (editKodeCustEl) { editKodeCustEl.style.display = 'block'; editKodeCustEl.value = kodeRaw; }
                     if (editKodeHintEl) editKodeHintEl.style.display = 'block';
@@ -1240,8 +1209,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     if (editKodeHintEl) editKodeHintEl.style.display = 'none';
                 }
             }
-            // Semua field terkunci: isi otomatis dari KODE_MAP berdasarkan kode klasifikasi
-            // Jika kode ada di map → gunakan map; jika tidak → fallback ke data server (dan unlock)
+
             var autoFillLocked = !!mapData;
             var editAutoIds = ['edit-sm-retensi-aktif','edit-sm-retensi-inaktif','edit-sm-retensi-keterangan','edit-sm-klas-keamanan','edit-sm-tingkat-akses'];
             editAutoIds.forEach(function(id) {
@@ -1301,7 +1269,7 @@ document.addEventListener('DOMContentLoaded', function () {
 <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/id.js"></script>
 <script>
 (function() {
-    // ── Flatpickr: mode direct (lebih reliabel dari wrap mode) ───────────────
+
     var BULAN_ID       = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
     var BULAN_ID_SHORT = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
     try {
@@ -1323,7 +1291,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 allowInput: false,
                 disableMobile: true,
             });
-            // Klik icon kalender → buka flatpickr
+
             var fpIconSM = document.querySelector('#tanggal-wrap-sm .date-icon');
             if (fpIconSM) fpIconSM.addEventListener('click', function() { window._fpSM.open(); });
         }
@@ -1348,7 +1316,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     } catch(e) { console.warn('Flatpickr SM error:', e); }
 
-    // ── Kode Surat: kunci hanya angka & titik ──────────────────────────────────
     ['kode_surat', 'edit-sm-kode-surat'].forEach(function(id) {
         var el = document.getElementById(id);
         if (!el) return;
@@ -1362,10 +1329,8 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-    // Format per kode: [retensi_aktif, retensi_inaktif, retensi_keterangan, klas_keamanan, tingkat_akses]
-    // Dijadikan global agar bisa diakses dari semua DOMContentLoaded handler
     window.RETENSI_MAP = window.KODE_MAP = {
-        //  Kode    Aktif        Inaktif       Keterangan   Keamanan   Akses
+
         'PR': ['2 Tahun',  '3 Tahun',  'Musnah',    'Biasa',   'Terbuka' ],
         'KP': ['5 Tahun',  '10 Tahun', 'Permanen',  'Biasa',   'Terbatas'],
         'OT': ['2 Tahun',  '3 Tahun',  'Musnah',    'Biasa',   'Terbuka' ],
@@ -1382,7 +1347,6 @@ document.addEventListener('DOMContentLoaded', function () {
         'KI': ['5 Tahun',  '10 Tahun', 'Permanen',  'Biasa',   'Terbatas'],
     };
 
-    // ── Helper: toggle readonly pada auto-fill fields ─────────────────────────
     var AUTO_FILL_IDS_SM = ['retensi_aktif','retensi_inaktif','retensi_keterangan','klasifikasi_keamanan','tingkat_akses'];
     function setAutoFillLocked(ids, locked) {
         ids.forEach(function(id) {
@@ -1402,11 +1366,10 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // Auto-fill semua field terkunci pada form tambah surat masuk
     function applyRetensiFromKode(kode) {
         var map    = window.KODE_MAP || {};
         var data   = map[kode] || null;
-        var locked = !!data;  // lock hanya jika kode dikenali
+        var locked = !!data;
         setAutoFillLocked(AUTO_FILL_IDS_SM, locked);
         if (data) {
             var fields = {
@@ -1421,7 +1384,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (el) el.value = fields[id];
             });
         } else {
-            // Kode kustom / tidak dikenali — kosongkan agar user isi manual
+
             AUTO_FILL_IDS_SM.forEach(function(id) {
                 var el = document.getElementById(id);
                 if (el) el.value = '';
@@ -1429,7 +1392,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    // ── Kode Klasifikasi: dropdown + custom input (form SM) ───────────────────
     var kodeSelectSM = document.getElementById('kode_klasifikasi');
     var kodeCustomSM = document.getElementById('kode_klasifikasi_custom_sm');
     var formSM = document.getElementById('arsip-form');
@@ -1448,10 +1410,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (kodeSelectSM) {
         kodeSelectSM.addEventListener('change', handleKodeSelectSM);
-        // Inisialisasi
+
         handleKodeSelectSM();
     }
-    // Helper: set nilai kustom ke elemen select secara aman (membuat option baru jika belum ada)
+
     function setCustomSelectValue(selectEl, customVal) {
         if (!selectEl) return;
         customVal = customVal.toUpperCase().trim();
@@ -1473,7 +1435,6 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // Sebelum submit — ganti nilai select dengan nilai custom (2 huruf) jika "Lainnya" dipilih
     if (formSM) {
         formSM.addEventListener('submit', function(e) {
             if (kodeSelectSM && kodeSelectSM.value === '__lainnya__') {
@@ -1492,7 +1453,6 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // ── Auto-fill untuk modal Edit Surat Masuk ─────────────────────────────────
     var AUTO_FILL_IDS_EDIT_SM = ['edit-sm-retensi-aktif','edit-sm-retensi-inaktif','edit-sm-retensi-keterangan','edit-sm-klas-keamanan','edit-sm-tingkat-akses'];
     function setAutoFillLockedEditSM(locked) {
         AUTO_FILL_IDS_EDIT_SM.forEach(function(id) {
@@ -1539,7 +1499,6 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // Sebelum submit edit SM — ganti select value dengan custom jika "Lainnya"
     var formEditSMEl = document.getElementById('form-edit-sm');
     if (formEditSMEl) {
         formEditSMEl.addEventListener('submit', function(e) {
@@ -1575,6 +1534,50 @@ document.addEventListener('DOMContentLoaded', function () {
             else if (el && !locked) el.value = '';
         });
     }
+})();
+
+(function() {
+    function formatJumlahLembarStr(val) {
+        if (!val) return '';
+        val = String(val).trim().replace(/\s+/g, ' ');
+        if (/^\d+$/.test(val)) {
+            return val + ' Lembar';
+        }
+        var m = val.match(/^(\d+)\s*lembar$/i);
+        if (m) {
+            return m[1] + ' Lembar';
+        }
+        return val;
+    }
+    window.formatJumlahLembarStr = formatJumlahLembarStr;
+
+    function setupJumlahLembarAuto(inputEl, formEl) {
+        if (!inputEl) return;
+
+        function applyFormat() {
+            var formatted = formatJumlahLembarStr(inputEl.value);
+            if (formatted !== inputEl.value) {
+                inputEl.value = formatted;
+            }
+        }
+
+        inputEl.addEventListener('blur', applyFormat);
+        inputEl.addEventListener('change', applyFormat);
+        inputEl.addEventListener('focus', function () {
+            if (/^\d+\s*lembar$/i.test(this.value.trim())) {
+                this.select();
+            }
+        });
+
+        if (formEl) {
+            formEl.addEventListener('submit', function () {
+                applyFormat();
+            });
+        }
+    }
+
+    setupJumlahLembarAuto(document.getElementById('jumlah_lembar'), document.getElementById('arsip-form'));
+    setupJumlahLembarAuto(document.getElementById('edit-sm-jumlah-lembar'), document.getElementById('form-edit-sm'));
 })();
 </script>
 @endpush

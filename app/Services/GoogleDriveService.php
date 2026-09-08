@@ -10,39 +10,72 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 
+/**
+ * ============================================================
+ * GOOGLE DRIVE SERVICE
+ * ============================================================
+ *
+ * Mengelola operasi file PDF ke Google Drive menggunakan Service Account.
+ * Setiap file PDF yang diarsipkan disimpan di DUA tempat:
+ *   1. Google Drive (folder yang dikonfigurasi via GOOGLE_DRIVE_FOLDER_ID)
+ *   2. Backup lokal di folder uploads/ di root project
+ *
+ * KONVENSI NAMA FILE:
+ *   Format: {KODE_KLASIFIKASI}_{TIMESTAMP}_{NAMA_ASLI}.pdf
+ *   Contoh: KP_20240901_143022_SuratPermohonan.pdf
+ *
+ * MEKANISME FALLBACK:
+ *   Jika upload Google Drive GAGAL (quota habis, API tidak aktif, dll),
+ *   sistem TIDAK melempar error ke user. Data tetap tersimpan ke Sheets
+ *   dengan kolom link berisi NAMA FILE LOKAL (bukan URL Drive).
+ *   File lokal (uploads/) bisa diakses via route /pdf/{type}/{filename}.
+ *
+ * KONFIGURASI (via .env):
+ *   GOOGLE_SERVICE_ACCOUNT_JSON = path/ke/credentials.json
+ *   GOOGLE_DRIVE_FOLDER_ID      = ID folder Drive yang dibagikan ke Service Account
+ *
+ * IZIN FILE DI DRIVE:
+ *   Setelah upload, file langsung diset public (anyone reader) agar
+ *   link Drive bisa dibuka siapa saja tanpa perlu login Google.
+ *   Jika gagal set izin, file tetap tersimpan tapi linknya mungkin private.
+ *
+ * CATATAN QUOTA:
+ *   Service Account di akun Google Drive pribadi memiliki kuota terbatas.
+ *   Gunakan Google Workspace / Shared Drive untuk kapasitas lebih besar.
+ *   Error 403 storageQuotaExceeded berarti Drive penuh → sistem fallback ke lokal.
+ */
 class GoogleDriveService
 {
+
     /**
-     * Upload file ke Google Drive dan backup ke local uploads/ directory di root project.
+     * Upload file PDF ke Google Drive sekaligus simpan backup di lokal (uploads/).
      *
-     * @param UploadedFile $file
-     * @param string $kodeKlasifikasi
-     * @return array [filename, driveLink]
+     * @param UploadedFile $file            File PDF yang diupload user
+     * @param string       $kodeKlasifikasi Kode klasifikasi arsip (untuk nama file)
+     * @return array ['filename' => string, 'driveLink' => string]
+     *               driveLink berisi URL Drive jika berhasil, atau nama file lokal jika gagal
      */
     public static function uploadAndBackup(UploadedFile $file, string $kodeKlasifikasi): array
     {
-        // 1. Generate filename yang unik & informatif
+
         $kodeKlasSlug  = preg_replace('/[^a-zA-Z0-9\-]/', '_', $kodeKlasifikasi);
         $originalName  = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
         $originalSlug  = preg_replace('/[^a-zA-Z0-9\-]/', '_', $originalName);
         $timestamp     = now()->format('Ymd_His');
         $filename      = strtoupper($kodeKlasSlug) . '_' . $timestamp . '_' . $originalSlug . '.' . $file->getClientOriginalExtension();
 
-        // 2. Backup lokal ke folder uploads/ di root project (diluar sub-subfolder)
         $backupDir = base_path('uploads');
         if (!File::exists($backupDir)) {
             File::makeDirectory($backupDir, 0755, true);
         }
-        
-        // Simpan salinan ke root uploads/
+
         $file->move($backupDir, $filename);
         $localFilePath = $backupDir . DIRECTORY_SEPARATOR . $filename;
 
-        // Default fallback link is just the local filename (which triggers local view routing)
         $driveLink = $filename;
 
         try {
-            // 3. Inisialisasi Google Drive API Client
+
             $credPath = config('google.service_account_json');
             if (empty($credPath)) {
                 throw new \RuntimeException('GOOGLE_SERVICE_ACCOUNT_JSON belum dikonfigurasi di .env');
@@ -54,24 +87,19 @@ class GoogleDriveService
 
             $client = new Client();
             $client->setAuthConfig($credFullPath);
-            $client->addScope(Drive::DRIVE); // Memerlukan scope Drive
+            $client->addScope(Drive::DRIVE);
             $driveService = new Drive($client);
 
-            // Ambil Folder ID dari config (aman saat config:cache — tidak pakai env() langsung)
             $parentFolderId = config('google.drive_folder_id');
             if (empty($parentFolderId)) {
                 throw new \RuntimeException('GOOGLE_DRIVE_FOLDER_ID belum dikonfigurasi di .env. Service Account memerlukan ID folder tujuan yang dibagikan.');
             }
 
-            // 4. Metadata file untuk Google Drive
             $driveFileMetadata = new DriveFile([
                 'name'    => $filename,
                 'parents' => [$parentFolderId]
             ]);
 
-            // 5. Kirim file ke Google Drive — baca sebagai string agar kompatibel dengan
-            //    Google API PHP Client yang memanggil base64_encode() secara internal.
-            //    (PHP 8 strict: base64_encode() harus menerima string, bukan resource)
             $fileContents = file_get_contents($localFilePath);
             if ($fileContents === false) {
                 throw new \RuntimeException("Gagal membaca file untuk upload ke Drive: {$localFilePath}");
@@ -88,7 +116,6 @@ class GoogleDriveService
             $fileId    = $driveFile->id;
             $driveLink = $driveFile->webViewLink;
 
-            // 6. Set permission agar file bisa diakses oleh siapa saja yang memiliki link (anyone with link as reader)
             try {
                 $permission = new Permission();
                 $permission->setType('anyone');
@@ -102,7 +129,7 @@ class GoogleDriveService
             }
         } catch (\Exception $e) {
             Log::error('Google Drive Upload gagal (mungkin API belum di-enable). Menggunakan backup lokal. Error: ' . $e->getMessage());
-            // driveLink tetap berupa $filename (fallback lokal)
+
         }
 
         return [
@@ -112,11 +139,17 @@ class GoogleDriveService
     }
 
     /**
-     * Rename file PDF lokal di /uploads dan di Google Drive jika terhubung.
+     * Mengubah nama file PDF baik di lokal maupun di Google Drive.
+     * Dipanggil saat admin mengedit kode_klasifikasi pada arsip yang sudah ada.
      *
-     * @param string $oldLinkOrFilename  Link Drive lama atau nama file lama
+     * LOGIKA:
+     *   - Jika $oldLinkOrFilename adalah URL (starts with http) → rename di Drive via API
+     *   - Jika bukan URL → rename file di lokal (uploads/ directory)
+     *   - Nama baru dibentuk dari kode baru + timestamp/suffix dari nama lama
+     *
+     * @param string $oldLinkOrFilename URL Drive atau nama file lokal
      * @param string $newKodeKlasifikasi Kode klasifikasi baru
-     * @return string  Nama file atau drive link yang sudah diperbarui
+     * @return string URL Drive yang sama (jika Drive), atau nama file lokal baru
      */
     public static function renameFile(string $oldLinkOrFilename, string $newKodeKlasifikasi): string
     {
@@ -125,7 +158,6 @@ class GoogleDriveService
             return $oldLinkOrFilename;
         }
 
-        // Tentukan nama file lokal lama & ekstrak drive file ID jika berupa URL Drive
         $isDriveUrl  = str_starts_with($oldLinkOrFilename, 'http');
         $oldFilename = $oldLinkOrFilename;
         $driveFileId = null;
@@ -138,7 +170,6 @@ class GoogleDriveService
             }
         }
 
-        // Buat nama file baru berdasarkan kode klasifikasi baru
         $kodeKlasSlug = strtoupper(preg_replace('/[^a-zA-Z0-9\-]/', '_', $newKodeKlasifikasi));
 
         if (!$isDriveUrl && preg_match('/^[A-Z0-9_]+_(\d{8}_\d{6}_.+)$/i', $oldFilename, $parts)) {
@@ -150,7 +181,6 @@ class GoogleDriveService
             $newFilename = $kodeKlasSlug . '_' . $timestamp . '_' . $cleanOld . '.' . $ext;
         }
 
-        // 1. Rename file lokal di uploads/ jika ada
         $uploadsDir   = base_path('uploads');
         $oldLocalPath = $uploadsDir . DIRECTORY_SEPARATOR . $oldFilename;
         $newLocalPath = $uploadsDir . DIRECTORY_SEPARATOR . $newFilename;
@@ -159,7 +189,6 @@ class GoogleDriveService
             File::move($oldLocalPath, $newLocalPath);
         }
 
-        // 2. Jika merupakan file Drive, perbarui nama file di Google Drive
         if ($driveFileId !== null) {
             try {
                 $credPath = config('google.service_account_json');
@@ -178,17 +207,23 @@ class GoogleDriveService
             } catch (\Exception $e) {
                 Log::warning('Gagal mengubah nama file di Google Drive: ' . $e->getMessage());
             }
-            return $oldLinkOrFilename; // Tetap kembalikan Drive URL
+            return $oldLinkOrFilename;
         }
 
         return $newFilename;
     }
 
     /**
-     * Hapus file PDF fisik dari folder lokal /uploads dan dari Google Drive jika terhubung.
+     * Menghapus file PDF dari lokal DAN Google Drive.
+     * Dipanggil saat admin menghapus data arsip.
      *
-     * @param string $linkOrFilename  Link Google Drive atau nama file lokal
-     * @return bool True jika berhasil atau file telah dihapus
+     * LOGIKA:
+     *   - Jika $linkOrFilename adalah URL Drive → hapus dari Drive + cari & hapus salinan lokal
+     *   - Jika bukan URL → hapus langsung dari uploads/
+     *   - Kegagalan penghapusan dari Drive hanya dicatat ke log (tidak throw exception)
+     *
+     * @param string $linkOrFilename URL Drive atau nama file lokal
+     * @return bool Selalu true (kegagalan Drive tidak dianggap fatal)
      */
     public static function deleteFile(string $linkOrFilename): bool
     {
@@ -209,7 +244,6 @@ class GoogleDriveService
             }
         }
 
-        // 1. Hapus file lokal dari folder /uploads
         $uploadsDir = base_path('uploads');
 
         if (!$isDriveUrl) {
@@ -217,20 +251,8 @@ class GoogleDriveService
             if (File::exists($localPath)) {
                 File::delete($localPath);
             }
-        } else {
-            // Jika berupa Drive URL, cari apakah ada salinan file lokal dengan nama yang cocok
-            if (File::exists($uploadsDir)) {
-                $files = File::files($uploadsDir);
-                foreach ($files as $file) {
-                    if ($file->getFilename() === $filename) {
-                        File::delete($file->getPathname());
-                        break;
-                    }
-                }
-            }
         }
 
-        // 2. Hapus file di Google Drive jika terhubung API
         if ($driveFileId !== null) {
             try {
                 $credPath = config('google.service_account_json');
@@ -239,6 +261,23 @@ class GoogleDriveService
                     $client->setAuthConfig(base_path($credPath));
                     $client->addScope(Drive::DRIVE);
                     $driveService = new Drive($client);
+
+                    try {
+                        $driveFile = $driveService->files->get($driveFileId, [
+                            'fields'             => 'name',
+                            'supportsAllDrives'  => true,
+                            'supportsTeamDrives' => true,
+                        ]);
+                        $driveName = $driveFile->name ?? null;
+                        if (!empty($driveName)) {
+                            $localPath = $uploadsDir . DIRECTORY_SEPARATOR . $driveName;
+                            if (File::exists($localPath)) {
+                                File::delete($localPath);
+                            }
+                        }
+                    } catch (\Exception $getEx) {
+                        Log::warning('Gagal mengambil nama file dari Google Drive: ' . $getEx->getMessage());
+                    }
 
                     $driveService->files->delete($driveFileId, [
                         'supportsAllDrives'  => true,

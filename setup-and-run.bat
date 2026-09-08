@@ -3,10 +3,9 @@ title Arsip BPSDMP - Master 1-Pintu Auto-Setup & System Runner
 color 0A
 setlocal EnableDelayedExpansion
 
-:: ── [0] Self-Elevate Administrator (UAC) ──────────────────────────────
 net session >nul 2>&1
 if %errorLevel% neq 0 (
-    echo [INFO] Meminta Hak Access Administrator untuk Konfigurasi Firewall ^& Hosts...
+    echo [INFO] Meminta Hak Administrator untuk Konfigurasi Firewall ^& Hosts...
     powershell -Command "Start-Process -FilePath cmd.exe -ArgumentList '/c \"%~f0\"' -Verb RunAs -WorkingDirectory '%~dp0'"
     exit /b
 )
@@ -14,37 +13,64 @@ if %errorLevel% neq 0 (
 cd /d "%~dp0"
 
 echo ====================================================================
-echo   ARSIP SURAT BPSDMP — MASTER 1-PINTU AUTO-SETUP ^& SYSTEM RUNNER
+echo   ARSIP SURAT BPSDMP - MASTER 1-PINTU AUTO-SETUP ^& SYSTEM RUNNER
 echo ====================================================================
 echo.
 
-:: ── [DETECT PHP] Mencari PHP dari Laragon (tidak butuh PATH) ─────────
-SET "PHP=php"
-echo [PHP] Mendeteksi PHP dari Laragon...
-FOR /D %%V IN ("C:\laragon\bin\php\php-8*") DO (
-    IF EXIST "%%V\php.exe" SET "PHP=%%V\php.exe"
-)
-IF "!PHP!"=="php" (
-    FOR /D %%V IN ("C:\laragon\bin\php\php-*") DO (
-        IF EXIST "%%V\php.exe" SET "PHP=%%V\php.exe"
+SET "PHP="
+SET "PHP_INI="
+echo [PHP] Mendeteksi PHP kompatibel dari Laragon (PHP 8.3+)...
+FOR /D %%V IN ("C:\laragon\bin\php\php-8.5*" "C:\laragon\bin\php\php-8.4*" "C:\laragon\bin\php\php-8.3*") DO (
+    IF EXIST "%%V\php.exe" (
+        SET "PHP=%%V\php.exe"
+        SET "PHP_INI=%%V\php.ini"
     )
 )
-IF "!PHP!"=="php" (
-    echo [WARNING] PHP Laragon tidak ditemukan! Mencoba dari PATH sistem...
+IF NOT DEFINED PHP (
+    FOR /D %%V IN ("C:\laragon\bin\php\php-8*") DO (
+        IF EXIST "%%V\php.exe" (
+            SET "PHP=%%V\php.exe"
+            SET "PHP_INI=%%V\php.ini"
+        )
+    )
+)
+IF NOT DEFINED PHP (
     where php >nul 2>&1
-    if !ERRORLEVEL! NEQ 0 (
-        echo [ERROR] PHP tidak ditemukan sama sekali. Pastikan Laragon terinstall di C:\laragon
+    if !ERRORLEVEL! EQU 0 (
+        SET "PHP=php"
+    ) else (
+        echo [ERROR] PHP tidak ditemukan. Pastikan Laragon terinstall di C:\laragon
         echo.
         pause
         exit /b 1
     )
-) ELSE (
-    echo [OK] PHP ditemukan: !PHP!
 )
+echo [OK] PHP ditemukan: !PHP!
 echo.
 
-:: ── [PRE] Pembersihan Storage Saja (Views & Cache - Preservasi Sessions) ──
-echo [PRE] Membersihkan cache sementara (views ^& cache data)...
+SET "COMPOSER_BIN="
+IF EXIST "C:\laragon\bin\composer\composer.phar" (
+    SET "COMPOSER_BIN="!PHP!" C:\laragon\bin\composer\composer.phar"
+) ELSE (
+    where composer >nul 2>&1
+    IF !ERRORLEVEL! EQU 0 (
+        SET "COMPOSER_BIN=composer"
+    )
+)
+
+IF DEFINED PHP_INI (
+    IF EXIST "!PHP_INI!" (
+        echo [PRE] Memastikan ekstensi zip, pdo_mysql, curl, fileinfo aktif di php.ini...
+        powershell -Command "$f='!PHP_INI!'; (Get-Content $f) -replace '^;extension=zip','extension=zip' -replace '^;extension=pdo_mysql','extension=pdo_mysql' -replace '^;extension=curl','extension=curl' -replace '^;extension=fileinfo','extension=fileinfo' -replace '^;extension=mbstring','extension=mbstring' -replace '^;extension=openssl','extension=openssl' | Set-Content $f"
+        echo [OK] Ekstensi php.ini terkonfigurasi.
+        echo.
+    )
+)
+
+echo [PRE] Membersihkan cache sementara dan bootstrap lama...
+IF EXIST "bootstrap\cache" (
+    del /f /q "bootstrap\cache\*.php" >nul 2>&1
+)
 IF EXIST "storage\framework\views" (
     del /f /q "storage\framework\views\*.php" >nul 2>&1
     del /f /q "storage\framework\views\*.html" >nul 2>&1
@@ -53,43 +79,52 @@ IF EXIST "storage\framework\cache\data" (
     rd /s /q "storage\framework\cache\data" >nul 2>&1
     md "storage\framework\cache\data" >nul 2>&1
 )
-echo [OK] Cache views ^& framework data berhasil dibersihkan (sesi login pengguna dipertahankan).
+echo [OK] Cache dibersihkan (path lama dinetralisir^).
 echo.
 
-:: ── [1/10] Memeriksa Status Apache & MySQL ────────────────────────────
-echo [1/10] Memeriksa status Apache ^& MySQL...
-SET "SVC_OK=1"
+echo [1/10] Memeriksa dan mengaktifkan servis Apache ^& MySQL...
 
-tasklist /FI "IMAGENAME eq httpd.exe" 2>NUL | find /I "httpd.exe" >NUL
+tasklist | findstr /i "httpd.exe" >nul
 IF !ERRORLEVEL! EQU 0 (
-    echo [OK] Apache (httpd.exe) berjalan.
+    echo [OK] Apache ^(httpd.exe^) sudah berjalan.
 ) ELSE (
-    echo [!] Apache (httpd.exe) belum berjalan.
-    SET "SVC_OK=0"
+    echo [ACTION] Menyalakan Apache otomatis...
+    SET "HTTPD_BIN="
+    FOR /D %%A IN ("C:\laragon\bin\apache\httpd-*") DO (
+        IF EXIST "%%A\bin\httpd.exe" SET "HTTPD_BIN=%%A\bin\httpd.exe"
+    )
+    IF DEFINED HTTPD_BIN (
+        start "" "!HTTPD_BIN!"
+        ping 127.0.0.1 -n 3 >nul
+        echo [OK] Apache berhasil dinyalakan.
+    ) ELSE (
+        echo [WARNING] Biner httpd.exe tidak ditemukan di C:\laragon\bin\apache
+    )
 )
 
-tasklist /FI "IMAGENAME eq mysqld.exe" 2>NUL | find /I "mysqld.exe" >NUL
+tasklist | findstr /i "mysqld.exe" >nul
 IF !ERRORLEVEL! EQU 0 (
-    echo [OK] MySQL (mysqld.exe) berjalan.
+    echo [OK] MySQL ^(mysqld.exe^) sudah berjalan.
 ) ELSE (
-    echo [!] MySQL (mysqld.exe) belum berjalan.
-    SET "SVC_OK=0"
+    echo [ACTION] Menyalakan MySQL otomatis...
+    SET "MYSQLD_BIN="
+    FOR /D %%M IN ("C:\laragon\bin\mysql\mysql-*") DO (
+        IF EXIST "%%M\bin\mysqld.exe" SET "MYSQLD_BIN=%%M\bin\mysqld.exe"
+    )
+    IF DEFINED MYSQLD_BIN (
+        start "" "!MYSQLD_BIN!" --console
+        ping 127.0.0.1 -n 4 >nul
+        echo [OK] MySQL berhasil dinyalakan.
+    ) ELSE (
+        echo [WARNING] Biner mysqld.exe tidak ditemukan di C:\laragon\bin\mysql
+    )
 )
 
-IF "!SVC_OK!"=="0" (
-    echo.
-    echo ================================================================
-    echo  PERHATIAN: Laragon belum aktif!
-    echo  1. Buka Laragon terlebih dahulu
-    echo  2. Klik tombol [Start All] di Laragon
-    echo  3. Tunggu Apache dan MySQL aktif
-    echo  4. Lalu tekan sembarang tombol di sini untuk melanjutkan...
-    echo ================================================================
-    pause >nul
-    echo.
+tasklist | findstr /i "laragon.exe" >nul
+IF !ERRORLEVEL! NEQ 0 (
+    IF EXIST "C:\laragon\laragon.exe" start "" "C:\laragon\laragon.exe"
 )
 
-:: ── [WAIT] Tunggu MySQL benar-benar siap menerima koneksi ─────────────
 echo [WAIT] Menunggu MySQL siap menerima koneksi...
 SET "RETRY=0"
 :WAIT_MYSQL
@@ -99,86 +134,71 @@ IF !ERRORLEVEL! EQU 0 (
     GOTO :MYSQL_DONE
 )
 SET /A RETRY+=1
-IF !RETRY! GEQ 20 (
-    echo [WARNING] MySQL belum merespons setelah 40 detik. Lanjutkan...
+IF !RETRY! GEQ 15 (
+    echo [WARNING] MySQL belum merespons setelah 30 detik. Lanjutkan proses...
     GOTO :MYSQL_DONE
 )
-echo [WAIT] MySQL belum siap, percobaan !RETRY!/20 -- tunggu 2 detik...
+echo [WAIT] Menghubungi MySQL, percobaan !RETRY!/15 -- tunggu 2 detik...
 ping 127.0.0.1 -n 3 >nul
 GOTO :WAIT_MYSQL
 :MYSQL_DONE
 echo.
 
-
-:: ── [2/10] Inisialisasi Environment File (.env) ──────────────────────
 echo [2/10] Memeriksa berkas konfigurasi .env...
 if not exist ".env" (
     echo [ACTION] Membuat berkas .env dari .env.example...
     copy .env.example .env >nul
 )
-
-:: Pastikan APP_URL=http://kearsipan.local, INTRANET_ENABLED=true,
-:: SESSION_DRIVER=database, SESSION_EXPIRE_ON_CLOSE=false (agar user tidak auto-logout)
-powershell -Command "(Get-Content .env) -replace '^APP_URL=.*', 'APP_URL=http://kearsipan.local' -replace '^INTRANET_ENABLED=.*', 'INTRANET_ENABLED=true' -replace '^SESSION_DRIVER=.*', 'SESSION_DRIVER=database' -replace '^SESSION_EXPIRE_ON_CLOSE=.*', 'SESSION_EXPIRE_ON_CLOSE=false' -replace '^SESSION_LIFETIME=.*', 'SESSION_LIFETIME=480' | Set-Content .env"
-
+powershell -Command "(Get-Content .env) -replace '^APP_URL=.*','APP_URL=http://kearsipan.local' -replace '^INTRANET_ENABLED=.*','INTRANET_ENABLED=false' -replace '^SESSION_DRIVER=.*','SESSION_DRIVER=database' -replace '^SESSION_EXPIRE_ON_CLOSE=.*','SESSION_EXPIRE_ON_CLOSE=false' -replace '^SESSION_LIFETIME=.*','SESSION_LIFETIME=480' | Set-Content .env"
 "!PHP!" artisan key:generate --force >nul 2>&1
-
-:: ── [3/10] Pengecekan Google Credentials JSON ─────────────────────────
+echo [OK] Konfigurasi .env ^& APP_KEY siap.
 echo.
+
 echo [3/10] Memeriksa berkas Google Credentials JSON...
 if exist "storage\app\google-credentials.json" (
-    echo [OK] Berkas storage\app\google-credentials.json ditemukan.
+    echo [OK] File google-credentials.json ditemukan.
 ) else (
-    echo [WARNING] Berkas storage\app\google-credentials.json TIDAK DITEMUKAN!
-    echo [WARNING] Integrasi Google Drive ^& Sheets mungkin memerlukan berkas ini.
+    echo [WARNING] File storage\app\google-credentials.json TIDAK DITEMUKAN!
+    echo [WARNING] Salin file tersebut untuk mengaktifkan sinkronisasi Google Drive ^& Sheets.
 )
-
-:: ── [4/10] Inisialisasi Database MySQL (arsip_bpsdmp) ──────────────────
 echo.
+
 echo [4/10] Memeriksa database MySQL arsip_bpsdmp...
 "!PHP!" -r "try { $pdo = new PDO('mysql:host=127.0.0.1;port=3306', 'root', ''); $pdo->exec('CREATE DATABASE IF NOT EXISTS `arsip_bpsdmp` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;'); echo '[OK] Database arsip_bpsdmp siap.' . PHP_EOL; } catch (Exception $e) { echo '[WARNING] Gagal konek MySQL: ' . $e->getMessage() . PHP_EOL; }"
-
-:: ── [5/10] Memeriksa Dependensi & Migrasi Database ─────────────────────
 echo.
-echo [5/10] Memeriksa dependensi Composer ^& menjalankan migrasi database...
-if not exist "vendor/autoload.php" (
+
+echo [5/10] Memeriksa dependensi Composer ^& migrasi database...
+if not exist "vendor\autoload.php" (
     echo [ACTION] Menginstall dependensi Composer...
-    call composer install --no-dev --optimize-autoloader --no-interaction
+    IF DEFINED COMPOSER_BIN (
+        call !COMPOSER_BIN! install --no-dev --optimize-autoloader --no-interaction --prefer-dist
+    ) ELSE (
+        echo [ERROR] Composer tidak ditemukan untuk instalasi vendor.
+    )
 )
 
+"!PHP!" artisan optimize:clear >nul 2>&1
 "!PHP!" artisan migrate --force
 "!PHP!" artisan db:seed --force
-
-:: Pastikan tabel sessions ada (wajib jika SESSION_DRIVER=database)
-"!PHP!" artisan session:table 2>nul
-"!PHP!" artisan migrate --force 2>nul
-
-:: ── [6/10] Build Aset Frontend (Vite) ──────────────────────────────────
+"!PHP!" artisan storage:link --force >nul 2>&1
 echo.
-echo [6/10] Memeriksa kompilasi aset frontend (Vite)...
-if not exist "public/build" (
-    echo [ACTION] Membangun aset frontend produksi (npm run build)...
-    where npm >nul 2>&1
-    if !ERRORLEVEL! EQU 0 (
-        if not exist "node_modules" (
-            echo [ACTION] Menginstall modul Node.js...
-            call npm install --no-audit --no-fund
-        )
-        call npm run build
-        echo [OK] Aset frontend berhasil dikompilasi.
-    ) else (
-        echo [WARNING] Node.js/NPM tidak ditemukan. Pastikan public/build sudah ada.
-    )
+
+echo [6/10] Memverifikasi aset frontend...
+if exist "public\css\app.css" (
+    echo [OK] Berkas CSS utama ditemukan (public\css\app.css^).
+    echo [INFO] Sistem menggunakan Vanilla CSS murni ^& CDN (tanpa dependensi Vite/Node^).
 ) else (
-    echo [OK] Aset frontend sudah dikompilasi (public/build ada).
+    echo [WARNING] Berkas public\css\app.css tidak ditemukan!
 )
-
-:: ── [7/10] Virtual Host Apache (kearsipan.local.conf) ──────────────────
 echo.
-echo [7/10] Mengonfigurasi Virtual Host Apache (kearsipan.local)...
+
+echo [7/10] Mengonfigurasi Virtual Host Apache (kearsipan.local^)...
+SET "PROJ_ROOT=%~dp0"
+SET "PROJ_ROOT=%PROJ_ROOT:~0,-1%"
+SET "PROJ_ROOT_FWD=%PROJ_ROOT:\=/%"
 if exist "C:\laragon\etc\apache2\sites-enabled" (
     (
-        echo define ROOT "C:/laragon/www/project-magang/public"
+        echo define ROOT "%PROJ_ROOT_FWD%/public"
         echo define SITE "kearsipan.local"
         echo.
         echo ^<VirtualHost *:80^>
@@ -190,103 +210,89 @@ if exist "C:\laragon\etc\apache2\sites-enabled" (
         echo         Require all granted
         echo     ^</Directory^>
         echo ^</VirtualHost^>
-        echo.
-        echo ^<VirtualHost *:443^>
-        echo     DocumentRoot "${ROOT}"
-        echo     ServerName ${SITE}
-        echo     ServerAlias *.${SITE}
-        echo     ^<Directory "${ROOT}"^>
-        echo         AllowOverride All
-        echo         Require all granted
-        echo     ^</Directory^>
-        echo     SSLEngine on
-        echo     SSLCertificateFile      C:/laragon/etc/ssl/laragon.crt
-        echo     SSLCertificateKeyFile   C:/laragon/etc/ssl/laragon.key
-        echo ^</VirtualHost^>
     ) > "C:\laragon\etc\apache2\sites-enabled\kearsipan.local.conf"
-    echo [OK] Virtual Host kearsipan.local.conf berhasil dibuat.
+    echo [OK] Virtual Host kearsipan.local.conf dibuat.
+    echo [OK] DocumentRoot: %PROJ_ROOT_FWD%/public
 )
-
-:: ── [8/10] Registrasi Windows Hosts File ────────────────────────────────
 echo.
-echo [8/10] Memeriksa entri Windows Hosts (127.0.0.1 kearsipan.local)...
-findstr /C:"kearsipan.local" "C:\Windows\System32\drivers\etc\hosts" >nul
-if %ERRORLEVEL% NEQ 0 (
-    echo 127.0.0.1    kearsipan.local>> "C:\Windows\System32\drivers\etc\hosts"
-    echo [OK] Domain kearsipan.local berhasil ditambahkan ke hosts file.
-) else (
+
+echo [8/10] Memeriksa entri Windows Hosts...
+SET "HOSTS_OK=0"
+findstr /C:"kearsipan.local" "C:\Windows\System32\drivers\etc\hosts" >nul 2>&1
+if !ERRORLEVEL! EQU 0 (
     echo [OK] Domain kearsipan.local sudah terdaftar di hosts file.
+    SET "HOSTS_OK=1"
+) ELSE (
+    echo 127.0.0.1    kearsipan.local>> "C:\Windows\System32\drivers\etc\hosts"
+    if !ERRORLEVEL! EQU 0 (
+        echo [OK] Domain kearsipan.local berhasil ditambahkan ke hosts file.
+        SET "HOSTS_OK=1"
+    ) else (
+        echo [WARNING] Gagal memperbarui hosts file. Sistem dapat diakses via http://localhost.
+    )
 )
-
-:: ── [9/10] Aturan Windows Firewall (Port 80 Inbound) ────────────────────
 echo.
+
 echo [9/10] Memeriksa aturan Windows Firewall Port 80...
-powershell -Command "if (!(Get-NetFirewallRule -DisplayName 'Laragon Apache HTTP' -ErrorAction SilentlyContinue)) { New-NetFirewallRule -DisplayName 'Laragon Apache HTTP' -Direction Inbound -Protocol TCP -LocalPort 80 -Action Allow; Write-Host '[OK] Aturan Firewall Port 80 berhasil dibuat.' } else { Write-Host '[OK] Aturan Firewall Port 80 sudah ada.' }"
-
-:: ── [10/10] Optimization, Queue Worker, & Launch ────────────────────────
+powershell -Command "if (!(Get-NetFirewallRule -DisplayName 'Laragon Apache HTTP' -ErrorAction SilentlyContinue)) { New-NetFirewallRule -DisplayName 'Laragon Apache HTTP' -Direction Inbound -Protocol TCP -LocalPort 80 -Action Allow; Write-Host '[OK] Aturan Firewall Port 80 dibuat.' } else { Write-Host '[OK] Aturan Firewall Port 80 sudah ada.' }"
 echo.
-echo [10/10] Mengoptimalkan cache ^& merestart Apache...
-"!PHP!" artisan storage:link --force >nul 2>&1
+
+echo [10/10] Mengoptimalkan cache ^& background workers...
 "!PHP!" artisan config:cache
 "!PHP!" artisan route:cache
 "!PHP!" artisan view:cache
 
-:: Jalankan Queue Worker di background window jika belum aktif
-:: --max-jobs=500 : worker restart otomatis setiap 500 job (cegah memory leak / hang)
-:: --max-time=3600: worker restart setelah 1 jam berjalan (cegah stuck)
-tasklist /FI "WINDOWTITLE eq Arsip BPSDMP Queue Worker*" 2>NUL | find /I "cmd.exe" >NUL
+tasklist /v | findstr /i "Arsip BPSDMP Queue Worker" >nul
 IF !ERRORLEVEL! NEQ 0 (
-    echo [INFO] Menjalankan Queue Worker di background...
     start "Arsip BPSDMP Queue Worker" /min cmd /k ""!PHP!" artisan queue:work --tries=3 --timeout=90 --max-jobs=500 --max-time=3600"
-    echo [OK] Queue Worker berhasil aktif di background (auto-restart setiap 500 jobs/1 jam).
+    echo [OK] Queue Worker aktif di background ^(auto-restart setiap 500 jobs/1 jam^).
 ) else (
-    echo [OK] Queue Worker sudah berjalan di background.
+    echo [OK] Queue Worker sudah berjalan.
 )
 
-:: Restart Apache agar Virtual Host kearsipan.local aktif
-tasklist /FI "IMAGENAME eq httpd.exe" 2>NUL | find /I "httpd.exe" >NUL
-IF !ERRORLEVEL! EQ 0 (
-    echo [INFO] Merestart Apache untuk memuat Virtual Host baru...
+tasklist /v | findstr /i "Arsip BPSDMP Scheduler" >nul
+IF !ERRORLEVEL! NEQ 0 (
+    start "Arsip BPSDMP Scheduler" /min cmd /k ""!PHP!" artisan schedule:work"
+    echo [OK] Task Scheduler aktif -- pembersihan storage:clean berjalan otomatis pukul 17:00.
+) else (
+    echo [OK] Task Scheduler sudah berjalan.
+)
+
+tasklist | findstr /i "httpd.exe" >nul
+IF !ERRORLEVEL! EQU 0 (
+    echo [INFO] Merestart Apache agar Virtual Host aktif...
     taskkill /F /IM httpd.exe >nul 2>&1
     ping 127.0.0.1 -n 3 >nul
-    SET "HTTPD_BIN="
-    FOR /D %%A IN ("C:\laragon\bin\apache\httpd-*") DO (
-        IF EXIST "%%A\bin\httpd.exe" SET "HTTPD_BIN=%%A\bin\httpd.exe"
-    )
-    IF DEFINED HTTPD_BIN (
-        start "" "!HTTPD_BIN!"
-        echo [OK] Apache berhasil direstart.
-    ) ELSE (
-        echo [WARNING] httpd.exe tidak ditemukan. Restart Apache secara manual dari Laragon.
-    )
-) ELSE (
-    echo [WARNING] Apache tidak berjalan. Aktifkan Laragon untuk memuat Virtual Host.
+)
+SET "HTTPD_BIN="
+FOR /D %%A IN ("C:\laragon\bin\apache\httpd-*") DO (
+    IF EXIST "%%A\bin\httpd.exe" SET "HTTPD_BIN=%%A\bin\httpd.exe"
+)
+IF DEFINED HTTPD_BIN (
+    start "" "!HTTPD_BIN!"
+    ping 127.0.0.1 -n 3 >nul
+    echo [OK] Apache berhasil direstart.
 )
 
-echo.
-echo ====================================================================
-echo  SISTEM SURAT BPSDMP BERHASIL DIAKTIFKAN DAN SIAP DIGUNAKAN!
-echo ====================================================================
-echo  - Akses Utama (URL)           : http://kearsipan.local/
-echo  - Akses WiFi Tamu (Read-Only)  : http://kearsipan.local/tamu
-echo.
-echo  ------------------------------------------------------------------
-echo  KREDENSIAL MULTI-USER UNTUK SIMULASI 1 LAPTOP (EKSEKUTOR & TESTER):
-echo  ------------------------------------------------------------------
-echo  [1] AKUN EKSEKUTOR / ADMIN (Jendela Browser Normal):
-echo      - Email    : admin@bpsdmp.go.id
-echo      - Password : admin_BPSDMP26
-echo.
-echo  [2] AKUN TESTER / INTERNSHIP (Jendela Browser Incognito/Private):
-echo      - Email    : internship@bpsdmp.go.id
-echo      - Password : internship_BPSDMP
-echo ====================================================================
-echo.
-echo [INFO] Membuka 2 Jendela Browser Terisolasi untuk Uji Coba Multi-User...
-start http://kearsipan.local/login
-start chrome --incognito "http://kearsipan.local/login" 2>nul || start msedge -inprivate "http://kearsipan.local/login" 2>nul
+SET "APP_URL=http://localhost"
+IF "!HOSTS_OK!"=="1" SET "APP_URL=http://kearsipan.local"
 
-echo [OK] Browser berhasil dibuka. Silakan login dengan akun yang sesuai.
+echo.
+echo ====================================================================
+echo  SISTEM ARSIP BPSDMP BERHASIL DIAKTIFKAN DAN SIAP DIGUNAKAN!
+echo ====================================================================
+echo  - URL Utama       : !APP_URL!/
+echo  - URL Tamu (WiFi^) : !APP_URL!/tamu
+echo.
+echo  KREDENSIAL LOGIN (Dapat menggunakan Username ATAU Email^):
+echo  [1] ADMIN      : Admin (atau admin@bpsdmp.go.id^)        / admin_BPSDMP26
+echo  [2] INTERNSHIP : Internship (atau internship@bpsdmp.go.id^) / internship_BPSDMP
+echo ====================================================================
+echo.
+
+start "" "!APP_URL!/login"
+start "" chrome --incognito "!APP_URL!/login" 2>nul || start "" msedge -inprivate "!APP_URL!/login" 2>nul
+echo [OK] Selesai. Browser telah dibuka. Silakan login.
 echo.
 endlocal
 pause

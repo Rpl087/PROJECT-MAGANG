@@ -6,18 +6,15 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Tabel password_reset_requests mencatat permintaan reset password dari user.
-     * Admin/maintenance dapat melihat dan menindaklanjuti permintaan ini.
-     */
+
     public function up(): void
     {
         Schema::create('password_reset_requests', function (Blueprint $table) {
             $table->id();
-            $table->string('username', 100);         // Username yang meminta reset
-            $table->string('ip_address', 45);        // IP pemohon
-            $table->boolean('is_resolved')->default(false); // Sudah diselesaikan?
-            $table->timestamp('resolved_at')->nullable();   // Kapan diselesaikan
+            $table->string('username', 100);
+            $table->string('ip_address', 45);
+            $table->boolean('is_resolved')->default(false);
+            $table->timestamp('resolved_at')->nullable();
             $table->timestamps();
         });
     }

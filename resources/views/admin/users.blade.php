@@ -4,12 +4,11 @@
 
 @push('styles')
 <style>
-/* ── Page header ── */
+
 .page-header { margin-bottom: 1.75rem; }
 .page-header h2 { font-size: 1.35rem; font-weight: 700; color: var(--color-text, #1e293b); margin-bottom: 4px; }
 .page-header p  { font-size: 0.85rem; color: var(--color-text-muted, #64748b); }
 
-/* ── Section card ── */
 .section-card {
     background: var(--color-surface, #fff);
     border: 1px solid var(--color-border, #e2e5ea);
@@ -30,7 +29,6 @@
     padding: 1px 7px; font-weight: 700;
 }
 
-/* ── Table ── */
 .data-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
 .data-table th {
     padding: 10px 14px; text-align: left;
@@ -49,7 +47,6 @@
 .role-admin       { background: rgba(59,130,246,.12); color: #1d4ed8; }
 .role-internship  { background: rgba(5,150,105,.12);  color: #047857; }
 
-/* ── Buttons ── */
 .btn-sm {
     display: inline-flex; align-items: center; gap: 5px;
     padding: 6px 12px; border-radius: 7px; font-size: 0.8rem; font-weight: 600;
@@ -63,7 +60,6 @@
 .btn-muted { background: rgba(100,116,139,.09); border-color: rgba(100,116,139,.3); color: #475569; }
 .btn-muted:hover { background: rgba(100,116,139,.16); }
 
-/* ── Modal Reset Password — Desain Identik dengan Modal Konfirmasi Cetak ── */
 #modal-reset.modal-overlay {
     background: rgba(15, 23, 42, 0.50);
     backdrop-filter: blur(10px) saturate(130%);
@@ -99,7 +95,6 @@
         0 8px 24px rgba(0,0,0,.35);
 }
 
-/* Garis gradient di atas modal */
 #modal-reset .modal-box::before {
     content: '';
     position: absolute;
@@ -109,7 +104,6 @@
     border-radius: 1.125rem 1.125rem 0 0;
 }
 
-/* Icon Container bulat */
 #modal-reset .modal-icon-reset {
     width: 62px;
     height: 62px;
@@ -133,7 +127,6 @@
     color: #818cf8;
 }
 
-/* Judul & Deskripsi */
 #modal-reset .modal-title-reset {
     font-size: 1.0625rem;
     font-weight: 700;
@@ -154,7 +147,6 @@
     font-weight: 600;
 }
 
-/* Form Input */
 #modal-reset .modal-form-group {
     margin-bottom: 1.1rem;
     text-align: left;
@@ -186,7 +178,6 @@
     box-shadow: 0 0 0 3.5px rgba(37,99,235,.18);
 }
 
-/* Tombol Aksi */
 #modal-reset .modal-actions-reset {
     display: flex;
     gap: .75rem;
@@ -238,7 +229,6 @@
 }
 #modal-reset-confirm:active { transform: translateY(0); }
 
-/* ── Pending alert ── */
 .pending-badge {
     display: inline-flex; align-items: center; gap: 5px;
     background: rgba(239,68,68,.1); border: 1px solid rgba(239,68,68,.3);
@@ -262,14 +252,13 @@
     <p>Lihat daftar pengguna dan tindak lanjuti permintaan reset password.</p>
 </div>
 
-{{-- ── Permintaan Reset Password Pending ── --}}
 @if($pendingResets->count() > 0)
 <div class="section-card" style="border-color:rgba(220, 38, 38, 0.7);box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.12);">
     <div class="section-title" style="color:#dc2626;">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
         Permintaan Reset Password
         <span class="badge-count">{{ $pendingResets->count() }}</span>
-        {{-- Indikator realtime: dot berkedip menandakan SSE aktif --}}
+
         <span id="reset-live-dot" title="Notifikasi realtime aktif" style="display:inline-flex;align-items:center;gap:4px;font-size:.7rem;font-weight:600;color:#10b981;text-transform:none;letter-spacing:0;margin-left:4px">
             <span style="width:7px;height:7px;border-radius:50%;background:#10b981;display:inline-block;animation:livePulse 1.4s ease-in-out infinite"></span>
             Live
@@ -292,8 +281,10 @@
                 <td style="font-size:.82rem;color:var(--color-text-muted,#64748b)">{{ $req->created_at->diffForHumans() }}</td>
                 <td>
                     <div style="display:flex;gap:6px;flex-wrap:wrap">
-                        {{-- Cari user yang matching untuk reset langsung --}}
-                        @php $matchUser = $users->firstWhere('name', $req->username); @endphp
+
+                        @php
+$matchUser = $users->firstWhere('name', $req->username);
+@endphp
                         @if($matchUser)
                         <button type="button" class="btn-sm btn-primary" onclick="openResetModal({{ $matchUser->id }}, '{{ $matchUser->name }}')">
                             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12l5 5L20 7"/></svg>
@@ -313,7 +304,6 @@
 </div>
 @endif
 
-{{-- ── Daftar Pengguna ── --}}
 <div class="section-card">
     <div class="section-title">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
@@ -355,7 +345,6 @@
     </table>
 </div>
 
-{{-- ── Modal Reset Password ── --}}
 <div id="modal-reset" class="modal-overlay" role="dialog" aria-modal="true">
     <div class="modal-box">
         <div class="modal-icon-reset">

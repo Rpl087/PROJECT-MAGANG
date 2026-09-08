@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Http\Middleware\BruteForceIpBan;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -11,16 +12,13 @@ use Illuminate\Support\Str;
 
 class LoginController extends Controller
 {
-    /**
-     * Batas percobaan login per menit (per IP).
-     * Setelah melewati batas ini, user diblokir selama DECAY_MINUTES.
-     */
-    private const MAX_ATTEMPTS  = 5;
-    private const DECAY_MINUTES = 1;
 
-    /**
-     * Tampilkan halaman login.
-     */
+    /** Maksimum percobaan login gagal per kombinasi username+IP sebelum di-throttle */
+    private const MAX_ATTEMPTS  = 5;
+
+    /** Durasi lockout throttle per username+IP dalam menit (5 menit) */
+    private const DECAY_MINUTES = 5;
+
     public function showLoginForm()
     {
         if (Auth::check()) {
@@ -29,10 +27,6 @@ class LoginController extends Controller
         return view('auth.login');
     }
 
-    /**
-     * Proses login: autentikasi menggunakan name (username) + password.
-     * Dilindungi rate limiting: maks 5 percobaan per menit per IP.
-     */
     public function login(Request $request)
     {
         $request->validate([
@@ -43,7 +37,6 @@ class LoginController extends Controller
             'password.required' => 'Password wajib diisi.',
         ]);
 
-        // ── Cek Rate Limit (Brute Force Protection) ───────────────────────────
         $throttleKey = $this->throttleKey($request);
 
         if (RateLimiter::tooManyAttempts($throttleKey, self::MAX_ATTEMPTS)) {
@@ -62,14 +55,14 @@ class LoginController extends Controller
                 );
         }
 
-        // ── Proses Autentikasi ─────────────────────────────────────────────────
+        $loginField = filter_var($request->username, FILTER_VALIDATE_EMAIL) ? 'email' : 'name';
         $credentials = [
-            'name'     => $request->username,
-            'password' => $request->password,
+            $loginField => $request->username,
+            'password'  => $request->password,
         ];
 
         if (Auth::attempt($credentials, $request->boolean('remember'))) {
-            // Login berhasil — reset rate limiter dan regenerate session
+
             RateLimiter::clear($throttleKey);
             $request->session()->regenerate();
 
@@ -86,8 +79,11 @@ class LoginController extends Controller
             return redirect()->intended($this->redirectAfterLogin($user)->getTargetUrl());
         }
 
-        // ── Login Gagal — tambah hit rate limiter & log ───────────────────────
         RateLimiter::hit($throttleKey, self::DECAY_MINUTES * 60);
+
+        // Catat kegagalan per-IP untuk proteksi bruteforce global (BruteForceIpBan).
+        // Jika IP ini mencapai 20 kegagalan dalam 10 menit => IP di-ban 1 jam.
+        BruteForceIpBan::recordFailure($request->ip());
 
         Log::warning('Percobaan login gagal.', [
             'ip'       => $request->ip(),
@@ -100,9 +96,6 @@ class LoginController extends Controller
             ->with('login_error', 'Username atau password tidak valid. Akses ditolak.');
     }
 
-    /**
-     * Logout: hapus sesi dan redirect ke login.
-     */
     public function logout(Request $request)
     {
         Log::info('User logout.', [
@@ -117,12 +110,6 @@ class LoginController extends Controller
         return redirect()->route('login');
     }
 
-    /**
-     * Tentukan redirect URL berdasarkan role user.
-     *
-     * - admin      → dashboard
-     * - internship → arsip.index
-     */
     private function redirectAfterLogin($user)
     {
         if ($user->isAdmin()) {
@@ -132,9 +119,6 @@ class LoginController extends Controller
         return redirect()->route('arsip.index');
     }
 
-    /**
-     * Buat throttle key unik berdasarkan username + IP address.
-     */
     private function throttleKey(Request $request): string
     {
         return Str::lower($request->input('username', '')) . '|' . $request->ip();

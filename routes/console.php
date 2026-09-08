@@ -2,24 +2,14 @@
 
 use Illuminate\Support\Facades\Schedule;
 
-/*
-|--------------------------------------------------------------------------
-| Console Routes
-|--------------------------------------------------------------------------
-|
-| Pembersihan storage (views, sessions, cache) dijadwalkan otomatis
-| setiap hari pukul 17:00 (5 sore) agar sistem selalu bersih saat
-| akhir jam kerja tanpa perlu intervensi manual.
-|
-| Untuk mengaktifkan scheduler, pastikan Queue Worker aktif dan
-| jalankan perintah berikut di background terminal:
-|   php artisan schedule:work
-|
-| Atau daftarkan via Windows Task Scheduler / supervisord untuk produksi.
-|
-*/
+// Pembersihan sesi kadaluarsa di database setiap 1 jam
+Schedule::command('session:prune-expired')
+    ->hourly()
+    ->withoutOverlapping()
+    ->runInBackground()
+    ->appendOutputTo(storage_path('logs/scheduler.log'));
 
-// ── Pembersihan storage otomatis setiap hari pukul 17:00 ──────────────────
+// Pembersihan berkas temporary storage setiap pukul 17:00
 Schedule::command('storage:clean')
     ->dailyAt('17:00')
     ->withoutOverlapping()

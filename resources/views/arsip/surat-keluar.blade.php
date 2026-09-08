@@ -14,7 +14,6 @@
     </div>
 </div>
 
-{{-- ── TABEL DAFTAR SURAT KELUAR (hanya tampil untuk admin) ────────────────────── --}}
 @if($isAdmin ?? false)
 <div class="form-container pre-hide" style="margin-bottom:2rem;">
     <div class="form-section" style="margin-bottom:0;">
@@ -35,7 +34,6 @@
             </div>
         @endif
 
-        {{-- ── Filter Bulan, Tahun & Kode Klasifikasi ── --}}
         <div class="table-filter-bar" id="filter-bar-sk">
             <div class="filter-group">
                 <label for="filter-bulan-sk" class="filter-label">Filter Bulan:</label>
@@ -60,13 +58,13 @@
                 <select id="filter-tahun-sk" class="filter-select">
                     <option value="">Semua Tahun</option>
                     @php
-                        $tahunListSK = [];
+$tahunListSK = [];
                         foreach($rows as $item) {
                             $t = trim($item['data'][7] ?? '');
                             if(preg_match('/(\d{4})/', $t, $m)) $tahunListSK[$m[1]] = true;
                         }
                         krsort($tahunListSK);
-                    @endphp
+@endphp
                     @foreach($tahunListSK as $thn => $_)
                     <option value="{{ $thn }}">{{ $thn }}</option>
                     @endforeach
@@ -77,7 +75,7 @@
                 <select id="filter-kode-sk" class="filter-select">
                     <option value="">Semua Kode</option>
                     @php
-                        $kodeListSK = [];
+$kodeListSK = [];
                         foreach($rows as $item) {
                             $k = trim($item['data'][1] ?? '');
                             if ($k !== '' && !str_starts_with($k, '#')) {
@@ -85,7 +83,7 @@
                                 $kodeListSK[$kp] = true;
                             }
                         }
-                        // Urutkan berdasarkan urutan prioritas kode klasifikasi
+
                         $kodePriorityOrder = ['PR','KP','OT','KU','HK','UM','PL','UP','HM','PW','LT','DL','DT','KI'];
                         $kodeListSKSorted = [];
                         foreach ($kodePriorityOrder as $pk) {
@@ -94,7 +92,7 @@
                         foreach ($kodeListSK as $kk => $_) {
                             if (!isset($kodeListSKSorted[$kk])) $kodeListSKSorted[$kk] = true;
                         }
-                    @endphp
+@endphp
                     @foreach($kodeListSKSorted as $kd => $_)
                     <option value="{{ $kd }}">{{ $kd }}</option>
                     @endforeach
@@ -104,7 +102,6 @@
             <div class="filter-count" id="filter-count-sk"></div>
         </div>
 
-        {{-- ── Skeleton Loader (tampil 1 tick sebelum tabel asli muncul) ── --}}
         <div id="table-skeleton-sk" class="skeleton-table-wrapper" aria-hidden="true">
             <div class="skeleton-header">
                 <div class="skeleton-header-cell"></div>
@@ -126,7 +123,6 @@
             @endfor
         </div>
 
-        {{-- ── Tabel Sesungguhnya (hidden sampai skeleton diremove) ── --}}
         <div id="table-content-sk" style="overflow-x:auto; margin-top:.5rem; display:none;">
             <table class="arsip-table" id="arsip-table-sk">
                 <thead>
@@ -142,7 +138,7 @@
                 <tbody id="tbody-sk">
                     @forelse($rows as $no => $item)
                         @php
-                            $d = $item['data'];
+$d = $item['data'];
                             $tanggal     = $d[7]  ?? '-';
                             $kodeKlasRaw = trim($d[1] ?? '');
                             $kodeKlas    = (str_starts_with($kodeKlasRaw, '#') || $kodeKlasRaw === '') ? '—' : $kodeKlasRaw;
@@ -156,7 +152,7 @@
                                     ? $rawFile
                                     : route('pdf.view', ['type' => 'surat-keluar', 'filename' => $rawFile]);
                             }
-                            // Parse bulan & tahun untuk filter
+
                             $bulanNum = '';
                             $tahunNum = '';
                             if (preg_match('/(\d{1,2})\s+\w+\s+(\d{4})/', $tanggal, $dm)) {
@@ -170,7 +166,7 @@
                             } elseif (preg_match('/(\d{1,2})\/(\d{1,2})\/(\d{4})/', $tanggal, $dm)) {
                                 $bulanNum = (int)$dm[2]; $tahunNum = $dm[3];
                             }
-                        @endphp
+@endphp
                         <tr data-bulan="{{ $bulanNum }}" data-tahun="{{ $tahunNum }}" data-kode="{{ $kodePrefix }}">
                             <td class="td-center td-no row-no">{{ $no + 1 }}</td>
                             <td class="td-nowrap">{{ $tanggal }}</td>
@@ -227,12 +223,11 @@
                     </svg>
                 </button>
             </div>
-        </div>{{-- /#table-content-sk --}}
+        </div>
     </div>
 </div>
 @endif
 
-{{-- Modal Konfirmasi Hapus --}}
 <div id="modal-hapus-sk" class="modal-overlay" style="display:none;">
     <div class="modal-box">
         <div class="modal-icon">
@@ -247,7 +242,6 @@
     </div>
 </div>
 
-{{-- Modal Edit Surat Keluar --}}
 <div id="modal-edit-sk" class="modal-overlay" style="display:none;">
     <div class="modal-box" style="max-width:640px;width:95%;max-height:90vh;overflow-y:auto;">
         <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1.25rem;">
@@ -290,7 +284,7 @@
                         <option value="KI">KI</option>
                         <option value="__lainnya__">Lainnya (isi manual)...</option>
                     </select>
-                    {{-- Input custom kode edit modal SK --}}
+
                     <input type="text" id="edit-sk-kode-klasifikasi-custom"
                            class="edit-field-input"
                            placeholder="Kode kustom (2 huruf, contoh: XX)"
@@ -383,7 +377,6 @@
     </div>
 </div>
 
-{{-- ── FORM INPUT SURAT KELUAR ──────────────────────────────────────────── --}}
 @if($isAdmin ?? false)
 <div class="sm-form-divider">
     <div class="sm-form-divider-line"></div>
@@ -398,7 +391,6 @@
 <form action="{{ route('surat-keluar.store') }}" method="POST" enctype="multipart/form-data" class="form-container" id="surat-keluar-form">
     @csrf
 
-    {{-- Section 1: Informasi Utama --}}
     <div class="form-section pre-hide">
         <div class="section-header">
             <div class="section-number">01</div>
@@ -431,8 +423,10 @@
                     <option value="KI" {{ old('kode_klasifikasi') == 'KI' ? 'selected' : '' }}>KI</option>
                     <option value="__lainnya__" {{ !in_array(old('kode_klasifikasi'), ['','PR','KP','OT','KU','HK','UM','PL','UP','HM','PW','LT','DL','DT','KI']) && old('kode_klasifikasi') ? 'selected' : '' }}>Lainnya (isi manual)...</option>
                 </select>
-                {{-- Input custom kode SK — tampil saat pilih "Lainnya" --}}
-                @php $oldKodeSK = old('kode_klasifikasi'); $isCustomKodeSK = $oldKodeSK && !in_array($oldKodeSK, ['','PR','KP','OT','KU','HK','UM','PL','UP','HM','PW','LT','DL','DT','KI','__lainnya__']); @endphp
+
+                @php
+$oldKodeSK = old('kode_klasifikasi'); $isCustomKodeSK = $oldKodeSK && !in_array($oldKodeSK, ['','PR','KP','OT','KU','HK','UM','PL','UP','HM','PW','LT','DL','DT','KI','__lainnya__']);
+@endphp
                 <input type="text" id="kode_klasifikasi_custom_sk"
                        class="form-input mt-1"
                        placeholder="Contoh: XX (2 huruf)"
@@ -459,10 +453,10 @@
             <div class="form-group">
                 <label for="tanggal_surat" class="form-label">Tanggal Surat <span class="required">*</span></label>
                 @php
-                    $_bulanIDsk = ['','Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+$_bulanIDsk = ['','Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
                     $_todaySK = now()->day . ' ' . $_bulanIDsk[now()->month] . ' ' . now()->year;
-                @endphp
-                {{-- flatpickr wrap mode: klik input ATAU ikon = buka kalender --}}
+@endphp
+
                 <div class="date-input-wrap" id="tanggal-wrap-sk">
                     <input type="text" name="tanggal_surat" id="tanggal_surat"
                            class="form-input @error('tanggal_surat') input-error @enderror"
@@ -538,7 +532,6 @@
         </div>
     </div>
 
-    {{-- Section 2: Detail Arsip --}}
     <div class="form-section pre-hide">
         <div class="section-header">
             <div class="section-number">02</div>
@@ -606,7 +599,6 @@
         </div>
     </div>
 
-    {{-- Section 3: Keamanan & Retensi --}}
     <div class="form-section pre-hide">
         <div class="section-header">
             <div class="section-number">03</div>
@@ -663,7 +655,6 @@
         </div>
     </div>
 
-    {{-- Submit --}}
     <div class="form-actions pre-hide">
         <button type="button" class="btn btn-secondary" id="btn-reset">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -686,7 +677,7 @@
 <link rel="preload" as="style" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" onload="this.rel='stylesheet'">
 <noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css"></noscript>
 <style>
-/* ── Form Divider (pemisah tabel & form) ─── */
+
 .sm-form-divider {
     display: flex;
     align-items: center;
@@ -714,7 +705,6 @@
     letter-spacing: .01em;
 }
 
-/* ── Filter Bar ─────────────────────────────────────── */
 .table-filter-bar {
     display: flex; flex-wrap: wrap; align-items: center;
     gap: .6rem; padding: .75rem 1rem;
@@ -740,7 +730,6 @@
 .filter-reset:hover { border-color: var(--color-primary); color: var(--color-primary); }
 .filter-count { font-size: .78rem; color: var(--color-text-muted); margin-left: auto; }
 
-/* ── Tabel Arsip ────────────────────────────────────────── */
 .arsip-table { width:100%; border-collapse:collapse; font-size:.875rem; }
 .arsip-table th {
     background: var(--color-primary);
@@ -806,8 +795,7 @@
     transition:all .2s;
 }
 .btn-edit-sk:hover { background:rgba(59,130,246,.22); }
-/* ── Modal ────────────────────────────────────────────── */
-/* .modal-overlay: didefinisikan di app.css secara global */
+
 @keyframes fadeIn { from{opacity:0} to{opacity:1} }
 .modal-box {
     background:var(--color-surface, #1a2236); border:1px solid var(--color-border,#2a3347);
@@ -831,13 +819,13 @@
 .btn-danger:hover { opacity:.88; transform:translateY(-1px); }
 .alert { display:flex; align-items:center; gap:.5rem; padding:.75rem 1rem; border-radius:.5rem; font-size:.875rem; }
 .alert-error { background:rgba(239,68,68,.1); color:#f87171; border:1px solid rgba(239,68,68,.2); }
-/* ── Flatpickr — wrap mode ────────────────────────────── */
+
 .date-input-wrap { position: relative; }
 .date-input-wrap .form-input { padding-right: 2.5rem; cursor: pointer; }
 .date-icon {
     position: absolute; right: .75rem; top: 50%; transform: translateY(-50%);
     color: var(--color-text-muted);
-    pointer-events: auto;   /* icon bisa diklik! */
+    pointer-events: auto;
     display: flex; cursor: pointer; z-index: 1;
 }
 .date-icon:hover { color: var(--color-primary); }
@@ -851,10 +839,8 @@
 <script>
 document.addEventListener('DOMContentLoaded', function () {
 
-    // ── KODE_MAP_SK didefinisikan PERTAMA — sebelum semua listener ──────────────
-    // Format: [retensi_aktif, retensi_inaktif, retensi_keterangan, klas_keamanan, tingkat_akses]
     window.KODE_MAP_SK = {
-        //  Kode    Aktif        Inaktif       Keterangan   Keamanan   Akses
+
         'PR': ['2 Tahun',  '3 Tahun',  'Musnah',    'Biasa',   'Terbuka' ],
         'KP': ['5 Tahun',  '10 Tahun', 'Permanen',  'Biasa',   'Terbatas'],
         'OT': ['2 Tahun',  '3 Tahun',  'Musnah',    'Biasa',   'Terbuka' ],
@@ -871,7 +857,6 @@ document.addEventListener('DOMContentLoaded', function () {
         'KI': ['5 Tahun',  '10 Tahun', 'Permanen',  'Biasa',   'Terbatas'],
     };
 
-    // Helper: toggle readonly untuk auto-fill field (form input)
     var AUTO_FILL_IDS_SK = ['retensi_aktif','retensi_inaktif','retensi_keterangan','klasifikasi_keamanan','tingkat_akses'];
     function setAutoFillLockedSK(locked) {
         AUTO_FILL_IDS_SK.forEach(function(id) {
@@ -891,7 +876,6 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // Auto-fill SEMUA field dari KODE_MAP_SK berdasarkan kode yang dipilih
     function applyRetensiFromKodeSK(kode) {
         var map    = window.KODE_MAP_SK || {};
         var data   = map[kode] || null;
@@ -917,7 +901,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    // ── Skeleton → Tabel ──────────────────────────────────────────────
     (function () {
         var skeleton = document.getElementById('table-skeleton-sk');
         var content  = document.getElementById('table-content-sk');
@@ -936,15 +919,12 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     })();
 
-    // ── Modal Hapus ──────────────────────────────
     const modal        = document.getElementById('modal-hapus-sk');
     const modalLabel   = document.getElementById('modal-label-sk');
     const modalCancel  = document.getElementById('modal-cancel-sk');
     const modalConfirm = document.getElementById('modal-confirm-sk');
     let   pendingForm  = null;
 
-    // Pindahkan modal ke document.body agar position:fixed
-    // tidak terpengaruh stacking context dari ancestor (transform/animation)
     if (modal) document.body.appendChild(modal);
 
     function openModal(label, form) {
@@ -952,8 +932,8 @@ document.addEventListener('DOMContentLoaded', function () {
         pendingForm = form;
         if (modalLabel) modalLabel.textContent = label;
         modal.style.display    = 'flex';
-        document.body.style.overflow = 'hidden'; // lock scroll
-        // Trigger smooth open (sama seperti modal SM)
+        document.body.style.overflow = 'hidden';
+
         requestAnimationFrame(function () {
             requestAnimationFrame(function () {
                 modal.classList.add('is-open');
@@ -966,12 +946,12 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!modal) return;
         modal.classList.remove('is-open');
         pendingForm = null;
-        // Tunggu transisi selesai sebelum display:none
+
         setTimeout(function () {
             if (!modal.classList.contains('is-open')) {
                 modal.style.display = 'none';
             }
-            document.body.style.overflow = ''; // unlock scroll
+            document.body.style.overflow = '';
         }, 240);
     }
 
@@ -989,12 +969,10 @@ document.addEventListener('DOMContentLoaded', function () {
         if (e.target === modal) closeModal();
     });
 
-    // Escape key menutup modal
     document.addEventListener('keydown', function (e) {
         if (e.key === 'Escape' && modal && modal.style.display === 'flex') closeModal();
     });
 
-    // ── File Upload ──────────────────────────────────────────────
     const zone        = document.getElementById('upload-zone');
     const input       = document.getElementById('surat_keluar');
     const placeholder = document.getElementById('upload-placeholder');
@@ -1064,7 +1042,6 @@ document.addEventListener('DOMContentLoaded', function () {
         if (window._fpSK) window._fpSK.clear();
     });
 
-    // ── Filter Bulan & Tahun ─────────────────────────────────────
     const selBulan = document.getElementById('filter-bulan-sk');
     const selTahun = document.getElementById('filter-tahun-sk');
     const btnReset = document.getElementById('filter-reset-sk');
@@ -1104,7 +1081,6 @@ document.addEventListener('DOMContentLoaded', function () {
             matchingRows.forEach(tr => tr.style.display = '');
         }
 
-        // Renumber visible rows
         let no = 1;
         allRows.forEach(tr => {
             if (tr.style.display !== 'none') {
@@ -1155,10 +1131,8 @@ document.addEventListener('DOMContentLoaded', function () {
         applyFilter();
     });
 
-    // Inisialisasi collapse awal saat load
     applyFilter();
 
-    // ── Kode Surat: kunci hanya angka & titik ──────────────────────────────────
     ['kode_surat', 'edit-sk-kode-surat'].forEach(function(id) {
         var el = document.getElementById(id);
         if (!el) return;
@@ -1172,7 +1146,6 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-    // ── Sort per Klasifikasi ─────────────────────────────────────
     const KODE_ORDER = ['PR','KP','OT','KU','HK','UM','PL','UP','HM','PW','LT','DL','DT','KI'];
     let sortDir = '';
 
@@ -1209,7 +1182,6 @@ document.addEventListener('DOMContentLoaded', function () {
         rows.forEach(function (row, i) { row.dataset.originalOrder = i; });
     }
 
-    // ── Modal Edit Surat Keluar ───────────────────────────────────
     const modalEditSK   = document.getElementById('modal-edit-sk');
     const formEditSK    = document.getElementById('form-edit-sk');
     const editSKLoading = document.getElementById('modal-edit-sk-loading');
@@ -1226,7 +1198,7 @@ document.addEventListener('DOMContentLoaded', function () {
         editSKError.style.display   = 'none';
         modalEditSK.style.display   = 'flex';
         document.body.style.overflow = 'hidden';
-        // Trigger smooth open (sama seperti modal Edit SM)
+
         requestAnimationFrame(function () {
             requestAnimationFrame(function () {
                 modalEditSK.classList.add('is-open');
@@ -1250,7 +1222,7 @@ document.addEventListener('DOMContentLoaded', function () {
             document.getElementById('edit-sk-nomor-item').value            = data.nomor_item_arsip || '';
             document.getElementById('edit-sk-tanggal').value               = data.tanggal_surat || '';
             document.getElementById('edit-sk-uraian-arsip').value          = data.uraian_informasi_arsip || '';
-            document.getElementById('edit-sk-jumlah-lembar').value         = data.jumlah_lembar || '';
+            document.getElementById('edit-sk-jumlah-lembar').value         = (window.formatJumlahLembarStr ? window.formatJumlahLembarStr(data.jumlah_lembar || '') : (data.jumlah_lembar || ''));
             var tingkatVal = data.tingkat_perkembangan || '';
             var tingkatNormalized = tingkatVal.trim().toLowerCase();
             if (tingkatNormalized === 'asli') {
@@ -1262,7 +1234,7 @@ document.addEventListener('DOMContentLoaded', function () {
             }
             document.getElementById('edit-sk-tingkat-perkembangan').value  = tingkatVal;
             document.getElementById('edit-sk-lokasi-simpan').value         = data.lokasi_simpan || '';
-            // Isi kode klasifikasi: cek apakah ada di dropdown standar
+
             var kodeRawSK    = (data.kode_klasifikasi || '').trim();
             var kodeForMapSK = kodeRawSK.replace(/[^A-Za-z]/g,'').toUpperCase().slice(0,2);
             var mapDataSK    = window.KODE_MAP_SK && window.KODE_MAP_SK[kodeForMapSK] ? window.KODE_MAP_SK[kodeForMapSK] : null;
@@ -1285,7 +1257,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     if (editKodeHintSK) editKodeHintSK.style.display = 'none';
                 }
             }
-            // Lock/unlock auto-fill fields berdasarkan KODE_MAP_SK
+
             var autoFillLockedSK = !!mapDataSK;
             var editAutoIdsSK = ['edit-sk-retensi-aktif','edit-sk-retensi-inaktif','edit-sk-retensi-keterangan','edit-sk-klas-keamanan','edit-sk-tingkat-akses'];
             editAutoIdsSK.forEach(function(id) {
@@ -1336,7 +1308,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (editSKClose)  editSKClose.addEventListener('click', closeEditSK);
     if (editSKCancel) editSKCancel.addEventListener('click', closeEditSK);
     if (modalEditSK)  modalEditSK.addEventListener('click', function(e) { if (e.target === modalEditSK) closeEditSK(); });
-    // ── Kode Klasifikasi: dropdown + custom input (form SK) ─────────────────────
+
     var kodeSelectSK = document.getElementById('kode_klasifikasi');
     var kodeCustomSK = document.getElementById('kode_klasifikasi_custom_sk');
     var formSK       = document.getElementById('surat-keluar-form');
@@ -1367,7 +1339,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (kodeSelectSK) {
         kodeSelectSK.addEventListener('change', handleKodeSelectSK);
-        handleKodeSelectSK(); // inisialisasi awal
+        handleKodeSelectSK();
     }
 
     if (kodeCustomSK) {
@@ -1393,7 +1365,6 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // ── Auto-fill untuk modal Edit Surat Keluar (kode klasifikasi berubah) ─────
     var AUTO_FILL_IDS_EDIT_SK = ['edit-sk-retensi-aktif','edit-sk-retensi-inaktif','edit-sk-retensi-keterangan','edit-sk-klas-keamanan','edit-sk-tingkat-akses'];
     function setAutoFillLockedEditSK(locked) {
         AUTO_FILL_IDS_EDIT_SK.forEach(function(id) {
@@ -1479,7 +1450,7 @@ document.addEventListener('DOMContentLoaded', function () {
 <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/id.js"></script>
 <script>
 (function() {
-    // ── Flatpickr: mode direct (lebih reliabel dari wrap mode) ───────────────
+
     var BULAN_ID       = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
     var BULAN_ID_SHORT = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
     try {
@@ -1501,7 +1472,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 allowInput: false,
                 disableMobile: true,
             });
-            // Klik icon kalender → buka flatpickr
+
             var fpIconSK = document.querySelector('#tanggal-wrap-sk .date-icon');
             if (fpIconSK) fpIconSK.addEventListener('click', function() { window._fpSK.open(); });
         }
@@ -1527,6 +1498,49 @@ document.addEventListener('DOMContentLoaded', function () {
     } catch(e) { console.warn('Flatpickr SK error:', e); }
 })();
 
+(function() {
+    function formatJumlahLembarStr(val) {
+        if (!val) return '';
+        val = String(val).trim().replace(/\s+/g, ' ');
+        if (/^\d+$/.test(val)) {
+            return val + ' Lembar';
+        }
+        var m = val.match(/^(\d+)\s*lembar$/i);
+        if (m) {
+            return m[1] + ' Lembar';
+        }
+        return val;
+    }
+    window.formatJumlahLembarStr = formatJumlahLembarStr;
+
+    function setupJumlahLembarAuto(inputEl, formEl) {
+        if (!inputEl) return;
+
+        function applyFormat() {
+            var formatted = formatJumlahLembarStr(inputEl.value);
+            if (formatted !== inputEl.value) {
+                inputEl.value = formatted;
+            }
+        }
+
+        inputEl.addEventListener('blur', applyFormat);
+        inputEl.addEventListener('change', applyFormat);
+        inputEl.addEventListener('focus', function () {
+            if (/^\d+\s*lembar$/i.test(this.value.trim())) {
+                this.select();
+            }
+        });
+
+        if (formEl) {
+            formEl.addEventListener('submit', function () {
+                applyFormat();
+            });
+        }
+    }
+
+    setupJumlahLembarAuto(document.getElementById('jumlah_lembar'), document.getElementById('surat-keluar-form'));
+    setupJumlahLembarAuto(document.getElementById('edit-sk-jumlah-lembar'), document.getElementById('form-edit-sk'));
+})();
 </script>
 @endpush
 

@@ -1,7 +1,6 @@
 @extends('layouts.app')
 
 @section('title', 'Dashboard')
-@section('navbarOnly', true)
 
 @section('content')
 
@@ -12,7 +11,7 @@
         <p class="page-description">Rekap surat masuk &amp; keluar — Tahun {{ $currentYear }}</p>
     </div>
     <div style="display:flex;align-items:center;gap:.5rem;flex-shrink:0;">
-        {{-- Tombol Print: arahkan ke halaman Cetak Custom --}}
+
         @auth
         @if(Auth::user()?->isAdmin())
         <a href="{{ route('dashboard.print') }}" id="btn-print-dashboard" class="db-print-btn" title="Cetak / Ekspor Laporan Rekap" target="_blank">
@@ -50,7 +49,6 @@
 </div>
 @endif
 
-{{-- ── Kartu Ringkasan ──────────────────────────────────────────── --}}
 <div class="db-stats-grid">
     <div class="db-stat-card db-stat-sm pre-hide">
         <div class="db-stat-icon db-stat-icon-sm">
@@ -88,7 +86,6 @@
     </div>
 </div>
 
-{{-- ── Tabel Rekap Bulanan ──────────────────────────────────────── --}}
 <div class="db-main-grid">
 <div class="db-card db-table-card pre-hide">
     <div class="db-card-header">
@@ -100,7 +97,9 @@
             </div>
             <h3 class="db-card-title">Rekap Bulanan Tahun {{ $currentYear }}</h3>
         </div>
-@php $bulanAktif = collect($monthlyRecap)->filter(fn($r) => $r['total'] > 0)->count(); @endphp
+@php
+$bulanAktif = collect($monthlyRecap)->filter(fn($r) => $r['total'] > 0)->count();
+@endphp
         <span class="db-badge">{{ $bulanAktif > 0 ? $bulanAktif . ' Bulan Aktif' : '0 Bulan' }}</span>
     </div>
     <div class="db-table-wrap">
@@ -156,7 +155,6 @@
     </div>
 </div>
 
-{{-- ── Diagram Kolom — Klasifikasi ──────────────────────────────── --}}
 <div class="db-charts-grid">
     <div class="db-card pre-hide">
         <div class="db-card-header">
@@ -167,7 +165,7 @@
                         <path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>
                     </svg>
                 </div>
-                <h3 class="db-card-title">SM — Klasifikasi Bulan Ini</h3>
+                <h3 class="db-card-title">SM - Klasifikasi Bulan Ini</h3>
             </div>
             <span class="db-badge">{{ $bulanNames[$currentMonth] ?? '' }} {{ $currentYear }}</span>
         </div>
@@ -194,7 +192,7 @@
                         <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
                     </svg>
                 </div>
-                <h3 class="db-card-title">SK — Klasifikasi Bulan Ini</h3>
+                <h3 class="db-card-title">SK - Klasifikasi Bulan Ini</h3>
             </div>
             <span class="db-badge">{{ $bulanNames[$currentMonth] ?? '' }} {{ $currentYear }}</span>
         </div>
@@ -222,7 +220,7 @@
                         <path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>
                     </svg>
                 </div>
-                <h3 class="db-card-title">SM — Klasifikasi Tahun Ini</h3>
+                <h3 class="db-card-title">SM - Klasifikasi Tahun Ini</h3>
             </div>
             <span class="db-badge">{{ $currentYear }}</span>
         </div>
@@ -249,7 +247,7 @@
                         <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
                     </svg>
                 </div>
-                <h3 class="db-card-title">SK — Klasifikasi Tahun Ini</h3>
+                <h3 class="db-card-title">SK - Klasifikasi Tahun Ini</h3>
             </div>
             <span class="db-badge">{{ $currentYear }}</span>
         </div>
@@ -272,10 +270,13 @@
 </div>
 
 <style>
-/* ── Dashboard Styles ─────────────────────────────── */
+
+.main-content-wrap { max-width: 100% !important; }
+.main-content { padding-left: 1.5rem !important; padding-right: 1.5rem !important; }
+
 .dashboard-viewport {
-    height: 100%; min-height: 0; padding: .75rem 1rem; overflow: hidden;
-    display: grid; grid-template-rows: auto auto minmax(0, 1fr); gap: .65rem;
+    padding: .75rem 0; overflow: visible;
+    display: grid; grid-template-rows: auto auto auto; gap: .65rem;
 }
 .dashboard-viewport .page-header { margin: 0; display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
 .dashboard-viewport .page-title { font-size: 1.25rem; }
@@ -292,7 +293,6 @@
 .db-fullscreen-btn.is-fullscreen .db-fullscreen-enter { display: none; }
 .db-fullscreen-btn.is-fullscreen .db-fullscreen-exit { display: block; }
 
-/* ── Print Button ─────────────────────── */
 .db-print-btn {
     display: inline-flex; align-items: center; justify-content: center; gap: .42rem;
     padding: .42rem .75rem; border: 1px solid rgba(16,185,129,0.45); border-radius: 8px;
@@ -345,7 +345,6 @@
 }
 .db-table-card { display: flex; flex-direction: column; min-height: 0; }
 
-/* ── Card ──────────────────────────── */
 .db-card {
     background: var(--color-surface);
     border: 1px solid var(--color-border);
@@ -373,7 +372,6 @@
     border-radius: 999px; background: var(--color-primary-light); color: var(--color-primary);
 }
 
-/* ── Table ─────────────────────────── */
 .db-table-wrap { overflow: auto; min-height: 0; flex: 1; }
 .db-table { width: 100%; border-collapse: collapse; font-size: .75rem; }
 .db-table th {
@@ -406,7 +404,6 @@
 .db-bar-sk { background: linear-gradient(90deg,#f472b6,#be185d); }
 .db-tfoot-row td { font-weight: 600; background: var(--color-bg); border-top: 2px solid var(--color-border); }
 
-/* ── Klasifikasi Summary Strip ─── */
 .db-klas-strip {
     display: flex;
     flex-wrap: wrap;
@@ -460,7 +457,7 @@
     padding: 0 4px;
     line-height: 1.45;
 }
-/* Override: angka menggunakan warna kontras */
+
 .db-klas-pill-sm .db-klas-pill-num  { background: #0369a1; color: #fff; }
 .db-klas-pill-sk .db-klas-pill-num  { background: #be185d; color: #fff; }
 [data-theme="dark"] .db-klas-pill-sm .db-klas-pill-num { background: #0284c7; }
@@ -485,7 +482,6 @@
     font-size: .72rem; font-weight: 800;
 }
 
-/* ── Charts Grid ─────────────────── */
 .db-charts-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -504,10 +500,10 @@
     flex-direction: column;
     align-items: stretch;
     flex: 1;
-    min-height: 0;
+    min-height: 160px;
     position: relative;
 }
-/* Bar chart: canvas melebar penuh, bukan dibatasi seperti pie */
+
 .db-chart-container canvas {
     width: 100% !important;
     max-width: 100% !important;
@@ -520,7 +516,6 @@
     padding: 2.5rem 1rem; color: var(--color-text-muted); font-size: .85rem; text-align: center;
 }
 
-/* ── Responsive ────────────────── */
 @media (min-width: 769px) and (max-width: 1100px) {
     .db-stats-grid { grid-template-columns: repeat(3, 1fr); }
     .dashboard-viewport { padding: .5rem; gap: .45rem; }
@@ -530,17 +525,13 @@
     .db-badge { display: none; }
 }
 @media (max-width: 768px) {
-    html:has(body.navbar-only), body.navbar-only { height: auto; overflow: auto !important; }
-    body.navbar-only .layout-body,
-    body.navbar-only .main-content,
-    body.navbar-only .main-content-wrap { height: auto; min-height: calc(100dvh - var(--header-height, 64px)); overflow: visible; }
-    .dashboard-viewport { height: auto; min-height: 100%; overflow: visible; }
+    .dashboard-viewport { height: auto; overflow: visible; }
     .db-main-grid { grid-template-columns: 1fr; }
     .db-table-wrap { max-height: 440px; }
     .db-stats-grid  { grid-template-columns: 1fr 1fr; }
     .db-charts-grid { grid-template-columns: 1fr; }
     .db-stat-value  { font-size: 1.4rem; }
-    .db-chart-container { min-height: 260px; } /* reduce di tablet */
+    .db-chart-container { min-height: 260px; }
 }
 @media (max-width: 480px) {
     .db-fullscreen-btn span { display: none; }
@@ -548,14 +539,13 @@
     .db-print-label { display: none; }
     .db-print-btn { padding: .5rem; }
     .db-stats-grid  { grid-template-columns: 1fr; }
-    .db-chart-container { min-height: 220px; padding: .75rem; } /* reduce di HP */
+    .db-chart-container { min-height: 220px; padding: .75rem; }
     .db-chart-container canvas { max-width: 180px; max-height: 180px; }
     .db-stat-card { padding: 1rem; gap: .75rem; }
     .db-stat-icon { width: 40px; height: 40px; }
     .db-stat-value { font-size: 1.25rem; }
 }
 
-/* ── Dark mode stat icon overrides ──────── */
 [data-theme="dark"] .db-stat-icon-sm    { background: rgba(14,165,233,0.15);  color: #38bdf8; }
 [data-theme="dark"] .db-stat-icon-sk    { background: rgba(244,114,182,0.15); color: #f472b6; }
 [data-theme="dark"] .db-stat-icon-total { background: rgba(167,139,250,0.15); color: #a78bfa; }
@@ -592,15 +582,12 @@
         fullscreenButton.hidden = true;
     }
 
-    // ── Deteksi dark mode ──────────────────────────────────────────────
     var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
     var gridColor   = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.06)';
     var tickColor   = isDark ? '#8892a4' : '#6b7280';
     var tooltipBg   = isDark ? '#1a2236' : '#ffffff';
     var tooltipText = isDark ? '#e2e8f0' : '#1e293b';
 
-    // ── Palet warna harmonis (satu warna dominan per grafik) ───────────
-    // SM = biru; SK = pink/rose
     var COLORS_SM = [
         '#3b82f6','#60a5fa','#06b6d4','#38bdf8','#818cf8',
         '#a78bfa','#34d399','#10b981','#84cc16','#fbbf24',
@@ -614,33 +601,27 @@
         '#38bdf8','#60a5fa','#3b82f6','#818cf8','#4ade80'
     ];
 
-    /**
-     * Buat diagram kolom (bar chart) vertikal.
-     * @param {string}  canvasId  - ID elemen <canvas>
-     * @param {object}  dataObj   - { "KodeKlasifikasi": jumlah, ... }
-     * @param {string}  accentHex - Warna aksen utama (SM = biru, SK = pink)
-     * @param {string[]} palette  - Array palet warna per bar
-     */
     function buildBar(canvasId, dataObj, accentHex, palette) {
         var canvas = document.getElementById(canvasId);
         if (!canvas) return;
 
         var labels = Object.keys(dataObj).map(function(k) {
-            // Tampilkan prefix kode saja: "PR.001" → "PR"
+
             return k.split('.')[0];
         });
         var values = Object.values(dataObj);
         var total  = values.reduce(function(a, b) { return a + b; }, 0);
 
-        // Buat gradient per bar menggunakan canvas context
         var ctx = canvas.getContext('2d');
-        var bgColors = palette.slice(0, labels.length).map(function(hex) {
-            // Solid dengan opacity 85% untuk kesan modern
-            return hex;
+        var bgColors = labels.map(function(l, i) {
+            var hex = palette[i % palette.length];
+            var r = parseInt(hex.slice(1,3),16);
+            var g = parseInt(hex.slice(3,5),16);
+            var b = parseInt(hex.slice(5,7),16);
+            return 'rgba('+r+','+g+','+b+',0.82)';
         });
-        var hoverColors = bgColors.map(function(hex) {
-            // Warna lebih terang saat hover: tambahkan channel putih
-            return hex;
+        var borderColors = labels.map(function(l, i) {
+            return palette[i % palette.length];
         });
 
         new Chart(canvas, {
@@ -650,20 +631,15 @@
                 datasets: [{
                     label: 'Jumlah Surat',
                     data: values,
-                    backgroundColor: bgColors.map(function(hex) {
-                        // Konversi hex ke rgba dengan opacity 0.82
-                        var r = parseInt(hex.slice(1,3),16);
-                        var g = parseInt(hex.slice(3,5),16);
-                        var b = parseInt(hex.slice(5,7),16);
-                        return 'rgba('+r+','+g+','+b+',0.82)';
-                    }),
-                    borderColor: bgColors,
+                    backgroundColor: bgColors,
+                    borderColor: borderColors,
                     borderWidth: 1.5,
                     borderRadius: 6,
                     borderSkipped: false,
-                    hoverBackgroundColor: bgColors,
+                    hoverBackgroundColor: borderColors,
                     barPercentage: 0.72,
                     categoryPercentage: 0.78,
+                    maxBarThickness: 48,
                 }]
             },
             plugins: [{
@@ -706,7 +682,7 @@
                         cornerRadius: 8,
                         callbacks: {
                             title: function(items) {
-                                // Tampilkan kode lengkap dari label asli
+
                                 var idx = items[0].dataIndex;
                                 var fullKey = Object.keys(dataObj)[idx];
                                 return fullKey;
@@ -731,12 +707,14 @@
                     y: {
                         beginAtZero: true,
                         grace: '18%',
+                        suggestedMax: Math.max.apply(null, values) < 3 ? 2 : undefined,
                         grid: { color: gridColor, lineWidth: 1 },
                         border: { display: false, dash: [4, 4] },
                         ticks: {
                             color: tickColor,
                             font: { size: 10 },
                             precision: 0,
+                            stepSize: 1,
                             maxTicksLimit: 6,
                             callback: function(val) { return val % 1 === 0 ? val : ''; }
                         }
@@ -746,7 +724,6 @@
         });
     }
 
-    // ── Render semua 4 diagram kolom ──────────────────────────────────
     buildBar('chart-sm-bulan', @json($smPieBulan), '#3b82f6', COLORS_SM);
     buildBar('chart-sk-bulan', @json($skPieBulan), '#ec4899', COLORS_SK);
     buildBar('chart-sm-tahun', @json($smPieTahun), '#3b82f6', COLORS_SM);
