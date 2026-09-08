@@ -95,7 +95,7 @@ class ArsipController extends Controller
      * Mengambil semua data dbSM dari Google Sheets dan menyimpannya di cache.
      * Cache berlaku selama SheetsCache::TTL_TABLE detik (default: 300 detik / 5 menit).
      *
-     * Admin mendapat cache terpisah (TTL_ADMIN_MICRO = 15 detik) agar data
+     * Admin mendapat cache terpisah (TTL_ADMIN_MICRO = 30 detik) agar data
      * lebih segar saat admin melakukan perubahan.
      *
      * Cache otomatis di-reset setiap kali ada operasi store/update/destroy.

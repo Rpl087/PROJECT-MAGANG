@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Cache;
  *
  * STRATEGI CACHING:
  *   - User biasa (internship): cache normal dengan TTL_TABLE (5 menit)
- *   - Admin: cache mikro terpisah dengan TTL_ADMIN_MICRO (15 detik)
+ *   - Admin: cache mikro terpisah dengan TTL_ADMIN_MICRO (30 detik)
  *     agar admin melihat data lebih segar setelah melakukan perubahan.
  *     Cache admin menulis ulang cache normal setiap refresh.
  *
@@ -61,7 +61,7 @@ class SheetsCache
      */
     public static function remember(string $key, int $ttl, callable $callback): mixed
     {
-        if (auth()->check() && auth()->user()->isAdmin()) {
+        if (auth()->check() && (auth()->user()->isAdmin() || auth()->user()->hasAdminAccess())) {
             // Gunakan konstanta langsung — env() tidak bekerja setelah config:cache dijalankan
             return Cache::remember('admin.micro.' . $key, self::TTL_ADMIN_MICRO, function () use ($key, $ttl, $callback) {
                 $data = $callback();

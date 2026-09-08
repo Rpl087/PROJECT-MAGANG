@@ -149,7 +149,7 @@ if not exist ".env" (
     echo [ACTION] Membuat berkas .env dari .env.example...
     copy .env.example .env >nul
 )
-powershell -Command "(Get-Content .env) -replace '^APP_URL=.*','APP_URL=http://kearsipan.local' -replace '^INTRANET_ENABLED=.*','INTRANET_ENABLED=false' -replace '^SESSION_DRIVER=.*','SESSION_DRIVER=database' -replace '^SESSION_EXPIRE_ON_CLOSE=.*','SESSION_EXPIRE_ON_CLOSE=false' -replace '^SESSION_LIFETIME=.*','SESSION_LIFETIME=480' | Set-Content .env"
+powershell -Command "(Get-Content .env) -replace '^APP_URL=.*','APP_URL=http://kearsipan.local' -replace '^INTRANET_ENABLED=.*','INTRANET_ENABLED=false' -replace '^SESSION_DRIVER=.*','SESSION_DRIVER=database' -replace '^SESSION_EXPIRE_ON_CLOSE=.*','SESSION_EXPIRE_ON_CLOSE=false' -replace '^SESSION_LIFETIME=.*','SESSION_LIFETIME=240' | Set-Content .env"
 "!PHP!" artisan key:generate --force >nul 2>&1
 echo [OK] Konfigurasi .env ^& APP_KEY siap.
 echo.
