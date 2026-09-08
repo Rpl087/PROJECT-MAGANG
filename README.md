@@ -35,8 +35,14 @@ Skrip runner ini **tidak membutuhkan hak Administrator** dan akan melakukan:
 - 🌐 **Auto-Launch** — Membuka browser langsung ke URL login aplikasi.
 
 ### 🌐 3. Akses Aplikasi & Kredensial Login
-- **Akses Staff / Admin**: `http://kearsipan.local/`
-- **Akses WiFi Tamu (Read-Only)**: `http://kearsipan.local/tamu`
+- **Akses Komputer Server (Lokal)**: `http://kearsipan.local/`
+- **Akses Perangkat Lain (HP/Laptop via LAN/Wi-Fi)**:
+  - HTTP: `http://192.168.100.4/` (atau IP server lokal)
+  - HTTPS: `https://192.168.100.4/`
+  *(Catatan: Akses via subfolder seperti `http://192.168.100.4/project-magangv1` otomatis di-redirect ke root aplikasi tanpa 404).*
+- **Akses WiFi Tamu (Read-Only Tanpa Login)**:
+  - `http://kearsipan.local/tamu`
+  - `http://192.168.100.4/tamu`
 
 | Peran | Username / Email | Password Default |
 |---|---|---|
@@ -59,10 +65,12 @@ Skrip runner ini **tidak membutuhkan hak Administrator** dan akan melakukan:
 | 🖨️ **Laporan Rekap Printable** | Tampilan cetak profesional dengan kisi garis seragam (`1pt solid #333`) & Uraian Informasi Arsip |
 | 👥 **Manajemen Pengguna** | Admin dapat mereset password internship & menindaklanjuti permintaan reset |
 | 🔔 **Notifikasi Realtime (SSE)** | Admin mendapat notifikasi realtime saat internship mengajukan reset password |
+| ⚡ **Mikro-Cache Sheets (30 Detik)** | Refresh tarikan data terbaru spreadsheet tiap 30 detik untuk Admin; 1 menit untuk Internship/Tamu |
+| ⏱️ **Sesi 4 Jam & Auto-Prune** | Masa aktif sesi 240 menit (4 jam) di database MySQL dengan pembersihan expired per jam |
 | 🌐 **Intranet Speed & Smooth Nav** | Loading animation kontekstual & font fallback sistem lokal untuk navigasi instan di Intranet WiFi |
 | 👀 **Mode Tamu (Read-Only)** | Halaman khusus WiFi tamu tanpa login untuk membaca data arsip |
-| 🔒 **Cybersecurity Layer** | Proteksi Formula Injection, CSP, Rate Limiting, & Session Protection |
-| 🧹 **Task Scheduler** | Pembersihan otomatis file temporary setiap tengah malam |
+| 🔒 **Cybersecurity Layer** | Brute Force IP Ban, Proteksi Formula Injection, CSP, Rate Limiting, & Production Hardening |
+| 🧹 **Task Scheduler** | Pembersihan otomatis sesi expired setiap 1 jam & berkas temporary storage setiap 17:00 |
 
 ---
 
@@ -343,18 +351,41 @@ erDiagram
 
 ## 🔒 Keamanan (Security Layer)
 
-Aplikasi dilengkapi dengan beberapa lapisan keamanan:
+Aplikasi dilengkapi dengan sistem perlindungan komprehensif:
 
-| Middleware | Fungsi |
+| Komponen | Mekanisme & Fungsi |
 |---|---|
-| `AdminOnly` | Membatasi akses rute hanya untuk role `admin` |
-| `InternalNetworkOnly` | Membatasi akses input/write hanya dari subnet jaringan internal |
-| `GuestNetwork` | Membatasi `/tamu` agar hanya bisa diakses dari subnet tamu atau internal |
-| `SecurityHeaders` | Menambahkan HTTP headers: CSP, X-Frame-Options, X-Content-Type-Options, dll. |
-| `UpdateUserLastSeen` | Mencatat waktu terakhir user aktif (`last_seen_at`) |
-| **Rate Limiting** | Login terkelola per IP & username; Reset Password: maks 3 req/5 menit |
-| **Formula Injection** | Sanitasi input spreadsheet untuk mencegah CSV/formula injection |
-| **Session Protection** | Enkripsi session, expire on close, SameSite cookie |
+| `BruteForceIpBan` | Memantau percobaan login gagal per IP. Jika gagal 20 kali dalam 10 menit, IP diblokir otomatis selama 1 jam (HTTP 429 Too Many Requests) |
+| `AdminOnly` | Membatasi akses rute administratif hanya untuk akun role `admin` |
+| `InternalNetworkOnly` | Membatasi akses input/edit/hapus hanya dari subnet jaringan internal kantor |
+| `GuestNetwork` | Membatasi rute `/tamu` agar hanya dapat diakses dari subnet tamu atau jaringan internal |
+| `SecurityHeaders` | Menambahkan HTTP security headers: CSP (dengan dukungan inline aman Chart.js/Blade), `X-Robots-Tag: noindex`, `Cross-Origin-Opener-Policy: same-origin`, `Cross-Origin-Resource-Policy: same-origin`, `X-Permitted-Cross-Domain-Policies: none`, `X-Frame-Options`, dll. |
+| `UpdateUserLastSeen` | Mencatat waktu terakhir user aktif (`last_seen_at`) di database |
+| **Rate Limiting** | Pembatasan login terkelola per IP & username (lockout 5 menit); Reset Password: maks 3 req / 5 menit |
+| **Formula Injection** | Sanitasi karakter prefix `=`, `+`, `-`, `@` pada input teks agar terlindung dari eksekusi formula berbahaya di spreadsheet |
+| **Session Protection** | Enkripsi payload sesi, masa aktif 240 menit (4 jam), SameSite cookie, dan penyimpanan persisten di database MySQL |
+| **Production Mode** | `APP_DEBUG=false` untuk mencegah kebocoran file path / stack trace dan `LOG_LEVEL=error` untuk menjaga privasi sistem |
+
+---
+
+## ⚡ Strategi Caching Google Sheets (`SheetsCache`)
+
+Untuk mencegah pembatasan kuota Google Sheets API (100 request per 100 detik per user) serta menjaga performa navigasi secepat kilat (0.1 – 0.2 detik per halaman), aplikasi mengimplementasikan strategi *dual-tier caching*:
+
+1. **Mikro-Cache Khusus Admin (30 Detik)**:
+   - Nilai konstanta: `SheetsCache::TTL_ADMIN_MICRO = 30`.
+   - Admin mendapatkan cache khusus berdurasi 30 detik.
+   - Setelah 30 detik berlalu, begitu admin membuka atau me-refresh halaman, sistem akan memicu *API call* ke Google Spreadsheet untuk **menarik data paling mutakhir**.
+   - Data segar hasil tarikan admin ini secara otomatis **menulis ulang cache global** (`Cache::put()`), sehingga seluruh staf dan tamu langsung mendapatkan data baru tersebut.
+   - Dalam interval 30 detik tersebut, admin bebas berpindah antar-halaman secara instan tanpa terkena jeda pemanggilan Google API.
+
+2. **Cache Normal untuk Non-Admin (60 Detik / 1 Menit)**:
+   - Nilai konstanta: `SheetsCache::TTL_TABLE = 60` & `SheetsCache::TTL_DASHBOARD = 60`.
+   - Pengguna dengan role **Internship** maupun **Tamu WiFi** menikmati data dari cache berdurasi 1 menit, meminimalkan latensi jaringan.
+
+3. **Invalidasi Cache Seketika (Instant Invalidation)**:
+   - Setiap kali terjadi penambahan data baru (`store`), pengeditan (`update`), atau penghapusan data (`destroy`), sistem langsung mengeksekusi `SheetsCache::forgetSuratMasuk()` atau `SheetsCache::forgetSuratKeluar()`.
+   - Seluruh cache terkait (tabel, statistik dashboard, dan laporan rekap) langsung terhapus saat itu juga, sehingga perubahan terlihat seketika.
 
 ---
 
@@ -365,13 +396,21 @@ Salin `.env.example` ke `.env` dan sesuaikan nilai berikut:
 ```env
 # Aplikasi
 APP_NAME="Arsip Surat BPSDMP"
+APP_ENV=production
+APP_DEBUG=false
 APP_URL=http://kearsipan.local
 APP_TIMEZONE=Asia/Makassar
 
 # Kontrol Jaringan Intranet
-INTRANET_ENABLED=true
-INTERNAL_NETWORK_SUBNET=192.168.252.0/22   # Subnet staff/admin
-GUEST_NETWORK_SUBNET=10.0.0.0/24           # Subnet tamu (read-only)
+INTRANET_ENABLED=false                     # Ubah ke true untuk mengaktifkan filter subnet
+INTERNAL_NETWORK_SUBNET="192.168.100.0/24,192.168.252.0/22"
+GUEST_NETWORK_SUBNET="192.168.101.0/24,192.168.248.0/22"
+
+# Sesi & Keamanan
+SESSION_DRIVER=database
+SESSION_LIFETIME=240
+SESSION_ENCRYPT=true
+SESSION_EXPIRE_ON_CLOSE=false
 
 # Google API
 GOOGLE_SHEET_ID=<id-spreadsheet-anda>
@@ -390,16 +429,26 @@ DB_PASSWORD=
 
 ## 🔒 Pemeliharaan & Jadwal Otomatis (Scheduler)
 
-Aplikasi dilengkapi dengan **Laravel Task Scheduler** yang berjalan setiap hari pukul **17:00 (5 Sore)** untuk membersihkan berkas-berkas temporary secara otomatis:
+Aplikasi dilengkapi dengan **Laravel Task Scheduler** yang berjalan di latar belakang:
 
-- `storage/framework/views` — Compiled Blade Views
-- `storage/framework/sessions` — File Session Usang
-- `storage/framework/cache/data` — Subfolder Cache Data
+1. **Pembersihan Sesi Kadaluarsa (Setiap 1 Jam)**:
+   - Perintah: `session:prune-expired`
+   - Berjalan otomatis setiap jam (`->hourly()`) untuk menghapus record sesi di database MySQL dan file temporary yang tidak aktif lebih dari 240 menit (4 jam).
+2. **Pembersihan Temporary Storage Harian (Pukul 17:00)**:
+   - Perintah: `storage:clean`
+   - Berjalan setiap sore pukul 17:00 untuk membersihkan:
+     - `storage/framework/views` — Compiled Blade Views
+     - `storage/framework/sessions` — Berkas Sesi Usang
+     - `storage/framework/cache/data` — Subfolder Cache Data (termasuk cache Google Sheets)
 
-Scheduler dijalankan secara otomatis oleh [`start-all.bat`](file:///c:/laragon/www/project-magang/start-all.bat) menggunakan `php artisan schedule:work` di background. Log eksekusi scheduler tersimpan di `storage/logs/scheduler.log`.
+Scheduler dijalankan secara otomatis oleh [`start-all.bat`](file:///c:/laragon/www/project-magangv1/start-all.bat) menggunakan `php artisan schedule:work` di background. Log eksekusi scheduler tersimpan di `storage/logs/scheduler.log`.
 
-Pembersihan manual dapat dilakukan kapan saja via terminal:
+Eksekusi manual dapat dijalankan kapan saja melalui terminal:
 ```bash
+# Membersihkan sesi expired di database
+php artisan session:prune-expired
+
+# Membersihkan temporary storage & cache
 php artisan storage:clean
 ```
 
@@ -408,42 +457,47 @@ php artisan storage:clean
 ## 📁 Struktur Direktori Penting
 
 ```
-project-magang/
+project-magangv1/
 ├── app/
+│   ├── Console/
+│   │   └── Commands/
+│   │       ├── CleanStorageCommand.php          # Pembersihan temporary storage & cache
+│   │       └── PruneExpiredSessionsCommand.php  # Pembersihan sesi database kadaluarsa
 │   ├── Http/
 │   │   ├── Controllers/
-│   │   │   ├── Admin/UserController.php        # Kelola pengguna & reset password + SSE
-│   │   │   ├── Auth/LoginController.php         # Login & logout
-│   │   │   ├── Auth/PasswordResetController.php # Permintaan reset password
-│   │   │   ├── ArsipController.php              # CRUD Surat Masuk
-│   │   │   ├── SuratKeluarController.php        # CRUD Surat Keluar
-│   │   │   ├── DashboardController.php          # Dashboard & rekap laporan
-│   │   │   └── Controller.php                   # Base controller: KODE_MAP, getSheetService, escapeFormula, dll.
+│   │   │   ├── Admin/UserController.php         # Kelola pengguna & reset password + SSE
+│   │   │   ├── Auth/LoginController.php          # Login & logout
+│   │   │   ├── Auth/PasswordResetController.php  # Permintaan reset password
+│   │   │   ├── ArsipController.php               # CRUD Surat Masuk
+│   │   │   ├── SuratKeluarController.php         # CRUD Surat Keluar
+│   │   │   ├── DashboardController.php           # Dashboard & rekap laporan
+│   │   │   └── Controller.php                    # Base controller: KODE_MAP, getSheetService, escapeFormula, dll.
 │   │   └── Middleware/
-│   │       ├── AdminOnly.php
-│   │       ├── InternalNetworkOnly.php
-│   │       ├── GuestNetwork.php
-│   │       ├── SecurityHeaders.php
-│   │       ├── UpdateUserLastSeen.php
+│   │       ├── AdminOnly.php                    # Pembatasan rute khusus admin
+│   │       ├── BruteForceIpBan.php              # Auto-ban IP 1 jam setelah 20x gagal login
+│   │       ├── InternalNetworkOnly.php          # Pembatasan rute intranet staff
+│   │       ├── GuestNetwork.php                 # Pembatasan rute wifi tamu
+│   │       ├── SecurityHeaders.php              # CSP, X-Robots-Tag, COOP, CORP, HSTS
+│   │       ├── UpdateUserLastSeen.php           # Catat aktivitas terakhir user
 │   │       └── Concerns/
-│   │           └── ChecksIpSubnet.php           # Trait bersama: validasi IP subnet CIDR (IPv4 & IPv6)
+│   │           └── ChecksIpSubnet.php            # Trait bersama: validasi IP subnet CIDR (IPv4 & IPv6)
 │   ├── Models/
 │   │   ├── User.php
 │   │   └── PasswordResetRequest.php
 │   └── Services/
-│       ├── GoogleDriveService.php               # Upload, rename, & delete di Google Drive & /uploads
-│       └── SheetsCache.php                      # Cache data Google Sheets
+│       ├── GoogleDriveService.php                # Upload, rename, & delete di Google Drive & /uploads
+│       └── SheetsCache.php                       # Dual-tier cache data Google Sheets (Admin 30s, Non-Admin 60s)
 ├── database/
-│   ├── migrations/                              # Skema tabel MySQL
-│   └── seeders/                                 # Data awal (user default)
+│   ├── migrations/                               # Skema tabel MySQL (users, sessions, reset requests, dll)
+│   └── seeders/                                  # Data awal (user default)
 ├── routes/
-│   ├── web.php                                  # Definisi semua rute web
-│   └── console.php                              # Task scheduler (storage:clean)
+│   ├── web.php                                   # Definisi seluruh rute web
+│   └── console.php                               # Definisi Task Scheduler (hourly prune & daily clean)
 ├── storage/app/
-│   └── google-credentials.json                  # (tidak di-commit) Service Account key
-├── uploads/                                     # File PDF yang diupload
-├── setup-and-run.bat                            # Skrip setup 1-Pintu (Windows)
-└── start-all.bat                                # Skrip jalankan ulang (Windows)
+│   └── google-credentials.json                   # (tidak di-commit) Service Account key
+├── uploads/                                      # File PDF lokal yang diupload
+├── setup-and-run.bat                             # Skrip setup 1-Pintu (Administrator Windows)
+└── start-all.bat                                 # Skrip runner harian (Laragon, Worker, Scheduler, Auto-Launch)
 ```
 
 ---
@@ -464,6 +518,12 @@ project-magang/
 | 10 | Penyesuaian parameter host header Ngrok agar sesuai dengan virtual host `kearsipan.local` | `start-ngrok.bat` |
 | 11 | Aktifkan Task Scheduler `storage:clean` otomatis setiap pukul **17:00** dengan logging ke `storage/logs/scheduler.log` | `routes/console.php` |
 | 12 | Tambahkan spawn `schedule:work` di background pada runner harian agar scheduler aktif tanpa intervensi manual | `start-all.bat` |
+| 13 | Implementasi middleware `BruteForceIpBan` → pantau kegagalan login dan ban IP otomatis 1 jam setelah 20x gagal dalam 10 menit | `BruteForceIpBan.php`, `LoginController.php`, `bootstrap/app.php` |
+| 14 | Penguatan Security Headers (`X-Robots-Tag`, `COOP`, `CORP`, `X-Permitted-Cross-Domain-Policies`, CSP aman inline script) & mode produksi (`APP_DEBUG=false`, `LOG_LEVEL=error`) | `SecurityHeaders.php`, `.env` |
+| 15 | Penyesuaian masa aktif session menjadi 4 jam (240 menit) dan pembuatan command `session:prune-expired` terjadwal per jam via Scheduler | `config/session.php`, `PruneExpiredSessionsCommand.php`, `routes/console.php` |
+| 16 | Optimalisasi Google Sheets Cache: Mikro-cache role Admin 30 detik (`TTL_ADMIN_MICRO = 30`) dan cache normal 1 menit (`TTL_TABLE = 60`, `TTL_DASHBOARD = 60`) | `SheetsCache.php`, `ArsipController.php` |
+| 17 | Konfigurasi VirtualHost Apache (`00-default.conf` & `kearsipan.local.conf`) port 80 dan 443 (SSL) agar perangkat lain dapat mengakses langsung via IP server (`192.168.100.4`) | `00-default.conf`, `kearsipan.local.conf` |
+| 18 | Penambahan aturan URL Rewrite di `.htaccess` & `public/.htaccess` untuk otomatis me-redirect akses subfolder `/project-magangv1` ke root aplikasi tanpa 404 | `.htaccess`, `public/.htaccess` |
 
 ---
 
