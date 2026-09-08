@@ -39,14 +39,14 @@ use Illuminate\Support\Facades\Cache;
 class SheetsCache
 {
 
-    // Durasi cache data tabel (surat masuk/keluar) dalam detik
-    public const TTL_TABLE = 300;
+    // Durasi cache data tabel (surat masuk/keluar) dalam detik (1 menit)
+    public const TTL_TABLE = 60;
 
-    // Durasi cache dashboard dan report dalam detik
-    public const TTL_DASHBOARD = 300;
+    // Durasi cache dashboard dan report dalam detik (1 menit)
+    public const TTL_DASHBOARD = 60;
 
-    // Durasi cache mikro khusus admin (lebih pendek agar data lebih segar)
-    public const TTL_ADMIN_MICRO = 15;
+    // Durasi cache mikro khusus admin (30 detik agar seimbang antara kesegaran data dan kecepatan)
+    public const TTL_ADMIN_MICRO = 30;
 
     public const KEY_SURAT_MASUK  = 'sheets.surat-masuk';
     public const KEY_SURAT_KELUAR = 'sheets.surat-keluar';

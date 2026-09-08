@@ -6,7 +6,7 @@
     <title>Cetak Rekap Dashboard — Tahun {{ $currentYear }}</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
-
+        /* ── Reset & Base ───────────────────────────────────────── */
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         html, body {
             font-family: 'Arial', 'Helvetica', sans-serif;
@@ -15,6 +15,7 @@
             background: #f0f4f8;
         }
 
+        /* ── Print Page ─────────────────────────────────────────── */
         @page {
             size: A4 portrait;
             margin: 15mm 15mm 15mm 20mm;
@@ -31,6 +32,7 @@
             .page-break-before { page-break-before: always; break-before: page; }
         }
 
+        /* ── Screen wrapper ─────────────────────────────────────── */
         .print-page {
             width: 210mm;
             min-height: 297mm;
@@ -40,6 +42,7 @@
             box-shadow: 0 4px 32px rgba(0,0,0,0.15);
         }
 
+        /* ── Action Bar (screen only) ───────────────────────────── */
         .action-bar {
             position: fixed;
             top: 0; left: 0; right: 0;
@@ -72,6 +75,7 @@
         .btn-back   { background: rgba(255,255,255,0.12); color: #e2e8f0; border: 1px solid rgba(255,255,255,0.2); }
         .action-bar-space { height: 48px; }
 
+        /* ── Kop Surat ──────────────────────────────────────────── */
         .kop-wrap {
             display: flex;
             align-items: center;
@@ -126,6 +130,7 @@
             margin: 4px 0 10px 0;
         }
 
+        /* ── Judul Laporan ──────────────────────────────────────── */
         .report-title-wrap {
             text-align: center;
             margin: 8px 0 14px 0;
@@ -148,6 +153,7 @@
             margin-top: 2px;
         }
 
+        /* ── Stat Cards (3 kolom) ───────────────────────────────── */
         .stat-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -178,6 +184,7 @@
         .stat-sk-val  { color: #be185d; }
         .stat-tot-val { color: #7c3aed; }
 
+        /* ── Tabel Rekap Bulanan ────────────────────────────────── */
         .section-title {
             font-size: 9.5pt;
             font-weight: 700;
@@ -242,6 +249,7 @@
         .count-sk { color: #be185d; font-weight: 700; }
         .count-tot{ font-weight: 700; color: #1a1a1a; }
 
+        /* ── Grafik Grid ────────────────────────────────────────── */
         .chart-section { margin-top: 4px; }
         .charts-grid {
             display: grid;
@@ -285,6 +293,7 @@
             height: 100%; color: #9ca3af; font-size: 8.5pt; text-align: center; gap: 6px;
         }
 
+        /* ── Footer ─────────────────────────────────────────────── */
         .print-footer {
             margin-top: 16px;
             border-top: 1px solid #c8d0dc;
@@ -298,6 +307,7 @@
         .print-footer-left { line-height: 1.6; }
         .print-footer-right { text-align: right; line-height: 1.6; }
 
+        /* ── Error ──────────────────────────────────────────────── */
         .error-box {
             background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px;
             padding: 16px; color: #dc2626; font-size: 9.5pt; margin: 20px 0;
@@ -306,6 +316,7 @@
 </head>
 <body>
 
+{{-- ── Action Bar (tidak dicetak) ── --}}
 <div class="action-bar no-print">
     <span class="action-bar-title">
         <svg style="display:inline-block;vertical-align:middle;margin-right:6px;" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -328,8 +339,10 @@
 </div>
 <div class="action-bar-space no-print"></div>
 
+{{-- ── Halaman Cetak ── --}}
 <div class="print-page">
 
+    {{-- Kop Surat --}}
     <div class="kop-wrap">
         <div class="kop-logo">
             <img src="{{ route('image.view', 'komdigi-logo.png') }}"
@@ -347,6 +360,7 @@
     </div>
     <hr class="kop-divider">
 
+    {{-- Judul Laporan --}}
     <div class="report-title-wrap">
         <div class="report-title">Rekapitulasi Data Arsip Surat</div>
         <div class="report-subtitle">Dashboard Surat Masuk &amp; Surat Keluar — Tahun {{ $currentYear }}</div>
@@ -357,6 +371,7 @@
     <div class="error-box">⚠️ {{ $error }}</div>
     @endif
 
+    {{-- Kartu Statistik --}}
     <div class="stat-grid">
         <div class="stat-card">
             <div class="stat-icon stat-icon-sm">
@@ -394,6 +409,7 @@
         </div>
     </div>
 
+    {{-- Tabel Rekap Bulanan --}}
     <div class="section-title">Rekap Bulanan Tahun {{ $currentYear }}</div>
     <table class="rekap-table">
         <thead>
@@ -431,8 +447,10 @@
         </tfoot>
     </table>
 
+    {{-- Grafik Klasifikasi — Halaman Baru --}}
     <div class="chart-section page-break-before">
 
+        {{-- Kop Surat ulang di halaman 2 --}}
         <div class="kop-wrap" style="margin-bottom:6px;">
             <div class="kop-logo">
                 <img src="{{ route('image.view', 'komdigi-logo.png') }}"
@@ -456,10 +474,10 @@
 
         <div class="section-title">Grafik Surat Masuk &amp; Surat Keluar — Bulan {{ $bulanNames[$currentMonth] ?? '' }} {{ $currentYear }}</div>
         <div class="charts-grid" style="margin-bottom:14px;">
-
+            {{-- SM Bulan Ini --}}
             <div class="chart-card">
                 <div class="chart-card-header">
-                    <span>📥 Surat Masuk - Klasifikasi Bulan Ini</span>
+                    <span>📥 Surat Masuk — Klasifikasi Bulan Ini</span>
                     <span class="chart-card-badge">{{ $bulanNames[$currentMonth] ?? '' }} {{ $currentYear }}</span>
                 </div>
                 <div class="chart-body">
@@ -474,9 +492,10 @@
                 </div>
             </div>
 
+            {{-- SK Bulan Ini --}}
             <div class="chart-card">
                 <div class="chart-card-header sk-header">
-                    <span>📤 Surat Keluar - Klasifikasi Bulan Ini</span>
+                    <span>📤 Surat Keluar — Klasifikasi Bulan Ini</span>
                     <span class="chart-card-badge">{{ $bulanNames[$currentMonth] ?? '' }} {{ $currentYear }}</span>
                 </div>
                 <div class="chart-body">
@@ -494,10 +513,10 @@
 
         <div class="section-title">Grafik Surat Masuk &amp; Surat Keluar — Tahun {{ $currentYear }}</div>
         <div class="charts-grid">
-
+            {{-- SM Tahun Ini --}}
             <div class="chart-card">
                 <div class="chart-card-header">
-                    <span>📥 Surat Masuk - Klasifikasi Tahun Ini</span>
+                    <span>📥 Surat Masuk — Klasifikasi Tahun Ini</span>
                     <span class="chart-card-badge">{{ $currentYear }}</span>
                 </div>
                 <div class="chart-body">
@@ -512,9 +531,10 @@
                 </div>
             </div>
 
+            {{-- SK Tahun Ini --}}
             <div class="chart-card">
                 <div class="chart-card-header sk-header">
-                    <span>📤 Surat Keluar - Klasifikasi Tahun Ini</span>
+                    <span>📤 Surat Keluar — Klasifikasi Tahun Ini</span>
                     <span class="chart-card-badge">{{ $currentYear }}</span>
                 </div>
                 <div class="chart-body">
@@ -532,6 +552,7 @@
 
     </div>
 
+    {{-- Footer --}}
     <div class="print-footer">
         <div class="print-footer-left">
             <strong>BPSDMP Komdigi Manado</strong><br>
@@ -545,7 +566,7 @@
         </div>
     </div>
 
-</div>
+</div>{{-- /.print-page --}}
 
 <script>
 (function () {
@@ -569,15 +590,11 @@
         var labels = Object.keys(dataObj);
         var values = Object.values(dataObj);
         var total  = values.reduce(function(a,b){ return a+b; }, 0);
-        var bgColors = labels.map(function(l, i) {
-            var hex = palette[i % palette.length];
+        var bgColors = palette.slice(0, labels.length).map(function(hex) {
             var r = parseInt(hex.slice(1,3),16);
             var g = parseInt(hex.slice(3,5),16);
             var b = parseInt(hex.slice(5,7),16);
             return 'rgba('+r+','+g+','+b+',0.85)';
-        });
-        var borderColors = labels.map(function(l, i) {
-            return palette[i % palette.length];
         });
 
         new Chart(canvas, {
@@ -588,13 +605,12 @@
                     label: 'Jumlah Surat',
                     data: values,
                     backgroundColor: bgColors,
-                    borderColor: borderColors,
+                    borderColor: palette.slice(0, labels.length),
                     borderWidth: 1.5,
                     borderRadius: 5,
                     borderSkipped: false,
                     barPercentage: 0.72,
                     categoryPercentage: 0.78,
-                    maxBarThickness: 44,
                 }]
             },
             options: {
@@ -634,15 +650,12 @@
                     },
                     y: {
                         beginAtZero: true,
-                        grace: '18%',
-                        suggestedMax: Math.max.apply(null, values) < 3 ? 2 : undefined,
                         grid: { color: 'rgba(0,0,0,0.06)', lineWidth: 1 },
                         border: { display: false },
                         ticks: {
                             color: '#6b7280',
                             font: { size: 9 },
                             precision: 0,
-                            stepSize: 1,
                             maxTicksLimit: 5,
                             callback: function(val) { return val % 1 === 0 ? val : ''; }
                         }
