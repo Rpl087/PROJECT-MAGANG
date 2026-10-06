@@ -38,20 +38,15 @@ Skrip ini akan menjalankan:
 - 🕔 **Task Scheduler** — Menyalakan `php artisan schedule:work` di latar belakang (otomatis menjalankan pembersihan storage setiap pukul **17:00** dan prune sesi setiap jam).
 - 🌐 **Auto-Launch** — Membuka browser langsung ke URL login aplikasi.
 
-### 🌐 3. Akses Aplikasi & Kredensial Login
+### 🌐 3. Akses Aplikasi
 - **Akses Komputer Server (Lokal)**: `http://kearsipan.local/`
 - **Akses Perangkat Lain (HP/Laptop via LAN/Wi-Fi)**:
-  - HTTP: `http://192.168.100.4/` (atau IP server lokal)
-  - HTTPS: `https://192.168.100.4/`
-  *(Catatan: Akses via subfolder seperti `http://192.168.100.4/project-magangv1` otomatis di-redirect ke root aplikasi tanpa 404).*
+  - HTTP: `http://<IP-SERVER>/` (sesuaikan dengan IP server lokal)
+  - HTTPS: `https://<IP-SERVER>/`
+  *(Catatan: Akses via subfolder seperti `http://<IP-SERVER>/project-magangv1` otomatis di-redirect ke root aplikasi tanpa 404).*
 - **Akses WiFi Tamu (Read-Only Tanpa Login)**:
   - `http://kearsipan.local/tamu`
-  - `http://192.168.100.4/tamu`
-
-| Peran | Username / Email | Password Default |
-|---|---|---|
-| **Admin** | `Admin` atau `admin@bpsdmp.go.id` | `admin_BPSDMP26` |
-| **Internship** | `Internship` atau `internship@bpsdmp.go.id` | `internship_BPSDMP` |
+  - `http://<IP-SERVER>/tamu`
 
 ---
 
@@ -375,58 +370,6 @@ Untuk mencegah pembatasan kuota Google Sheets API serta menjaga performa navigas
 
 ---
 
-## ⚙️ Konfigurasi Environment (`.env`)
-
-Salin `.env.example` ke `.env` dan sesuaikan nilai berikut:
-
-```env
-# Aplikasi
-APP_NAME="Arsip Surat BPSDMP"
-APP_ENV=production
-APP_DEBUG=false
-APP_URL=http://kearsipan.local
-APP_TIMEZONE=Asia/Makassar
-
-# Kontrol Jaringan Intranet
-INTRANET_ENABLED=false                      # Ubah ke true untuk mengaktifkan filter subnet
-INTERNAL_NETWORK_SUBNET="192.168.100.0/24,192.168.252.0/22"
-GUEST_NETWORK_SUBNET="192.168.101.0/24,192.168.248.0/22"
-TRUSTED_PROXIES=                            # Isi jika di balik reverse proxy, misal: 127.0.0.1
-
-# Google API
-GOOGLE_SHEET_ID=<id-spreadsheet-anda>
-GOOGLE_SERVICE_ACCOUNT_JSON=storage/app/google-credentials.json
-GOOGLE_DRIVE_FOLDER_ID=<id-folder-drive-anda>
-
-# Database MySQL
-DB_CONNECTION=mysql
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_DATABASE=arsip_bpsdmp
-DB_USERNAME=root
-DB_PASSWORD=
-
-# Session & Keamanan
-SESSION_DRIVER=database
-SESSION_LIFETIME=240
-SESSION_ENCRYPT=true
-SESSION_EXPIRE_ON_CLOSE=false
-SESSION_SAME_SITE=lax
-
-# Cache & Queue
-CACHE_STORE=file              # Ganti ke "redis" untuk performa lebih baik
-QUEUE_CONNECTION=database
-
-# Logging
-LOG_CHANNEL=stack
-LOG_LEVEL=error               # Gunakan "debug" hanya saat development
-BCRYPT_ROUNDS=12
-```
-
-> **Catatan**: Letakkan file `google-credentials.json` (Service Account key) di `storage/app/`. File ini **tidak di-commit** ke Git (terdaftar di `.gitignore`).
-
----
-
 ## 🔧 Artisan Commands & Task Scheduler
 
 ### Custom Artisan Commands
@@ -515,7 +458,7 @@ project-magangv1/
 ├── autostart.bat                             # Runner harian ringan (tanpa Administrator)
 ├── setup-and-run.bat                         # Skrip setup 1-Pintu (butuh Administrator)
 ├── "Arsip Surat (server).bat"                # Runner server lengkap (Queue + Scheduler)
-├── start-ngrok.bat                           # Tunnel Ngrok dengan host header kearsipan.local
+
 └── supervisord.conf.example                  # Contoh konfigurasi Supervisord (Linux server)
 ```
 
@@ -542,7 +485,7 @@ project-magangv1/
 | 7 | Trait `ChecksIpSubnet` → penanganan subnet IPv4 & IPv6 multi-CIDR yang aman tanpa exception | `Concerns/ChecksIpSubnet.php` |
 | 8 | Perbaikan keamanan database seeder → mengganti `truncate()` dengan `firstOrCreate()` agar user kustom persisten | `DatabaseSeeder.php` |
 | 9 | Pemisahan skrip startup harian `autostart.bat` dari skrip inisialisasi awal `setup-and-run.bat` | `autostart.bat`, `setup-and-run.bat` |
-| 10 | Penyesuaian parameter host header Ngrok agar sesuai dengan virtual host `kearsipan.local` | `start-ngrok.bat` |
+
 | 11 | Aktifkan Task Scheduler `storage:clean` otomatis setiap pukul **17:00** dengan logging ke `storage/logs/scheduler.log` | `routes/console.php` |
 | 12 | Tambahkan `schedule:work` di background pada runner agar scheduler aktif tanpa intervensi manual | `Arsip Surat (server).bat` |
 | 13 | Implementasi middleware `BruteForceIpBan` → pantau kegagalan login & ban IP otomatis 1 jam setelah 20x gagal dalam 10 menit | `BruteForceIpBan.php`, `LoginController.php`, `bootstrap/app.php` |
