@@ -47,14 +47,25 @@ class UserController extends Controller
             'reset_by_role' => auth()->user()->role,
         ]);
 
-        PasswordResetRequest::where('username', $user->name)
+        if ($request->filled('request_id')) {
+            PasswordResetRequest::where('id', $request->input('request_id'))
+                ->where('is_resolved', false)
+                ->get()
+                ->each(fn($req) => $req->resolve());
+        }
+
+        PasswordResetRequest::where(function ($q) use ($user) {
+                $q->where('username', $user->name)
+                  ->orWhere('username', strtolower($user->name))
+                  ->orWhere('username', $user->email);
+            })
             ->where('is_resolved', false)
             ->get()
             ->each(fn($req) => $req->resolve());
 
         static::bumpResetVersion();
 
-        return back()->with('success', "Password {$user->name} berhasil direset.");
+        return back()->with('success', "Password {$user->name} berhasil diubah.");
     }
 
     public function resolveResetRequest(PasswordResetRequest $resetRequest)

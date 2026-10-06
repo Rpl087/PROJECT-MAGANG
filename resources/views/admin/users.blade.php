@@ -173,9 +173,50 @@
     transition: border-color .2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow .2s cubic-bezier(0.4, 0, 0.2, 1);
     box-sizing: border-box;
 }
-#modal-reset .modal-form-group input:focus {
+#modal-reset .modal-form-group input:focus,
+#modal-reset .modal-form-group select:focus {
     border-color: #2563eb;
     box-shadow: 0 0 0 3.5px rgba(37,99,235,.18);
+}
+[data-theme="dark"] #modal-reset .modal-form-group input,
+[data-theme="dark"] #modal-reset .modal-form-group select {
+    background: var(--color-surface, #1a1d27);
+    border-color: var(--color-border, #2d3148);
+    color: var(--color-text, #f1f5f9);
+}
+
+.input-password-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+.input-password-wrapper input {
+    padding-right: 2.75rem !important;
+}
+.btn-toggle-eye {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--color-text-muted, #94a3b8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px;
+    border-radius: 6px;
+    transition: color 0.15s ease, background 0.15s ease;
+}
+.btn-toggle-eye:hover {
+    color: var(--color-text, #1e293b);
+    background: rgba(148, 163, 184, 0.15);
+}
+[data-theme="dark"] .btn-toggle-eye:hover {
+    color: #e2e8f0;
+    background: rgba(255, 255, 255, 0.08);
 }
 
 #modal-reset .modal-actions-reset {
@@ -280,22 +321,10 @@
                 <td style="font-family:monospace;font-size:.82rem">{{ $req->ip_address }}</td>
                 <td style="font-size:.82rem;color:var(--color-text-muted,#64748b)">{{ $req->created_at->diffForHumans() }}</td>
                 <td>
-                    <div style="display:flex;gap:6px;flex-wrap:wrap">
-
-                        @php
-$matchUser = $users->firstWhere('name', $req->username);
-@endphp
-                        @if($matchUser)
-                        <button type="button" class="btn-sm btn-primary" onclick="openResetModal({{ $matchUser->id }}, '{{ $matchUser->name }}')">
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12l5 5L20 7"/></svg>
-                            Reset Sekarang
-                        </button>
-                        @endif
-                        <form method="POST" action="{{ route('admin.users.resolve-reset', $req) }}" style="margin:0">
-                            @csrf
-                            <button type="submit" class="btn-sm btn-muted">Tandai Selesai</button>
-                        </form>
-                    </div>
+                    <form method="POST" action="{{ route('admin.users.resolve-reset', $req) }}" style="margin:0">
+                        @csrf
+                        <button type="submit" class="btn-sm btn-muted">Tandai Selesai</button>
+                    </form>
                 </td>
             </tr>
             @endforeach
@@ -317,6 +346,7 @@ $matchUser = $users->firstWhere('name', $req->username);
                 <th>Role</th>
                 <th>Akses Terakhir</th>
                 <th>Dibuat</th>
+                <th style="text-align:center">Aksi</th>
             </tr>
         </thead>
         <tbody>
@@ -337,9 +367,17 @@ $matchUser = $users->firstWhere('name', $req->username);
                     @endif
                 </td>
                 <td style="font-size:.82rem;color:var(--color-text-muted,#64748b)">{{ $user->created_at->format('d M Y') }}</td>
+                <td style="text-align:center">
+                    <button type="button" class="btn-sm btn-primary" onclick="openResetModal({{ $user->id }}, '{{ addslashes($user->name) }}')">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                        </svg>
+                        Ubah Password
+                    </button>
+                </td>
             </tr>
             @empty
-            <tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--color-text-muted)">Tidak ada pengguna.</td></tr>
+            <tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--color-text-muted)">Tidak ada pengguna.</td></tr>
             @endforelse
         </tbody>
     </table>
@@ -353,20 +391,37 @@ $matchUser = $users->firstWhere('name', $req->username);
                 <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
             </svg>
         </div>
-        <h4 class="modal-title-reset">Reset Password</h4>
+        <h4 class="modal-title-reset">Ubah Password</h4>
         <p class="modal-desc-reset">
             Set password baru untuk pengguna <strong id="reset-username-label">-</strong>.<br>
             Password lama akan langsung tidak berlaku.
         </p>
+
         <form id="form-reset-password" method="POST" action="">
             @csrf
+            <input type="hidden" name="request_id" id="reset_request_id" value="">
             <div class="modal-form-group">
-                <label>Password Baru</label>
-                <input type="password" name="new_password" id="new_password" required minlength="8" placeholder="Minimal 8 karakter">
+                <label for="new_password">Password Baru</label>
+                <div class="input-password-wrapper">
+                    <input type="password" name="new_password" id="new_password" required minlength="8" placeholder="Minimal 8 karakter" autocomplete="new-password">
+                    <button type="button" class="btn-toggle-eye" onclick="togglePasswordVisibility('new_password', this)" title="Lihat password" aria-label="Lihat password">
+                        <svg class="icon-eye" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                        <svg class="icon-eye-off" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                    </button>
+                </div>
             </div>
             <div class="modal-form-group">
-                <label>Konfirmasi Password Baru</label>
-                <input type="password" name="new_password_confirmation" id="new_password_confirmation" required minlength="8" placeholder="Ulangi password baru">
+                <label for="new_password_confirmation">Konfirmasi Password Baru</label>
+                <div class="input-password-wrapper">
+                    <input type="password" name="new_password_confirmation" id="new_password_confirmation" required minlength="8" placeholder="Ulangi password baru" autocomplete="new-password">
+                    <button type="button" class="btn-toggle-eye" onclick="togglePasswordVisibility('new_password_confirmation', this)" title="Lihat password" aria-label="Lihat password">
+                        <svg class="icon-eye" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                        <svg class="icon-eye-off" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                    </button>
+                </div>
+            </div>
+            <div id="password-match-error" style="display:none;font-size:.78rem;color:#ef4444;margin-top:-6px;margin-bottom:12px;text-align:left;">
+                Konfirmasi password tidak cocok.
             </div>
             <div class="modal-actions-reset">
                 <button type="button" id="modal-reset-cancel" onclick="closeResetModal()">Batal</button>
@@ -387,28 +442,81 @@ $matchUser = $users->firstWhere('name', $req->username);
 document.addEventListener('DOMContentLoaded', function() {
     const modal = document.getElementById('modal-reset');
     if (modal) document.body.appendChild(modal);
+
+    const form = document.getElementById('form-reset-password');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            const p1 = document.getElementById('new_password').value;
+            const p2 = document.getElementById('new_password_confirmation').value;
+            const err = document.getElementById('password-match-error');
+            if (p1 !== p2) {
+                e.preventDefault();
+                if (err) err.style.display = 'block';
+                document.getElementById('new_password_confirmation').focus();
+                return false;
+            }
+            if (err) err.style.display = 'none';
+        });
+    }
 });
 
-function openResetModal(userId, username) {
+function togglePasswordVisibility(inputId, btn) {
+    const input = document.getElementById(inputId);
+    const iconEye = btn.querySelector('.icon-eye');
+    const iconEyeOff = btn.querySelector('.icon-eye-off');
+    if (!input) return;
+
+    if (input.type === 'password') {
+        input.type = 'text';
+        if (iconEye) iconEye.style.display = 'none';
+        if (iconEyeOff) iconEyeOff.style.display = 'inline-block';
+        btn.title = 'Sembunyikan password';
+    } else {
+        input.type = 'password';
+        if (iconEye) iconEye.style.display = 'inline-block';
+        if (iconEyeOff) iconEyeOff.style.display = 'none';
+        btn.title = 'Lihat password';
+    }
+}
+
+function openResetModal(userId, username, reqId = null) {
     const modal  = document.getElementById('modal-reset');
     const form   = document.getElementById('form-reset-password');
     const label  = document.getElementById('reset-username-label');
+    const reqInput = document.getElementById('reset_request_id');
+
     label.textContent = username;
+    if (reqInput) reqInput.value = reqId || '';
     form.action = "{{ url('/admin/users') }}/" + userId + '/reset-password';
+
     document.getElementById('new_password').value = '';
     document.getElementById('new_password_confirmation').value = '';
+    const err = document.getElementById('password-match-error');
+    if (err) err.style.display = 'none';
+
+    document.querySelectorAll('.btn-toggle-eye').forEach(btn => {
+        const iconEye = btn.querySelector('.icon-eye');
+        const iconEyeOff = btn.querySelector('.icon-eye-off');
+        if (iconEye) iconEye.style.display = 'inline-block';
+        if (iconEyeOff) iconEyeOff.style.display = 'none';
+        btn.title = 'Lihat password';
+    });
+    document.getElementById('new_password').type = 'password';
+    document.getElementById('new_password_confirmation').type = 'password';
+
     modal.classList.add('is-open');
     document.body.style.overflow = 'hidden';
     setTimeout(function() {
         document.getElementById('new_password').focus();
     }, 100);
 }
+
 function closeResetModal() {
     const modal = document.getElementById('modal-reset');
     if (modal) modal.classList.remove('is-open');
     document.body.style.overflow = '';
 }
-document.getElementById('modal-reset').addEventListener('click', function(e) {
+document.getElementById('modal-reset')?.addEventListener('click', function(e) {
     if (e.target === this) closeResetModal();
 });
 document.addEventListener('keydown', function(e) {

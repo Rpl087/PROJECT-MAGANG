@@ -20,15 +20,20 @@ class PasswordResetController extends Controller
             'reset_username.required' => 'Username wajib diisi.',
         ]);
 
-        $username = trim($request->input('reset_username'));
+        $input = trim($request->input('reset_username'));
 
-        $userExists = User::where('name', $username)->exists();
+        $user = User::where('name', $input)
+            ->orWhere('email', $input)
+            ->first();
 
-        if (!$userExists) {
-            return back()->with('reset_error', 'Username tidak ditemukan atau tidak dapat mereset password.');
+        if (!$user) {
+            return back()->with('reset_error', 'Username atau email tidak ditemukan atau tidak dapat mereset password.');
         }
 
-        $alreadyPending = PasswordResetRequest::where('username', $username)
+        $alreadyPending = PasswordResetRequest::where(function ($q) use ($user) {
+                $q->where('username', $user->name)
+                  ->orWhere('username', strtolower($user->name));
+            })
             ->where('is_resolved', false)
             ->exists();
 
@@ -38,14 +43,14 @@ class PasswordResetController extends Controller
         }
 
         PasswordResetRequest::create([
-            'username'   => $username,
+            'username'   => $user->name,
             'ip_address' => $request->ip(),
         ]);
 
         UserController::bumpResetVersion();
 
         Log::info('Permintaan reset password diterima.', [
-            'username' => $username,
+            'username' => $user->name,
             'ip'       => $request->ip(),
         ]);
 
