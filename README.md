@@ -172,7 +172,11 @@ Skrip ini akan menjalankan:
 | **Publik** | Akses URL PDF langsung (tanpa login) |
 
 ```mermaid
-%%{init: {"flowchart": {"curve": "linear"}}}%%
+---
+config:
+  flowchart:
+    curve: linear
+---
 flowchart LR
     %% ── Aktor Utama ──
     Tamu([Tamu WiFi])
