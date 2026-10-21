@@ -160,106 +160,94 @@ Skrip ini akan menjalankan:
 
 ---
 
-## 👤 Use Case Diagram
-
-### Ringkasan Aktor & Use Case
-
-| Aktor | Use Case yang Dapat Diakses |
-|---|---|
-| **Admin** | Login, Logout, Lihat Surat Masuk/Keluar, Input Surat (internal), Edit Data & Rename PDF, Hapus Data & PDF, Dashboard & Grafik, Rekap Laporan & Print, Kelola Pengguna, Terima Notifikasi SSE Reset Password, Akses PDF |
-| **Internship** | Login, Logout, Lihat Surat Masuk/Keluar, Input Surat (internal only), Ajukan Reset Password, Akses PDF |
-| **Tamu WiFi** | Lihat Surat Masuk Read-Only, Lihat Surat Keluar Read-Only (tanpa login, dari subnet tamu) |
-| **Publik** | Akses URL PDF langsung (tanpa login) |
-
-```mermaid
 flowchart LR
-    %% ── Aktor: urutan atas→bawah agar garis tidak silang ──────
-    Tamu(["👥\nTamu WiFi"])
-    Public(["🌍\nPublik"])
-    Internship(["🧑‍💻\nInternship"])
-    Admin(["👨‍💼\nAdmin"])
+    %% ── Aktor Utama (Primary Actors) ──
+    Tamu([Tamu WiFi])
+    Publ([Publik])
+    Intrn([Internship])
+    Adm([Admin])
 
-    %% ── Boundary Sistem ──────────────────────────────────────
-    subgraph SYS ["&lt;&lt;subsystem&gt;&gt;\nSistem Pengarsipan Digital — BPSDMP"]
+    %% ── Sistem Boundary ──
+    subgraph Sistem_Pengarsipan_Digital_BPSDMP [Sistem Pengarsipan Digital BPSDMP]
         direction TB
 
-        %% UC diurutkan sesuai posisi aktor atas→bawah
-        %% ─ Tamu (atas)
-        UC_TamuSM(["Lihat SM Read-Only"])
-        UC_TamuSK(["Lihat SK Read-Only"])
-        %% ─ Publik & bersama
-        UC_AksesPDF(["Akses URL PDF"])
-        %% ─ Internship
-        UC_ResetReq(["Ajukan Reset Password"])
-        UC_Login(["Login"])
-        UC_Logout(["Logout"])
-        UC_LihatSM(["Lihat Surat Masuk"])
-        UC_LihatSK(["Lihat Surat Keluar"])
-        UC_InputSM(["Input Surat Masuk"])
-        UC_InputSK(["Input Surat Keluar"])
-        %% ─ Admin only (bawah)
-        UC_ResetMgr(["Notifikasi Reset SSE"])
-        UC_KelolaPengguna(["Kelola Pengguna"])
-        UC_Dashboard(["Dashboard & Grafik"])
-        UC_Rekap(["Rekap Laporan"])
-        UC_Print(["Print Laporan"])
-        UC_EditData(["Edit Data & Rename PDF"])
-        UC_HapusData(["Hapus Data & PDF"])
-        %% ─ Include targets (paling bawah)
-        UC_UploadPDF(["Upload & Backup PDF"])
-        UC_SimpanSheets(["Simpan ke Google Sheets"])
+        %% Use Cases
+        UC_TamuSM([Lihat Surat Masuk Read-Only])
+        UC_TamuSK([Lihat Surat Keluar Read-Only])
+        UC_AksesPDF([Akses URL PDF])
+        
+        UC_ResetReq([Ajukan Reset Password])
+        UC_Login([Login])
+        UC_Logout([Logout])
+        UC_LihatSM([Lihat Surat Masuk])
+        UC_LihatSK([Lihat Surat Keluar])
+        UC_InputSM([Input Surat Masuk])
+        UC_InputSK([Input Surat Keluar])
+        
+        UC_ResetMgr([Terima Notifikasi SSE Reset])
+        UC_KelolaUser([Kelola Pengguna])
+        UC_Dashboard([Dashboard & Grafik])
+        UC_Rekap([Rekap Laporan])
+        UC_Print([Print Laporan])
+        UC_Edit([Edit Data & Rename PDF])
+        UC_Hapus([Hapus Data & PDF])
+        
+        %% Use Case Target (Include)
+        UC_Upload([Upload & Backup PDF])
+        UC_Simpan([Simpan ke Google Sheets])
     end
 
-    %% ── Sistem Eksternal ──────────────────────────────────────
-    GS(["☁️ Google Sheets\n(dbSM & dbSK)"])
-    GD(["☁️ Google Drive"])
+    %% ── Aktor Eksternal (Secondary Actors) ──
+    GS([Google Sheets API])
+    GD([Google Drive API])
 
-    %% ── Association: Aktor ↔ Use Case (garis tanpa panah) ────
+    %% ── Asosiasi Aktor Utama ↔ Use Case ──
     Tamu --- UC_TamuSM
     Tamu --- UC_TamuSK
     Tamu --- UC_AksesPDF
 
-    Public --- UC_AksesPDF
+    Publ --- UC_AksesPDF
 
-    Internship --- UC_ResetReq
-    Internship --- UC_Login
-    Internship --- UC_Logout
-    Internship --- UC_LihatSM
-    Internship --- UC_LihatSK
-    Internship --- UC_InputSM
-    Internship --- UC_InputSK
-    Internship --- UC_AksesPDF
+    Intrn --- UC_ResetReq
+    Intrn --- UC_Login
+    Intrn --- UC_Logout
+    Intrn --- UC_LihatSM
+    Intrn --- UC_LihatSK
+    Intrn --- UC_InputSM
+    Intrn --- UC_InputSK
+    Intrn --- UC_AksesPDF
 
-    Admin --- UC_Login
-    Admin --- UC_Logout
-    Admin --- UC_LihatSM
-    Admin --- UC_LihatSK
-    Admin --- UC_InputSM
-    Admin --- UC_InputSK
-    Admin --- UC_ResetMgr
-    Admin --- UC_KelolaPengguna
-    Admin --- UC_Dashboard
-    Admin --- UC_Rekap
-    Admin --- UC_Print
-    Admin --- UC_EditData
-    Admin --- UC_HapusData
-    Admin --- UC_AksesPDF
+    Adm --- UC_Login
+    Adm --- UC_Logout
+    Adm --- UC_LihatSM
+    Adm --- UC_LihatSK
+    Adm --- UC_InputSM
+    Adm --- UC_InputSK
+    Adm --- UC_ResetMgr
+    Adm --- UC_KelolaUser
+    Adm --- UC_Dashboard
+    Adm --- UC_Rekap
+    Adm --- UC_Print
+    Adm --- UC_Edit
+    Adm --- UC_Hapus
+    Adm --- UC_AksesPDF
 
-    %% ── <<include>>: UC → UC (garis putus-putus dengan panah) ─────────────
-    UC_InputSM -. "<<include>>" .-> UC_UploadPDF
-    UC_InputSK -. "<<include>>" .-> UC_UploadPDF
-    UC_EditData -. "<<include>>" .-> UC_UploadPDF
-    UC_HapusData -. "<<include>>" .-> UC_UploadPDF
-    UC_InputSM -. "<<include>>" .-> UC_SimpanSheets
-    UC_InputSK -. "<<include>>" .-> UC_SimpanSheets
-    UC_EditData -. "<<include>>" .-> UC_SimpanSheets
-    UC_HapusData -. "<<include>>" .-> UC_SimpanSheets
+    %% ── Relasi <<include>> (Mandatory Dependency) ──
+    UC_InputSM -. "<<include>>" .-> UC_Upload
+    UC_InputSK -. "<<include>>" .-> UC_Upload
+    UC_Edit -. "<<include>>" .-> UC_Upload
+    UC_Hapus -. "<<include>>" .-> UC_Upload
 
-    %% ── Relasi ke Sistem Eksternal ───────────────────────────
-    UC_SimpanSheets --> GS
-    UC_UploadPDF --> GD
-    UC_Dashboard --> GS
-    UC_Rekap --> GS
+    UC_InputSM -. "<<include>>" .-> UC_Simpan
+    UC_InputSK -. "<<include>>" .-> UC_Simpan
+    UC_Edit -. "<<include>>" .-> UC_Simpan
+    UC_Hapus -. "<<include>>" .-> UC_Simpan
+
+    %% ── Asosiasi Use Case ↔ Aktor Eksternal ──
+    UC_Simpan --- GS
+    UC_Dashboard --- GS
+    UC_Rekap --- GS
+    UC_Upload --- GD
 ```
 
 
