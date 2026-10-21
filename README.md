@@ -172,11 +172,6 @@ Skrip ini akan menjalankan:
 | **Publik** | Akses URL PDF langsung (tanpa login) |
 
 ```mermaid
----
-config:
-  flowchart:
-    curve: linear
----
 flowchart LR
     %% ── Aktor Utama ──
     Tamu([Tamu WiFi])
@@ -263,6 +258,7 @@ flowchart LR
     UC_Dashboard --- GS
     UC_Rekap --- GS
     UC_Upload --- GD
+    linkStyle default interpolate linear
 ```
 
 
