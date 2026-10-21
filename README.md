@@ -173,55 +173,43 @@ Skrip ini akan menjalankan:
 
 ```mermaid
 flowchart LR
-    Admin["👨‍💼 Admin"]
-    Internship["🧑‍💻 Internship"]
-    Tamu["👥 Tamu WiFi\n(guest_network)"]
-    Public["🌍 Publik"]
+    %% ── Aktor (di luar boundary sistem) ──────────────────────
+    Admin(["👨‍💼\nAdmin"])
+    Internship(["🧑‍💻\nInternship"])
+    Tamu(["👥\nTamu WiFi"])
+    Public(["🌍\nPublik"])
 
-    subgraph System ["🏢 Sistem Pengarsipan Digital — BPSDMP"]
+    %% ── Boundary Sistem ──────────────────────────────────────
+    subgraph SYS ["&lt;&lt;subsystem&gt;&gt;\nSistem Pengarsipan Digital — BPSDMP"]
         direction TB
 
-        subgraph Auth ["🔐 Autentikasi"]
-            UC_Login["🔑 Login\n(name/email + password)"]
-            UC_Logout["🚪 Logout"]
-            UC_ResetReq["🔏 Ajukan Reset Password"]
-            UC_ResetMgr["🔔 Kelola & Notifikasi Reset\n(SSE + polling fallback)"]
-        end
-
-        subgraph Arsip ["📂 Manajemen Arsip"]
-            UC_LihatSM["👁️ Lihat Surat Masuk"]
-            UC_LihatSK["👁️ Lihat Surat Keluar"]
-            UC_InputSM["📥 Input Surat Masuk\n(internal_only)"]
-            UC_InputSK["📤 Input Surat Keluar\n(internal_only)"]
-            UC_EditData["✏️ Edit Data & Rename PDF\n(Admin only)"]
-            UC_HapusData["🗑️ Hapus Data & PDF\n(Admin only)"]
-            UC_UploadPDF["📄 Upload & Backup PDF\n(Google Drive + /uploads)"]
-            UC_SimpanSheets["💾 Simpan ke Google Sheets\n(dbSM / dbSK)"]
-        end
-
-        subgraph Laporan ["📊 Laporan & Dashboard"]
-            UC_Dashboard["📊 Dashboard Statistik\n& Grafik Bar"]
-            UC_Rekap["📋 Rekap Laporan Tahunan\n& per Klasifikasi"]
-            UC_Print["🖨️ Tampilan Print\n(Admin only)"]
-        end
-
-        subgraph User ["👥 Manajemen Pengguna"]
-            UC_KelolaPengguna["👥 Kelola Pengguna\n& Reset Password"]
-        end
-
-        subgraph ReadOnly ["👀 Akses Read-Only"]
-            UC_TamuSM["👀 Lihat Surat Masuk\n(Read-Only Tamu)"]
-            UC_TamuSK["👀 Lihat Surat Keluar\n(Read-Only Tamu)"]
-            UC_AksesPDF["🔗 Akses URL PDF Publik"]
-        end
+        %% Use case — bentuk oval/stadium ([(...)])
+        UC_Login(["Login"])
+        UC_Logout(["Logout"])
+        UC_LihatSM(["Lihat Surat Masuk"])
+        UC_LihatSK(["Lihat Surat Keluar"])
+        UC_InputSM(["Input Surat Masuk"])
+        UC_InputSK(["Input Surat Keluar"])
+        UC_EditData(["Edit Data & Rename PDF"])
+        UC_HapusData(["Hapus Data & PDF"])
+        UC_UploadPDF(["Upload & Backup PDF"])
+        UC_SimpanSheets(["Simpan ke Google Sheets"])
+        UC_Dashboard(["Dashboard & Grafik"])
+        UC_Rekap(["Rekap Laporan"])
+        UC_Print(["Print Laporan"])
+        UC_KelolaPengguna(["Kelola Pengguna"])
+        UC_ResetMgr(["Notifikasi Reset SSE"])
+        UC_ResetReq(["Ajukan Reset Password"])
+        UC_TamuSM(["Lihat SM Read-Only"])
+        UC_TamuSK(["Lihat SK Read-Only"])
+        UC_AksesPDF(["Akses URL PDF"])
     end
 
-    subgraph Cloud ["☁️ Google Cloud"]
-        GS["📊 Google Sheets\n(dbSM & dbSK)"]
-        GD["📁 Google Drive"]
-    end
+    %% ── Sistem Eksternal ──────────────────────────────────────
+    GS(["☁️ Google Sheets\n(dbSM & dbSK)"])
+    GD(["☁️ Google Drive"])
 
-    %% Admin --- garis tanpa panah (UML Use Case standard)
+    %% ── Association: Aktor ↔ Use Case (garis tanpa panah) ────
     Admin --- UC_Login
     Admin --- UC_Logout
     Admin --- UC_LihatSM
@@ -237,7 +225,6 @@ flowchart LR
     Admin --- UC_ResetMgr
     Admin --- UC_AksesPDF
 
-    %% Internship --- garis tanpa panah
     Internship --- UC_Login
     Internship --- UC_Logout
     Internship --- UC_LihatSM
@@ -247,15 +234,13 @@ flowchart LR
     Internship --- UC_ResetReq
     Internship --- UC_AksesPDF
 
-    %% Tamu WiFi --- garis tanpa panah
     Tamu --- UC_TamuSM
     Tamu --- UC_TamuSK
     Tamu --- UC_AksesPDF
 
-    %% Publik --- garis tanpa panah
     Public --- UC_AksesPDF
 
-    %% <<include>> --- garis putus-putus dengan label
+    %% ── <<include>>: UC → UC (garis putus-putus) ─────────────
     UC_InputSM -. "<<include>>" .-> UC_UploadPDF
     UC_InputSK -. "<<include>>" .-> UC_UploadPDF
     UC_EditData -. "<<include>>" .-> UC_UploadPDF
@@ -265,12 +250,13 @@ flowchart LR
     UC_EditData -. "<<include>>" .-> UC_SimpanSheets
     UC_HapusData -. "<<include>>" .-> UC_SimpanSheets
 
-    %% Sistem eksternal --- panah
+    %% ── Relasi ke Sistem Eksternal ───────────────────────────
     UC_SimpanSheets --> GS
     UC_UploadPDF --> GD
     UC_Dashboard --> GS
     UC_Rekap --> GS
 ```
+
 
 ---
 
