@@ -173,7 +173,7 @@ Skrip ini akan menjalankan:
 
 ```mermaid
 flowchart LR
-    %% ── Aktor Kiri ──
+    %% ── Aktor Utama ──
     subgraph Aktor_Pengguna [ ]
         direction TB
         Tamu([Tamu WiFi])
@@ -182,17 +182,19 @@ flowchart LR
         Adm([Admin])
     end
 
-    %% ── Boundary Sistem ──
-    subgraph Sistem [Sistem Pengarsipan Digital BPSDMP]
+    %% ── Sistem Boundary ──
+    subgraph Sistem_Pengarsipan_Digital_BPSDMP [Sistem Pengarsipan Digital BPSDMP]
         direction TB
         
         subgraph Modul_Publik [Akses Publik & Tamu]
+            direction TB
             UC_TamuSM([Lihat Surat Masuk Read-Only])
             UC_TamuSK([Lihat Surat Keluar Read-Only])
             UC_AksesPDF([Akses URL PDF])
         end
 
         subgraph Modul_Surat [Operasional Arsip Surat]
+            direction TB
             UC_Login([Login])
             UC_Logout([Logout])
             UC_LihatSM([Lihat Surat Masuk])
@@ -204,6 +206,7 @@ flowchart LR
         end
 
         subgraph Modul_Admin [Kelola Akun & Laporan]
+            direction TB
             UC_ResetReq([Ajukan Reset Password])
             UC_ResetMgr([Terima Notifikasi SSE Reset])
             UC_KelolaUser([Kelola Pengguna])
@@ -213,25 +216,26 @@ flowchart LR
         end
 
         subgraph Modul_Sync [Sinkronisasi Cloud]
+            direction TB
             UC_Upload([Upload & Backup PDF])
             UC_Simpan([Simpan ke Google Sheets])
         end
     end
 
-    %% ── Aktor Kanan ──
+    %% ── Aktor Eksternal ──
     subgraph Aktor_Eksternal [ ]
         direction TB
         GS([Google Sheets API])
         GD([Google Drive API])
     end
 
-    %% ── Relasi Tamu & Publik ──
+    %% ── Asosiasi Aktor Utama ↔ Use Case ──
     Tamu --- UC_TamuSM
     Tamu --- UC_TamuSK
     Tamu --- UC_AksesPDF
+
     Publ --- UC_AksesPDF
 
-    %% ── Relasi Internship ──
     Intrn --- UC_Login
     Intrn --- UC_Logout
     Intrn --- UC_ResetReq
@@ -241,9 +245,12 @@ flowchart LR
     Intrn --- UC_InputSK
     Intrn --- UC_AksesPDF
 
-    %% ── Relasi Admin ──
     Adm --- UC_Login
     Adm --- UC_Logout
+    Adm --- UC_LihatSM
+    Adm --- UC_LihatSK
+    Adm --- UC_InputSM
+    Adm --- UC_InputSK
     Adm --- UC_ResetMgr
     Adm --- UC_KelolaUser
     Adm --- UC_Dashboard
@@ -251,19 +258,20 @@ flowchart LR
     Adm --- UC_Print
     Adm --- UC_Edit
     Adm --- UC_Hapus
+    Adm --- UC_AksesPDF
 
-    %% ── Include ──
-    UC_InputSM -.-> UC_Upload
-    UC_InputSK -.-> UC_Upload
-    UC_Edit -.-> UC_Upload
-    UC_Hapus -.-> UC_Upload
+    %% ── Relasi <<include>> ──
+    UC_InputSM -. "<<include>>" .-> UC_Upload
+    UC_InputSK -. "<<include>>" .-> UC_Upload
+    UC_Edit -. "<<include>>" .-> UC_Upload
+    UC_Hapus -. "<<include>>" .-> UC_Upload
 
-    UC_InputSM -.-> UC_Simpan
-    UC_InputSK -.-> UC_Simpan
-    UC_Edit -.-> UC_Simpan
-    UC_Hapus -.-> UC_Simpan
+    UC_InputSM -. "<<include>>" .-> UC_Simpan
+    UC_InputSK -. "<<include>>" .-> UC_Simpan
+    UC_Edit -. "<<include>>" .-> UC_Simpan
+    UC_Hapus -. "<<include>>" .-> UC_Simpan
 
-    %% ── Cloud ──
+    %% ── Asosiasi Use Case ↔ Aktor Eksternal ──
     UC_Simpan --- GS
     UC_Dashboard --- GS
     UC_Rekap --- GS
