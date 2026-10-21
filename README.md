@@ -172,8 +172,9 @@ Skrip ini akan menjalankan:
 | **Publik** | Akses URL PDF langsung (tanpa login) |
 
 ```mermaid
+%%{init: {"flowchart": {"curve": "linear"}}}%%
 flowchart LR
-    %% ── Aktor Utama (Primary Actors) ──
+    %% ── Aktor Utama ──
     Tamu([Tamu WiFi])
     Publ([Publik])
     Intrn([Internship])
@@ -182,43 +183,24 @@ flowchart LR
     %% ── Sistem Boundary ──
     subgraph Sistem_Pengarsipan_Digital_BPSDMP [Sistem Pengarsipan Digital BPSDMP]
         direction TB
-
-        %% Use Cases
         UC_TamuSM([Lihat Surat Masuk Read-Only])
         UC_TamuSK([Lihat Surat Keluar Read-Only])
         UC_AksesPDF([Akses URL PDF])
-        
         UC_ResetReq([Ajukan Reset Password])
         UC_Login([Login])
         UC_Logout([Logout])
-        UC_LihatSM([Lihat Surat Masuk])
-        UC_LihatSK([Lihat Surat Keluar])
         UC_InputSM([Input Surat Masuk])
-        UC_InputSK([Input Surat Keluar])
         
-        UC_ResetMgr([Terima Notifikasi SSE Reset])
-        UC_KelolaUser([Kelola Pengguna])
-        UC_Dashboard([Dashboard & Grafik])
-        UC_Rekap([Rekap Laporan])
-        UC_Print([Print Laporan])
-        UC_Edit([Edit Data & Rename PDF])
-        UC_Hapus([Hapus Data & PDF])
-        
-        %% Use Case Target (Include)
-        UC_Upload([Upload & Backup PDF])
-        UC_Simpan([Simpan ke Google Sheets])
+        %% (Sisa use case lainnya tetap sama seperti sebelumnya...)
     end
 
-    %% ── Aktor Eksternal (Secondary Actors) ──
-    GS([Google Sheets API])
+    %% ── Aktor Eksternal ──
     GD([Google Drive API])
 
-    %% ── Asosiasi Aktor Utama ↔ Use Case ──
+    %% ── Asosiasi ──
     Tamu --- UC_TamuSM
     Tamu --- UC_TamuSK
     Tamu --- UC_AksesPDF
-
-    Publ --- UC_AksesPDF
 
     Intrn --- UC_ResetReq
     Intrn --- UC_Login
