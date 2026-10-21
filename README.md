@@ -171,6 +171,7 @@ Skrip ini akan menjalankan:
 | **Tamu WiFi** | Lihat Surat Masuk Read-Only, Lihat Surat Keluar Read-Only (tanpa login, dari subnet tamu) |
 | **Publik** | Akses URL PDF langsung (tanpa login) |
 
+```mermaid
 flowchart LR
     %% ── Aktor Utama (Primary Actors) ──
     Tamu([Tamu WiFi])
