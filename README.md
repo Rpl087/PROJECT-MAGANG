@@ -221,51 +221,51 @@ flowchart LR
         GD["📁 Google Drive"]
     end
 
-    %% Admin
-    Admin --> UC_Login
-    Admin --> UC_Logout
-    Admin --> UC_LihatSM
-    Admin --> UC_LihatSK
-    Admin --> UC_InputSM
-    Admin --> UC_InputSK
-    Admin --> UC_EditData
-    Admin --> UC_HapusData
-    Admin --> UC_Dashboard
-    Admin --> UC_Rekap
-    Admin --> UC_Print
-    Admin --> UC_KelolaPengguna
-    Admin --> UC_ResetMgr
-    Admin --> UC_AksesPDF
+    %% Admin --- garis tanpa panah (UML Use Case standard)
+    Admin --- UC_Login
+    Admin --- UC_Logout
+    Admin --- UC_LihatSM
+    Admin --- UC_LihatSK
+    Admin --- UC_InputSM
+    Admin --- UC_InputSK
+    Admin --- UC_EditData
+    Admin --- UC_HapusData
+    Admin --- UC_Dashboard
+    Admin --- UC_Rekap
+    Admin --- UC_Print
+    Admin --- UC_KelolaPengguna
+    Admin --- UC_ResetMgr
+    Admin --- UC_AksesPDF
 
-    %% Internship
-    Internship --> UC_Login
-    Internship --> UC_Logout
-    Internship --> UC_LihatSM
-    Internship --> UC_LihatSK
-    Internship --> UC_InputSM
-    Internship --> UC_InputSK
-    Internship --> UC_ResetReq
-    Internship --> UC_AksesPDF
+    %% Internship --- garis tanpa panah
+    Internship --- UC_Login
+    Internship --- UC_Logout
+    Internship --- UC_LihatSM
+    Internship --- UC_LihatSK
+    Internship --- UC_InputSM
+    Internship --- UC_InputSK
+    Internship --- UC_ResetReq
+    Internship --- UC_AksesPDF
 
-    %% Tamu WiFi
-    Tamu --> UC_TamuSM
-    Tamu --> UC_TamuSK
-    Tamu --> UC_AksesPDF
+    %% Tamu WiFi --- garis tanpa panah
+    Tamu --- UC_TamuSM
+    Tamu --- UC_TamuSK
+    Tamu --- UC_AksesPDF
 
-    %% Publik
-    Public --> UC_AksesPDF
+    %% Publik --- garis tanpa panah
+    Public --- UC_AksesPDF
 
-    %% Include / depend
-    UC_InputSM --> UC_UploadPDF
-    UC_InputSK --> UC_UploadPDF
-    UC_EditData --> UC_UploadPDF
-    UC_HapusData --> UC_UploadPDF
-    UC_InputSM --> UC_SimpanSheets
-    UC_InputSK --> UC_SimpanSheets
-    UC_EditData --> UC_SimpanSheets
-    UC_HapusData --> UC_SimpanSheets
+    %% <<include>> --- garis putus-putus dengan label
+    UC_InputSM -. "<<include>>" .-> UC_UploadPDF
+    UC_InputSK -. "<<include>>" .-> UC_UploadPDF
+    UC_EditData -. "<<include>>" .-> UC_UploadPDF
+    UC_HapusData -. "<<include>>" .-> UC_UploadPDF
+    UC_InputSM -. "<<include>>" .-> UC_SimpanSheets
+    UC_InputSK -. "<<include>>" .-> UC_SimpanSheets
+    UC_EditData -. "<<include>>" .-> UC_SimpanSheets
+    UC_HapusData -. "<<include>>" .-> UC_SimpanSheets
 
-    %% External
+    %% Sistem eksternal --- panah
     UC_SimpanSheets --> GS
     UC_UploadPDF --> GD
     UC_Dashboard --> GS
