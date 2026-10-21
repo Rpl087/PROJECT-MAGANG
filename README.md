@@ -160,6 +160,17 @@ Skrip ini akan menjalankan:
 
 ---
 
+## 👤 Use Case Diagram
+
+### Ringkasan Aktor & Use Case
+
+| Aktor | Use Case yang Dapat Diakses |
+|---|---|
+| **Admin** | Login, Logout, Lihat Surat Masuk/Keluar, Input Surat (internal), Edit Data & Rename PDF, Hapus Data & PDF, Dashboard & Grafik, Rekap Laporan & Print, Kelola Pengguna, Terima Notifikasi SSE Reset Password, Akses PDF |
+| **Internship** | Login, Logout, Lihat Surat Masuk/Keluar, Input Surat (internal only), Ajukan Reset Password, Akses PDF |
+| **Tamu WiFi** | Lihat Surat Masuk Read-Only, Lihat Surat Keluar Read-Only (tanpa login, dari subnet tamu) |
+| **Publik** | Akses URL PDF langsung (tanpa login) |
+
 flowchart LR
     %% ── Aktor Utama (Primary Actors) ──
     Tamu([Tamu WiFi])
