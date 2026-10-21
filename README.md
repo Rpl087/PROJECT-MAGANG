@@ -174,60 +174,42 @@ Skrip ini akan menjalankan:
 ```mermaid
 flowchart LR
     %% ── Aktor Utama ──
-    subgraph Aktor_Pengguna [ ]
-        direction TB
-        Tamu([Tamu WiFi])
-        Publ([Publik])
-        Intrn([Internship])
-        Adm([Admin])
-    end
+    Tamu([Tamu WiFi])
+    Publ([Publik])
+    Intrn([Internship])
+    Adm([Admin])
 
     %% ── Sistem Boundary ──
     subgraph Sistem_Pengarsipan_Digital_BPSDMP [Sistem Pengarsipan Digital BPSDMP]
         direction TB
         
-        subgraph Modul_Publik [Akses Publik & Tamu]
-            direction TB
-            UC_TamuSM([Lihat Surat Masuk Read-Only])
-            UC_TamuSK([Lihat Surat Keluar Read-Only])
-            UC_AksesPDF([Akses URL PDF])
-        end
-
-        subgraph Modul_Surat [Operasional Arsip Surat]
-            direction TB
-            UC_Login([Login])
-            UC_Logout([Logout])
-            UC_LihatSM([Lihat Surat Masuk])
-            UC_LihatSK([Lihat Surat Keluar])
-            UC_InputSM([Input Surat Masuk])
-            UC_InputSK([Input Surat Keluar])
-            UC_Edit([Edit Data & Rename PDF])
-            UC_Hapus([Hapus Data & PDF])
-        end
-
-        subgraph Modul_Admin [Kelola Akun & Laporan]
-            direction TB
-            UC_ResetReq([Ajukan Reset Password])
-            UC_ResetMgr([Terima Notifikasi SSE Reset])
-            UC_KelolaUser([Kelola Pengguna])
-            UC_Dashboard([Dashboard & Grafik])
-            UC_Rekap([Rekap Laporan])
-            UC_Print([Print Laporan])
-        end
-
-        subgraph Modul_Sync [Sinkronisasi Cloud]
-            direction TB
-            UC_Upload([Upload & Backup PDF])
-            UC_Simpan([Simpan ke Google Sheets])
-        end
+        UC_TamuSM([Lihat Surat Masuk Read-Only])
+        UC_TamuSK([Lihat Surat Keluar Read-Only])
+        UC_AksesPDF([Akses URL PDF])
+        
+        UC_ResetReq([Ajukan Reset Password])
+        UC_Login([Login])
+        UC_Logout([Logout])
+        UC_LihatSM([Lihat Surat Masuk])
+        UC_LihatSK([Lihat Surat Keluar])
+        UC_InputSM([Input Surat Masuk])
+        UC_InputSK([Input Surat Keluar])
+        
+        UC_ResetMgr([Terima Notifikasi SSE Reset])
+        UC_KelolaUser([Kelola Pengguna])
+        UC_Dashboard([Dashboard & Grafik])
+        UC_Rekap([Rekap Laporan])
+        UC_Print([Print Laporan])
+        UC_Edit([Edit Data & Rename PDF])
+        UC_Hapus([Hapus Data & PDF])
+        
+        UC_Upload([Upload & Backup PDF])
+        UC_Simpan([Simpan ke Google Sheets])
     end
 
     %% ── Aktor Eksternal ──
-    subgraph Aktor_Eksternal [ ]
-        direction TB
-        GS([Google Sheets API])
-        GD([Google Drive API])
-    end
+    GS([Google Sheets API])
+    GD([Google Drive API])
 
     %% ── Asosiasi Aktor Utama ↔ Use Case ──
     Tamu --- UC_TamuSM
@@ -236,9 +218,9 @@ flowchart LR
 
     Publ --- UC_AksesPDF
 
+    Intrn --- UC_ResetReq
     Intrn --- UC_Login
     Intrn --- UC_Logout
-    Intrn --- UC_ResetReq
     Intrn --- UC_LihatSM
     Intrn --- UC_LihatSK
     Intrn --- UC_InputSM
