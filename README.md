@@ -183,24 +183,41 @@ flowchart LR
     %% ── Sistem Boundary ──
     subgraph Sistem_Pengarsipan_Digital_BPSDMP [Sistem Pengarsipan Digital BPSDMP]
         direction TB
+        
         UC_TamuSM([Lihat Surat Masuk Read-Only])
         UC_TamuSK([Lihat Surat Keluar Read-Only])
         UC_AksesPDF([Akses URL PDF])
+        
         UC_ResetReq([Ajukan Reset Password])
         UC_Login([Login])
         UC_Logout([Logout])
+        UC_LihatSM([Lihat Surat Masuk])
+        UC_LihatSK([Lihat Surat Keluar])
         UC_InputSM([Input Surat Masuk])
+        UC_InputSK([Input Surat Keluar])
         
-        %% (Sisa use case lainnya tetap sama seperti sebelumnya...)
+        UC_ResetMgr([Terima Notifikasi SSE Reset])
+        UC_KelolaUser([Kelola Pengguna])
+        UC_Dashboard([Dashboard & Grafik])
+        UC_Rekap([Rekap Laporan])
+        UC_Print([Print Laporan])
+        UC_Edit([Edit Data & Rename PDF])
+        UC_Hapus([Hapus Data & PDF])
+        
+        UC_Upload([Upload & Backup PDF])
+        UC_Simpan([Simpan ke Google Sheets])
     end
 
     %% ── Aktor Eksternal ──
+    GS([Google Sheets API])
     GD([Google Drive API])
 
-    %% ── Asosiasi ──
+    %% ── Asosiasi Aktor Utama ↔ Use Case ──
     Tamu --- UC_TamuSM
     Tamu --- UC_TamuSK
     Tamu --- UC_AksesPDF
+
+    Publ --- UC_AksesPDF
 
     Intrn --- UC_ResetReq
     Intrn --- UC_Login
@@ -226,7 +243,7 @@ flowchart LR
     Adm --- UC_Hapus
     Adm --- UC_AksesPDF
 
-    %% ── Relasi <<include>> (Mandatory Dependency) ──
+    %% ── Relasi <<include>> ──
     UC_InputSM -. "<<include>>" .-> UC_Upload
     UC_InputSK -. "<<include>>" .-> UC_Upload
     UC_Edit -. "<<include>>" .-> UC_Upload
