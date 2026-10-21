@@ -173,72 +173,77 @@ Skrip ini akan menjalankan:
 
 ```mermaid
 flowchart LR
-    %% ── Aktor (di luar boundary sistem) ──────────────────────
-    Admin(["👨‍💼\nAdmin"])
-    Internship(["🧑‍💻\nInternship"])
+    %% ── Aktor: urutan atas→bawah agar garis tidak silang ──────
     Tamu(["👥\nTamu WiFi"])
     Public(["🌍\nPublik"])
+    Internship(["🧑‍💻\nInternship"])
+    Admin(["👨‍💼\nAdmin"])
 
     %% ── Boundary Sistem ──────────────────────────────────────
     subgraph SYS ["&lt;&lt;subsystem&gt;&gt;\nSistem Pengarsipan Digital — BPSDMP"]
         direction TB
 
-        %% Use case — bentuk oval/stadium ([(...)])
+        %% UC diurutkan sesuai posisi aktor atas→bawah
+        %% ─ Tamu (atas)
+        UC_TamuSM(["Lihat SM Read-Only"])
+        UC_TamuSK(["Lihat SK Read-Only"])
+        %% ─ Publik & bersama
+        UC_AksesPDF(["Akses URL PDF"])
+        %% ─ Internship
+        UC_ResetReq(["Ajukan Reset Password"])
         UC_Login(["Login"])
         UC_Logout(["Logout"])
         UC_LihatSM(["Lihat Surat Masuk"])
         UC_LihatSK(["Lihat Surat Keluar"])
         UC_InputSM(["Input Surat Masuk"])
         UC_InputSK(["Input Surat Keluar"])
-        UC_EditData(["Edit Data & Rename PDF"])
-        UC_HapusData(["Hapus Data & PDF"])
-        UC_UploadPDF(["Upload & Backup PDF"])
-        UC_SimpanSheets(["Simpan ke Google Sheets"])
+        %% ─ Admin only (bawah)
+        UC_ResetMgr(["Notifikasi Reset SSE"])
+        UC_KelolaPengguna(["Kelola Pengguna"])
         UC_Dashboard(["Dashboard & Grafik"])
         UC_Rekap(["Rekap Laporan"])
         UC_Print(["Print Laporan"])
-        UC_KelolaPengguna(["Kelola Pengguna"])
-        UC_ResetMgr(["Notifikasi Reset SSE"])
-        UC_ResetReq(["Ajukan Reset Password"])
-        UC_TamuSM(["Lihat SM Read-Only"])
-        UC_TamuSK(["Lihat SK Read-Only"])
-        UC_AksesPDF(["Akses URL PDF"])
+        UC_EditData(["Edit Data & Rename PDF"])
+        UC_HapusData(["Hapus Data & PDF"])
+        %% ─ Include targets (paling bawah)
+        UC_UploadPDF(["Upload & Backup PDF"])
+        UC_SimpanSheets(["Simpan ke Google Sheets"])
     end
 
     %% ── Sistem Eksternal ──────────────────────────────────────
     GS(["☁️ Google Sheets\n(dbSM & dbSK)"])
     GD(["☁️ Google Drive"])
 
-    %% ── Association: Aktor ↔ Use Case (garis tanpa panah, UML standard) ────
-    Admin o--o UC_Login
-    Admin o--o UC_Logout
-    Admin o--o UC_LihatSM
-    Admin o--o UC_LihatSK
-    Admin o--o UC_InputSM
-    Admin o--o UC_InputSK
-    Admin o--o UC_EditData
-    Admin o--o UC_HapusData
-    Admin o--o UC_Dashboard
-    Admin o--o UC_Rekap
-    Admin o--o UC_Print
-    Admin o--o UC_KelolaPengguna
-    Admin o--o UC_ResetMgr
-    Admin o--o UC_AksesPDF
+    %% ── Association: Aktor ↔ Use Case (garis tanpa panah) ────
+    Tamu --- UC_TamuSM
+    Tamu --- UC_TamuSK
+    Tamu --- UC_AksesPDF
 
-    Internship o--o UC_Login
-    Internship o--o UC_Logout
-    Internship o--o UC_LihatSM
-    Internship o--o UC_LihatSK
-    Internship o--o UC_InputSM
-    Internship o--o UC_InputSK
-    Internship o--o UC_ResetReq
-    Internship o--o UC_AksesPDF
+    Public --- UC_AksesPDF
 
-    Tamu o--o UC_TamuSM
-    Tamu o--o UC_TamuSK
-    Tamu o--o UC_AksesPDF
+    Internship --- UC_ResetReq
+    Internship --- UC_Login
+    Internship --- UC_Logout
+    Internship --- UC_LihatSM
+    Internship --- UC_LihatSK
+    Internship --- UC_InputSM
+    Internship --- UC_InputSK
+    Internship --- UC_AksesPDF
 
-    Public o--o UC_AksesPDF
+    Admin --- UC_Login
+    Admin --- UC_Logout
+    Admin --- UC_LihatSM
+    Admin --- UC_LihatSK
+    Admin --- UC_InputSM
+    Admin --- UC_InputSK
+    Admin --- UC_ResetMgr
+    Admin --- UC_KelolaPengguna
+    Admin --- UC_Dashboard
+    Admin --- UC_Rekap
+    Admin --- UC_Print
+    Admin --- UC_EditData
+    Admin --- UC_HapusData
+    Admin --- UC_AksesPDF
 
     %% ── <<include>>: UC → UC (garis putus-putus dengan panah) ─────────────
     UC_InputSM -. "<<include>>" .-> UC_UploadPDF
