@@ -209,38 +209,38 @@ flowchart LR
     GS(["☁️ Google Sheets\n(dbSM & dbSK)"])
     GD(["☁️ Google Drive"])
 
-    %% ── Association: Aktor ↔ Use Case (garis tanpa panah) ────
-    Admin --- UC_Login
-    Admin --- UC_Logout
-    Admin --- UC_LihatSM
-    Admin --- UC_LihatSK
-    Admin --- UC_InputSM
-    Admin --- UC_InputSK
-    Admin --- UC_EditData
-    Admin --- UC_HapusData
-    Admin --- UC_Dashboard
-    Admin --- UC_Rekap
-    Admin --- UC_Print
-    Admin --- UC_KelolaPengguna
-    Admin --- UC_ResetMgr
-    Admin --- UC_AksesPDF
+    %% ── Association: Aktor ↔ Use Case (garis tanpa panah, UML standard) ────
+    Admin o--o UC_Login
+    Admin o--o UC_Logout
+    Admin o--o UC_LihatSM
+    Admin o--o UC_LihatSK
+    Admin o--o UC_InputSM
+    Admin o--o UC_InputSK
+    Admin o--o UC_EditData
+    Admin o--o UC_HapusData
+    Admin o--o UC_Dashboard
+    Admin o--o UC_Rekap
+    Admin o--o UC_Print
+    Admin o--o UC_KelolaPengguna
+    Admin o--o UC_ResetMgr
+    Admin o--o UC_AksesPDF
 
-    Internship --- UC_Login
-    Internship --- UC_Logout
-    Internship --- UC_LihatSM
-    Internship --- UC_LihatSK
-    Internship --- UC_InputSM
-    Internship --- UC_InputSK
-    Internship --- UC_ResetReq
-    Internship --- UC_AksesPDF
+    Internship o--o UC_Login
+    Internship o--o UC_Logout
+    Internship o--o UC_LihatSM
+    Internship o--o UC_LihatSK
+    Internship o--o UC_InputSM
+    Internship o--o UC_InputSK
+    Internship o--o UC_ResetReq
+    Internship o--o UC_AksesPDF
 
-    Tamu --- UC_TamuSM
-    Tamu --- UC_TamuSK
-    Tamu --- UC_AksesPDF
+    Tamu o--o UC_TamuSM
+    Tamu o--o UC_TamuSK
+    Tamu o--o UC_AksesPDF
 
-    Public --- UC_AksesPDF
+    Public o--o UC_AksesPDF
 
-    %% ── <<include>>: UC → UC (garis putus-putus) ─────────────
+    %% ── <<include>>: UC → UC (garis putus-putus dengan panah) ─────────────
     UC_InputSM -. "<<include>>" .-> UC_UploadPDF
     UC_InputSK -. "<<include>>" .-> UC_UploadPDF
     UC_EditData -. "<<include>>" .-> UC_UploadPDF
