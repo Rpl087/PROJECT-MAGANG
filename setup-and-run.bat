@@ -20,7 +20,7 @@ echo.
 SET "PHP="
 SET "PHP_INI="
 echo [PHP] Mendeteksi PHP kompatibel dari Laragon (PHP 8.3+)...
-FOR /D %%V IN ("C:\laragon\bin\php\php-8.5*" "C:\laragon\bin\php\php-8.4*" "C:\laragon\bin\php\php-8.3*") DO (
+FOR /D %%V IN ("C:\laragon\bin\php\php-8.3*" "C:\laragon\bin\php\php-8.4*" "C:\laragon\bin\php\php-8.5*") DO (
     IF EXIST "%%V\php.exe" (
         SET "PHP=%%V\php.exe"
         SET "PHP_INI=%%V\php.ini"

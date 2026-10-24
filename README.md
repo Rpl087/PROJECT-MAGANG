@@ -69,7 +69,7 @@ Skrip ini akan menjalankan:
 | ⏱️ **Sesi 4 Jam & Auto-Prune** | Masa aktif sesi 240 menit di database MySQL dengan pembersihan expired per jam |
 | 🌐 **Intranet Speed & Smooth Nav** | Loading animation kontekstual & font fallback sistem lokal untuk navigasi instan di Intranet |
 | 👀 **Mode Tamu (Read-Only)** | Halaman khusus WiFi tamu tanpa login untuk membaca data arsip surat masuk & keluar |
-| 🔒 **Cybersecurity Layer** | Brute Force IP Ban, Formula Injection Guard, CSP, Rate Limiting, Security Headers, Production Hardening |
+| 🔒 **Cybersecurity Layer** | Brute Force IP Ban, Formula Injection Guard, CSP, Rate Limiting, Security Headers, PHP2Shell Immunity (PHP 8.4.27+ & upload progress disabled), Production Hardening |
 | 🧹 **Task Scheduler** | Pembersihan otomatis sesi expired setiap 1 jam & berkas temporary storage setiap 17:00 |
 | 🌐 **Multi-Subnet Support** | Dukungan beberapa subnet sekaligus dipisah koma di `.env` (IPv4 & IPv6 via `ChecksIpSubnet` trait) |
 | 🔄 **Kode Klasifikasi Auto-fill** | Kolom retensi & keamanan terisi otomatis berdasarkan `KODE_MAP` sesuai jadwal retensi arsip |
@@ -81,7 +81,7 @@ Skrip ini akan menjalankan:
 
 | Lapisan | Teknologi |
 |---|---|
-| **Framework** | Laravel 13 (PHP 8.3+) |
+| **Framework** | Laravel 13 (PHP 8.4.27+ / PHP 8.3.36+ / PHP 8.5.12+ — Patch Resmi PHP2Shell) |
 | **Database** | MySQL / MariaDB (autentikasi, session, password reset requests) |
 | **Penyimpanan Data** | Google Sheets API v4 (`dbSM` & `dbSK`) via Service Account |
 | **Penyimpanan File** | Server Lokal (`/uploads`) + Google Drive API (dual backup) |
@@ -91,6 +91,10 @@ Skrip ini akan menjalankan:
 | **Cache** | Laravel Cache (file driver, dapat diganti Redis/Memcached via `CACHE_STORE`) |
 | **Dependency** | `google/apiclient:^2.0` (Sheets & Drive API services) |
 | **Dev Tools** | Laravel Pail, Laravel Pao, Laravel Pint, PHPUnit 12, Faker |
+
+> [!IMPORTANT]
+> **Standar Keamanan PHP Runtime (Mitigasi Insiden PHP2Shell — CVE-2026-109618 & CVE-2026-109619)**:
+> Server wajib menggunakan runtime PHP versi tertambal (**PHP 8.4.27+**, **PHP 8.3.36+**, atau **PHP 8.5.12+**). Versi PHP unpatched (< 8.4.27) rentan terhadap Remote Code Execution (RCE) pre-auth pada level engine interpretor. Selain pembaruan runtime, konfigurasi `php.ini` diperkuat dengan `session.upload_progress.enabled = Off`.
 
 ---
 
@@ -630,6 +634,7 @@ project-magangv1/
 | 19 | **Bug fix**: variabel `$username` tidak terdefinisi di `PasswordResetController::requestReset()` → diganti `$user->name` | `Auth/PasswordResetController.php` |
 | 20 | Dukungan multi-subnet CIDR di `InternalNetworkOnly` & `GuestNetwork` via `ChecksIpSubnet::ipInSubnet()` | `ChecksIpSubnet.php` |
 | 21 | Tambahkan `Trusted Proxy` support di `bootstrap/app.php` via env `TRUSTED_PROXIES` | `bootstrap/app.php` |
+| 22 | **Pembaruan Keamanan PHP Runtime & Mitigasi PHP2Shell**: Upgrade runtime PHP Laragon ke **PHP 8.4.27 (x64 Thread-Safe)** (menambal CVE-2026-109618 & CVE-2026-109619), penguatan `php.ini` (`session.upload_progress.enabled = Off`), sinkronisasi Apache `mod_php.conf`, pembaruan batasan versi `composer.json` (`^8.3.36 || ^8.4.27 || ^8.5.12`), dan perbaikan urutan deteksi ascending pada `setup-and-run.bat` | `composer.json`, `setup-and-run.bat`, `php.ini`, `mod_php.conf`, `laragon.ini` |
 
 ---
 
