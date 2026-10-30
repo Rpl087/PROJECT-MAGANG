@@ -4,44 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Services\SheetsCache;
 
-/**
- * ============================================================
- * DASHBOARD CONTROLLER
- * ============================================================
- *
- * Mengelola tampilan dashboard statistik arsip (hanya untuk admin).
- * Data diambil dari sheet dbSM (Surat Masuk) dan dbSK (Surat Keluar)
- * menggunakan batchGet API untuk efisiensi (1 request, 2 sheet).
- *
- * HALAMAN YANG DIKELOLA:
- *   - /dashboard         → tampilan statistik interaktif (chart, rekap bulanan)
- *   - /dashboard/report  → laporan rekap lengkap per tahun & klasifikasi
- *   - /dashboard/print   → tampilan print-friendly untuk laporan
- *
- * ALUR DATA:
- *   1. Ambil data dbSM dan dbSK dari Google Sheets (via batchGet)
- *   2. Proses baris-baris data menjadi statistik (processRows)
- *   3. Kirim data ke view untuk ditampilkan
- *
- * PARSING TANGGAL:
- *   - Mendukung format tanggal Bahasa Indonesia (Januari, Februari, dst)
- *   - Mendukung format DD/MM/YYYY dan DD-MM-YYYY
- *   - Baris dengan tanggal kosong/tidak valid diabaikan
- *
- * FALLBACK BATCHGET:
- *   Jika batchGet gagal (quota/error), otomatis fallback ke dua request
- *   terpisah untuk dbSM dan dbSK.
- *
- * CATATAN INDEX KOLOM (digunakan di processRows dan report):
- *   - dbSM: dateColIndex=8 (tanggal surat), klasifikasiColIndex=1
- *   - dbSK: dateColIndex=9 (tanggal surat SK berbeda posisi), klasifikasiColIndex=1
- */
 class DashboardController extends Controller
 {
-    /**
-     * Translasi nama bulan Bahasa Indonesia ke Bahasa Inggris.
-     * Digunakan oleh parseDate() agar strtotime() bisa memahami tanggal berbahasa Indonesia.
-     */
     private const ID_TO_EN = [
         'januari'   => 'January',
         'februari'  => 'February',
@@ -81,11 +45,6 @@ class DashboardController extends Controller
         }
     }
 
-    /**
-     * Membangun data statistik dashboard (digunakan oleh index() dan printView()).
-     * Mengambil dua sheet sekaligus via batchGet, lalu memproses rekap bulanan
-     * dan klasifikasi per bulan/tahun.
-     */
     private function buildDashboardStats(string $cacheKey): array
     {
         [$smRows, $skRows] = SheetsCache::remember(
@@ -150,9 +109,6 @@ class DashboardController extends Controller
         ];
     }
 
-    /**
-     * Mengembalikan struktur data kosong untuk view dashboard saat terjadi error.
-     */
     private function emptyDashboardData(string $errorMessage): array
     {
         return [
@@ -444,15 +400,6 @@ class DashboardController extends Controller
         }
     }
 
-    /**
-     * Memproses array baris data sheet menjadi statistik:
-     *   - monthly: jumlah arsip per bulan (key: 'YYYY-MM')
-     *   - klasifikasiMonthly: jumlah per kode per bulan
-     *   - klasifikasiYearly: jumlah per kode per tahun
-     *
-     * Baris dengan tanggal kosong atau tidak valid diabaikan.
-     * Kode klasifikasi diambil hanya prefix huruf (misal: 'KP' dari 'KP.001').
-     */
     private function processRows(array $rows, int $dateColIndex, int $klasifikasiColIndex): array
     {
         $monthly            = [];
@@ -491,15 +438,6 @@ class DashboardController extends Controller
         return compact('monthly', 'klasifikasiMonthly', 'klasifikasiYearly');
     }
 
-    /**
-     * Mengurai string tanggal ke Unix timestamp.
-     * Mendukung:
-     *   - Nama bulan Bahasa Indonesia (via ID_TO_EN)
-     *   - Format DD/MM/YYYY dan DD-MM-YYYY
-     *   - Format-format lain yang didukung strtotime()
-     *
-     * @return int|false Timestamp atau false jika tidak valid
-     */
     private function parseDate(string $raw): int|false
     {
         $raw = trim($raw);
@@ -519,15 +457,6 @@ class DashboardController extends Controller
         return ($ts !== false && $ts > 0) ? $ts : false;
     }
 
-    /**
-     * Mengambil data dari dua sheet (dbSM dan dbSK) dalam satu API call (batchGet).
-     * Lebih efisien dari dua request terpisah.
-     *
-     * Jika batchGet gagal (misal: error jaringan/quota), fallback ke
-     * dua request terpisah untuk menjaga keandalan.
-     *
-     * @return array [$smRows, $skRows]
-     */
     private function fetchBothSheets($service, string $spreadsheetId): array
     {
         try {

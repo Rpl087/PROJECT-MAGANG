@@ -11,21 +11,6 @@ use Google\Service\Sheets;
 class SuratKeluarController extends Controller
 {
 
-    /**
-     * Memetakan ulang kolom raw dbSK agar sesuai urutan tampilan view.
-     *
-     * Urutan kolom RAW dbSK (dari Google Sheets):
-     *   [0]=timestamp, [1]=kode_klas, [2]=kode_surat, [3]=uraian_berkas,
-     *   [4]=kurun_waktu, [5]=jumlah_folder, [6]=nomor_item,
-     *   [7]=pdf_link  ← dipindah ke index 16 hasil mapped!
-     *   [8]=uraian_arsip, [9]=tanggal_surat, ..., [17]=retensi_ket
-     *
-     * Urutan kolom MAPPED (hasil method ini, dipakai oleh view):
-     *   [0..6] sama, [7..15]=kolom [8..16] raw, [16]=pdf_link (dari raw[7])
-     *
-     * PENTING: destroy() dan edit() membaca LANGSUNG dari raw row (bukan mapped),
-     * sehingga pdf_link selalu diakses via index 7 di sana.
-     */
     private function mapDbskRow(array $row): array
     {
         $kodeKlas  = trim($row[1] ?? '');
@@ -40,8 +25,8 @@ class SuratKeluarController extends Controller
             $row[4]  ?? '',
             $row[5]  ?? '',
             $row[6]  ?? '',
-            $row[8]  ?? '',   // index 6 mapped ← raw[8]
-            $row[9]  ?? '',   // index 7 mapped (tanggal) ← raw[9]
+            $row[8]  ?? '',
+            $row[9]  ?? '',
             $row[10] ?? '',
             $row[11] ?? '',
             $row[12] ?? '',
@@ -50,7 +35,7 @@ class SuratKeluarController extends Controller
             $row[15] ?? '',
             $row[16] ?? '',
             $row[17] ?? '',
-            $row[7]  ?? '',   // index 16 mapped (pdf_link) ← raw[7]
+            $row[7]  ?? '',
         ];
     }
 
@@ -85,7 +70,6 @@ class SuratKeluarController extends Controller
         $fetchError = null;
         $isAdmin    = auth()->user()?->hasAdminAccess() ?? false;
 
-        // Semua user yang sudah login (admin maupun internship) bisa melihat data
         try {
             $allRows = $this->fetchAndCacheDbsk();
 
@@ -132,7 +116,6 @@ class SuratKeluarController extends Controller
 
     public function destroy(int $rowIndex)
     {
-        // Validasi: baris 0 adalah header, tidak boleh dihapus
         if ($rowIndex < 1) {
             return redirect()->route('surat-keluar.index')
                 ->with('error', 'Indeks baris tidak valid.');
@@ -150,7 +133,6 @@ class SuratKeluarController extends Controller
                     ->with('error', 'Data tidak ditemukan di sheet dbSK.');
             }
 
-            // Ambil link PDF dari baris RAW (index 7 = kolom H di sheet dbSK)
             $pdfLink = trim($targetRow[7] ?? '');
 
             $sheetId = $this->getSheetId($service, $spreadsheetId, 'dbSK');
@@ -160,7 +142,6 @@ class SuratKeluarController extends Controller
                     ->with('error', 'Sheet "dbSK" tidak ditemukan di Spreadsheet.');
             }
 
-            // Gunakan $rowIndex langsung — sudah merupakan indeks baris yang benar di sheet
             $requests = [[
                 'deleteDimension' => [
                     'range' => [
@@ -277,12 +258,10 @@ class SuratKeluarController extends Controller
                 ->with('success', 'Data surat keluar berhasil diarsipkan ke Spreadsheet!');
         } catch (\Exception $e) {
 
-            // Rollback: hapus file lokal
             if ($storedFilePath !== null) {
                 $this->safeDeleteFile(base_path('uploads/' . $storedFilePath));
             }
 
-            // Rollback: hapus file dari Google Drive jika upload Drive sudah berhasil
             if (!empty($filePath) && str_starts_with($filePath, 'http')) {
                 GoogleDriveService::deleteFile($filePath);
             }
@@ -414,9 +393,6 @@ class SuratKeluarController extends Controller
         }
     }
 
-    /**
-     * Memastikan nilai jumlah_lembar selalu memiliki akhiran ' Lembar'.
-     */
     private function formatJumlahLembar(string $value): string
     {
         $val = trim($value);

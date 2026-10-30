@@ -6,39 +6,6 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
 
-/**
- * ============================================================
- * COMMAND: storage:clean
- * ============================================================
- *
- * Membersihkan file-file temporary di storage Laravel.
- * Dijalankan terjadwal setiap hari via Laravel Scheduler
- * (didaftarkan di bootstrap/app.php atau routes/console.php).
- *
- * YANG DIBERSIHKAN:
- *   1. Compiled views (storage/framework/views/*.php)
- *      → Diregenerasi otomatis saat halaman diakses berikutnya.
- *   2. Session files (storage/framework/sessions/*)
- *      → Menghapus sesi yang sudah tidak aktif.
- *      → File .gitignore dan .gitkeep TIDAK ikut dihapus.
- *   3. Cache data (via php artisan cache:clear)
- *      → Termasuk cache Google Sheets (SheetsCache).
- *
- * CARA MENJALANKAN MANUAL:
- *   php artisan storage:clean
- *
- * JADWAL OTOMATIS:
- *   Perintah ini dijadwalkan berjalan setiap hari (daily) via Laravel Scheduler.
- *   Untuk mengaktifkan scheduler di Windows, daftarkan di Task Scheduler:
- *     php artisan schedule:run
- *   Atau tambahkan ke cron (Linux):
- *     * * * * * php /path/to/artisan schedule:run
- *
- * DAMPAK:
- *   - User yang sedang aktif TIDAK otomatis logout (session DB tetap aman).
- *   - Cache Google Sheets bersih → request pertama setelah clean akan
- *     sedikit lebih lambat karena harus fetch ulang dari API.
- */
 class CleanStorageCommand extends Command
 {
 
@@ -57,7 +24,6 @@ class CleanStorageCommand extends Command
         $sessionCount = 0;
         if (File::exists($sessionPath)) {
             foreach (File::files($sessionPath) as $file) {
-                // Jangan hapus file system (.gitignore, .gitkeep)
                 if (!in_array($file->getFilename(), ['.gitignore', '.gitkeep'])) {
                     File::delete($file->getPathname());
                     $sessionCount++;

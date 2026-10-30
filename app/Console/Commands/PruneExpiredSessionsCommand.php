@@ -8,22 +8,6 @@ use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 
-/**
- * ============================================================
- * COMMAND: session:prune-expired
- * ============================================================
- *
- * Membersihkan record session yang telah melewati batas masa aktif
- * (expired) dari tabel database `sessions` dan file storage sessions.
- *
- * JADWAL OTOMATIS:
- *   Didaftarkan di routes/console.php untuk berjalan otomatis
- *   setiap jam melalui Laravel Scheduler (schedule:work).
- *
- * CARA MENJALANKAN MANUAL:
- *   php artisan session:prune-expired
- *   php artisan session:prune-expired --minutes=240
- */
 class PruneExpiredSessionsCommand extends Command
 {
     protected $signature = 'session:prune-expired {--minutes= : Batas masa aktif dalam menit (default: sesuai config session.lifetime)}';
@@ -49,7 +33,6 @@ class PruneExpiredSessionsCommand extends Command
             $this->warn("Tabel `{$tableName}` tidak ditemukan di database.");
         }
 
-        // Jika ada file sesi di storage/framework/sessions, bersihkan juga yang kadaluarsa
         $fileCount = 0;
         $sessionPath = storage_path('framework/sessions');
         if (File::exists($sessionPath)) {

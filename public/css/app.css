@@ -1,10 +1,7 @@
-/* =========================================================
-   Arsip Surat BPSDMP — Minimalist Professional Design System
-   ========================================================= */
+﻿
 
-/* --- CSS Custom Properties (Design Tokens) --- */
 :root {
-    /* Color Palette — Monochrome + Navy accent */
+    
     --color-bg: #f8f9fb;
     --color-surface: #ffffff;
     --color-border: #e2e5ea;
@@ -24,24 +21,24 @@
     --color-section-num: #cbd5e1;
     --color-required: #dc2626;
 
-    /* Typography */
+    
     --font-family:
         system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
         "Inter", sans-serif;
-    --font-size-xs: 0.8125rem; /* 13px */
-    --font-size-sm: 0.9375rem; /* 15px */
-    --font-size-base: 1rem; /* 16px */
-    --font-size-md: 1.125rem; /* 18px */
-    --font-size-lg: 1.375rem; /* 22px */
-    --font-size-xl: 1.625rem; /* 26px */
-    --font-size-2xl: 2.125rem; /* 34px */
+    --font-size-xs: 0.8125rem; 
+    --font-size-sm: 0.9375rem; 
+    --font-size-base: 1rem; 
+    --font-size-md: 1.125rem; 
+    --font-size-lg: 1.375rem; 
+    --font-size-xl: 1.625rem; 
+    --font-size-2xl: 2.125rem; 
     --font-weight-light: 300;
     --font-weight-regular: 400;
     --font-weight-medium: 500;
     --font-weight-semibold: 600;
     --font-weight-bold: 700;
 
-    /* Spacing */
+    
     --space-1: 0.25rem;
     --space-2: 0.5rem;
     --space-3: 0.75rem;
@@ -52,33 +49,30 @@
     --space-10: 2.5rem;
     --space-12: 3rem;
 
-    /* Radius */
+    
     --radius-sm: 6px;
     --radius-md: 8px;
     --radius-lg: 12px;
 
-    /* Shadows */
+    
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
     --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.06);
     --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.08);
     --shadow-focus: 0 0 0 3px rgba(30, 58, 95, 0.12);
 
-    /* Transitions — smooth cubic-bezier easing throughout */
+    
     --transition-fast:   160ms cubic-bezier(0.4, 0, 0.2, 1);
     --transition-normal: 280ms cubic-bezier(0.4, 0, 0.2, 1);
     --transition-slow:   420ms cubic-bezier(0.22, 1, 0.36, 1);
     --transition-spring: 320ms cubic-bezier(0.34, 1.56, 0.64, 1);
 
-    /* Layout */
+    
     --max-width: 880px;
     --body-max-width: 1120px;
     --sidebar-width: 240px;
     --header-height: 64px;
 }
 
-/* =========================================================
-   Dark Theme — [data-theme="dark"]
-   ========================================================= */
 [data-theme="dark"] {
     --color-bg:             #0f1117;
     --color-surface:        #1a1d27;
@@ -104,29 +98,24 @@
     --shadow-focus: 0 0 0 3px rgba(79,142,247,0.25);
 }
 
-/* Dark — Header */
 [data-theme="dark"] .header {
     background: rgba(26, 29, 39, 0.92);
     border-bottom-color: #2d3148;
 }
 
-/* Dark — Sidebar mobile drawer */
 [data-theme="dark"] .sidebar-overlay {
     background: rgba(0,0,0,0.65);
 }
 
-/* Dark — Form select chevron (white arrow) */
 [data-theme="dark"] .form-select {
     background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%2364748b' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
 }
 
-/* Dark — Login page overrides */
 [data-theme="dark"] .login-card {
     background: #1a1d27;
     border-color: #2d3148;
 }
 
-/* ── Dark Theme Toggle Button ──────────────────────────── */
 .theme-toggle {
     display: inline-flex;
     align-items: center;
@@ -151,7 +140,6 @@
 [data-theme="dark"] .theme-toggle .icon-sun  { display: block; }
 [data-theme="dark"] .theme-toggle .icon-moon { display: none; }
 
-/* --- Reset & Base --- */
 *,
 *::before,
 *::after {
@@ -168,7 +156,6 @@ html {
     scroll-padding-top: calc(var(--header-height) + 1rem);
 }
 
-/* ── View Transitions API — smooth page navigations ── */
 @view-transition { navigation: auto; }
 ::view-transition-old(root),
 ::view-transition-new(root) {
@@ -189,7 +176,6 @@ body {
     overflow-x: hidden;
 }
 
-/* Slide-in konten utama saat halaman pertama kali dimuat */
 .main-content-wrap {
     animation: contentSlideIn 0.38s cubic-bezier(0.22, 1, 0.36, 1) both;
     will-change: opacity, transform;
@@ -199,8 +185,6 @@ body {
     to   { opacity: 1; transform: translateY(0); }
 }
 
-/* ── Modal Overlay — pastikan selalu di viewport penuh, tidak terpengaruh
-   stacking context dari ancestor yang punya transform/filter/will-change ── */
 .modal-overlay {
     position: fixed !important;
     top: 0 !important;
@@ -216,21 +200,21 @@ body {
     background: rgba(0, 0, 0, 0.65);
     backdrop-filter: blur(6px);
     -webkit-backdrop-filter: blur(6px);
-    /* Isolate: break out dari stacking context manapun */
+    
     isolation: isolate;
     contain: layout style;
-    /* Smooth open/close via opacity + pointer-events */
+    
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.24s cubic-bezier(0.4, 0, 0.2, 1);
     will-change: opacity;
 }
-/* State terbuka */
+
 .modal-overlay.is-open {
     opacity: 1;
     pointer-events: auto;
 }
-/* Elemen box di dalam modal: spring entrance */
+
 .modal-overlay .modal-box,
 .modal-overlay > div > .modal-box,
 .modal-overlay > div[id$="-box"] {
@@ -253,7 +237,6 @@ body {
     to   { opacity: 1; }
 }
 
-/* ── Report Section — smooth fade+slide untuk tab switching ── */
 .report-section {
     transition:
         opacity  0.22s ease,
@@ -272,17 +255,11 @@ body {
     to   { opacity: 1; transform: translateY(0); }
 }
 
-/* ── File Upload Preview — smooth cross-fade ── */
 .file-upload-placeholder,
 .file-upload-preview {
     transition: opacity 0.2s ease;
 }
 
-
-
-
-
-/* --- Header --- */
 .header {
     position: sticky;
     top: 0;
@@ -293,14 +270,13 @@ body {
     backdrop-filter: blur(14px);
     -webkit-backdrop-filter: blur(14px);
     will-change: transform;
-    /* Show: fast and crisp */
+    
     transition:
         transform 0.18s cubic-bezier(0.22, 1, 0.36, 1),
         box-shadow 0.18s cubic-bezier(0.4, 0, 0.2, 1),
         background 0.28s ease;
 }
 
-/* Saat disembunyikan: sedikit lebih lambat untuk terasa natural */
 .header.is-hidden {
     transform: translateY(-100%);
     box-shadow: none;
@@ -371,7 +347,6 @@ body {
     font-weight: var(--font-weight-medium);
 }
 
-/* ── Realtime Clock (Global Header) ─────────────────────────────── */
 .header-clock {
     display: inline-flex;
     align-items: center;
@@ -399,7 +374,7 @@ body {
     font-weight: 400;
     margin: 0 1px;
 }
-/* Hide date text on very small screens to save space */
+
 @media (max-width: 520px) {
     #header-clock-date,
     .header-clock-sep { display: none; }
@@ -416,7 +391,6 @@ body {
     }
 }
 
-/* --- Layout Body (Sidebar + Content) --- */
 .layout-body {
     display: flex;
     align-items: flex-start;
@@ -424,9 +398,8 @@ body {
     width: 100%;
 }
 
-/* --- Sidebar --- */
 .sidebar {
-    /* Fixed: benar-benar tidak ikut scroll konten */
+    
     position: fixed;
     top: var(--header-height);
     left: 0;
@@ -440,7 +413,7 @@ body {
     scrollbar-width: thin;
     scrollbar-color: var(--color-border) transparent;
     will-change: transform, top, height;
-    transform: translateZ(0); /* promote to GPU layer */
+    transform: translateZ(0); 
     transition:
         top    0.32s cubic-bezier(0.4, 0, 0.2, 1),
         height 0.32s cubic-bezier(0.4, 0, 0.2, 1),
@@ -449,7 +422,6 @@ body {
         border-color 0.28s ease;
 }
 
-/* Saat header tersembunyi, sidebar naik & memenuhi tinggi layar penuh */
 body.header-is-hidden .sidebar {
     top: 0;
     height: 100vh;
@@ -469,9 +441,9 @@ body.header-is-hidden .sidebar {
     display: flex;
     flex-direction: column;
     gap: 2px;
-    flex: 1;          /* tumbuh mengisi sisa ruang sidebar */
-    min-height: 0;    /* izinkan shrink agar overflow-y bekerja */
-    overflow-y: auto; /* nav scrolls jika item terlalu banyak */
+    flex: 1;          
+    min-height: 0;    
+    overflow-y: auto; 
     scrollbar-width: thin;
     scrollbar-color: var(--color-border) transparent;
 }
@@ -525,7 +497,6 @@ body.header-is-hidden .sidebar {
     opacity: 1;
 }
 
-/* --- Main Content --- */
 .main-content {
     flex: 1;
     min-width: 0;
@@ -537,7 +508,6 @@ body.header-is-hidden .sidebar {
         padding     0.32s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* --- Page Header --- */
 .page-header {
     margin-bottom: var(--space-8);
 }
@@ -568,7 +538,6 @@ body.header-is-hidden .sidebar {
     }
 }
 
-/* --- Alert Messages --- */
 .alert {
     display: flex;
     align-items: center;
@@ -617,14 +586,12 @@ body.header-is-hidden .sidebar {
     }
 }
 
-/* --- Form Container --- */
 .form-container {
     display: flex;
     flex-direction: column;
     gap: var(--space-6);
 }
 
-/* --- Form Section (Card) --- */
 .form-section {
     background: var(--color-surface);
     border: 1px solid var(--color-border);
@@ -644,7 +611,6 @@ body.header-is-hidden .sidebar {
     transform: translateY(-2px);
 }
 
-/* --- Scroll Reveal System --- */
 .reveal {
     transition:
         opacity   0.55s cubic-bezier(0.22, 1, 0.36, 1),
@@ -653,25 +619,21 @@ body.header-is-hidden .sidebar {
     transform: translateZ(0);
 }
 
-/* Muncul dari bawah */
 .reveal-from-bottom {
     opacity: 0;
     transform: translateY(28px);
 }
 
-/* Muncul dari atas */
 .reveal-from-top {
     opacity: 0;
     transform: translateY(-20px);
 }
 
-/* State terlihat */
 .reveal.is-visible {
     opacity: 1 !important;
     transform: translateY(0) !important;
 }
 
-/* Stagger delay — elemen berurutan muncul bergantian */
 .reveal:nth-child(1) { transition-delay: 0ms;   }
 .reveal:nth-child(2) { transition-delay: 55ms;  }
 .reveal:nth-child(3) { transition-delay: 110ms; }
@@ -680,10 +642,8 @@ body.header-is-hidden .sidebar {
 .reveal:nth-child(6) { transition-delay: 275ms; }
 .reveal:nth-child(n+7) { transition-delay: 330ms; }
 
-/* Override delay saat elemen sudah visible */
 .reveal.is-visible { transition-delay: 0ms !important; }
 
-/* --- Section Header --- */
 .section-header {
     display: flex;
     align-items: flex-start;
@@ -716,7 +676,6 @@ body.header-is-hidden .sidebar {
     margin-top: var(--space-1);
 }
 
-/* --- Form Grid --- */
 .form-grid {
     display: grid;
     gap: var(--space-5);
@@ -735,14 +694,12 @@ body.header-is-hidden .sidebar {
     grid-template-columns: repeat(3, 1fr);
 }
 
-/* --- Form Group --- */
 .form-group {
     display: flex;
     flex-direction: column;
     gap: var(--space-2);
 }
 
-/* --- Form Label --- */
 .form-label {
     font-size: var(--font-size-sm);
     font-weight: var(--font-weight-medium);
@@ -755,7 +712,6 @@ body.header-is-hidden .sidebar {
     font-weight: var(--font-weight-bold);
 }
 
-/* --- Form Input --- */
 .form-input {
     width: 100%;
     padding: var(--space-3) var(--space-4);
@@ -816,7 +772,6 @@ select.edit-field-input {
     background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%2394a3b8' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") !important;
 }
 
-/* --- Input Error State --- */
 .input-error {
     border-color: var(--color-error) !important;
     background: var(--color-error-bg);
@@ -826,7 +781,6 @@ select.edit-field-input {
     box-shadow: 0 0 0 3px rgba(185, 28, 28, 0.12);
 }
 
-/* ── Disable WebKit Light Aqua Blue & Match Input Background ── */
 input:-webkit-autofill,
 input:-webkit-autofill:hover, 
 input:-webkit-autofill:focus, 
@@ -839,7 +793,6 @@ select:-webkit-autofill {
     transition: background-color 5000s ease-in-out 0s !important;
 }
 
-/* ── Tombol Simpan ke Arsip (Hijau) ────────────────────── */
 .btn-save-green,
 .btn-success-green {
     background: linear-gradient(135deg, #10b981, #059669) !important;
@@ -865,7 +818,6 @@ select:-webkit-autofill {
     font-weight: var(--font-weight-medium);
 }
 
-/* --- File Upload Component --- */
 .form-group-upload {
     grid-column: 1 / -1;
 }
@@ -911,7 +863,6 @@ select:-webkit-autofill {
     padding: var(--space-3) var(--space-4);
 }
 
-/* Input tersembunyi — trigger via JS */
 .file-upload-input {
     position: absolute;
     inset: 0;
@@ -922,7 +873,6 @@ select:-webkit-autofill {
     z-index: 0;
 }
 
-/* Placeholder (sebelum file dipilih) */
 .file-upload-placeholder {
     display: flex;
     flex-direction: column;
@@ -965,7 +915,6 @@ select:-webkit-autofill {
     font-weight: var(--font-weight-semibold);
 }
 
-/* Preview (setelah file dipilih) */
 .file-upload-preview {
     display: flex;
     align-items: center;
@@ -1032,16 +981,14 @@ select:-webkit-autofill {
     background: var(--color-error-bg);
 }
 
-/* --- Form Actions --- */
 .form-actions {
     display: flex;
     justify-content: flex-end;
     gap: var(--space-3);
     padding-top: var(--space-4);
-    flex-wrap: wrap; /* cegah overflow di layar sempit */
+    flex-wrap: wrap; 
 }
 
-/* --- Buttons --- */
 .btn {
     display: inline-flex;
     align-items: center;
@@ -1101,7 +1048,6 @@ select:-webkit-autofill {
     border-color: var(--color-border-focus);
 }
 
-/* --- Footer --- */
 .footer {
     border-top: 1px solid var(--color-border);
     background: var(--color-surface);
@@ -1122,18 +1068,6 @@ select:-webkit-autofill {
     letter-spacing: 0.02em;
 }
 
-/* --- Responsive Design --- */
-/* ──────────────────────────────────────────────────────────
-   RESPONSIVE — Breakpoints
-   1100px  Split-screen desktop (dihandle di app.blade.php)
-   1024px  Tablet Landscape
-    768px  Tablet Portrait / Mobile Drawer (dihandle di app.blade.php)
-    640px  Large Phone
-    480px  Phone
-    360px  Small Phone
-   ────────────────────────────────────────────────────────── */
-
-/* ── 1024px: Tablet Landscape ── */
 @media (max-width: 1024px) {
     :root { --sidebar-width: 210px; }
     .main-content {
@@ -1145,41 +1079,39 @@ select:-webkit-autofill {
     .form-section { padding: var(--space-6); }
 }
 
-/* ── 768px: Mobile (sidebar sudah jadi drawer di app.blade.php) ── */
 @media (max-width: 768px) {
-    /* Sidebar drawer: mulai dari TOP layar, bukan dari bawah header */
+    
     .sidebar {
         top: 0 !important;
         height: 100vh !important;
         overflow-y: auto !important;
-        /* Pastikan flex-column agar margin-top: auto pada drawer-footer bekerja */
+        
         display: flex !important;
         flex-direction: column !important;
     }
 
-    /* Sidebar nav fleksibel — drawer-footer tetap di bawah */
+    
     .sidebar-nav {
         flex: 1;
     }
 
-    /* Drawer user info: selalu tampil di mobile */
+    
     .drawer-user-info {
         display: flex !important;
     }
 
-    /* Drawer footer selalu terlihat */
+    
     .drawer-footer {
         flex-shrink: 0;
         padding-bottom: 1rem;
     }
 
-    /* Footer mobile */
+    
     .footer {
         margin-left: 0;
     }
 }
 
-/* --- 640px: Large Phone --- */
 @media (max-width: 640px) {
     .header-inner {
         padding: 0 var(--space-4);
@@ -1190,7 +1122,7 @@ select:-webkit-autofill {
         padding: var(--space-5) var(--space-4) var(--space-8);
     }
 
-    /* Semua grid → 1-kolom */
+    
     .form-grid-2,
     .form-grid-3 {
         grid-template-columns: 1fr;
@@ -1217,7 +1149,7 @@ select:-webkit-autofill {
         gap: var(--space-3);
     }
 
-    /* Cegah iOS auto-zoom: input minimal 16px */
+    
     .form-input {
         font-size: 1rem;
     }
@@ -1231,7 +1163,7 @@ select:-webkit-autofill {
         gap: var(--space-1);
     }
 
-    /* File upload preview: wrap pada layar kecil */
+    
     .file-upload-preview {
         flex-wrap: wrap;
         gap: var(--space-2);
@@ -1253,7 +1185,7 @@ select:-webkit-autofill {
         align-items: flex-start;
     }
 
-    /* Form actions: tumpuk vertikal di layar kecil */
+    
     .form-actions {
         flex-direction: column-reverse;
         align-items: stretch;
@@ -1264,7 +1196,6 @@ select:-webkit-autofill {
     }
 }
 
-/* --- 480px: Phone --- */
 @media (max-width: 480px) {
     :root {
         --header-height: 56px;
@@ -1282,7 +1213,6 @@ select:-webkit-autofill {
     .brand-subtitle {
         display: none;
     }
-
 
     .main-content {
         padding: var(--space-4) var(--space-3) var(--space-8);
@@ -1328,7 +1258,6 @@ select:-webkit-autofill {
     }
 }
 
-/* --- 360px: Small Phone --- */
 @media (max-width: 360px) {
     .main-content {
         padding: var(--space-3) var(--space-2) var(--space-6);
@@ -1365,9 +1294,6 @@ select:-webkit-autofill {
     }
 }
 
-/* =========================================================
-   PAGE LOADING BAR — Top progress bar, hilang saat CSS ready
-   ========================================================= */
 #page-loading-bar {
     position: fixed;
     top: 0;
@@ -1399,9 +1325,6 @@ select:-webkit-autofill {
     pointer-events: none;
 }
 
-/* =========================================================
-   SKELETON LOADING — Shimmer untuk tabel saat data dimuat
-   ========================================================= */
 @keyframes shimmer {
     0%   { background-position: -600px 0; }
     100% { background-position:  600px 0; }
@@ -1429,7 +1352,6 @@ select:-webkit-autofill {
     background-size: 600px 100%;
 }
 
-/* ── Skeleton wrapper ── */
 .skeleton-table-wrapper {
     padding: 0.5rem 0;
 }
@@ -1484,14 +1406,12 @@ select:-webkit-autofill {
 .skeleton-cell:nth-child(5) { width: 60px;  }
 .skeleton-cell:nth-child(6) { width: 60px;  }
 
-/* Stagger animasi antar baris skeleton */
 .skeleton-row:nth-child(1) .skeleton-cell { animation-delay: 0ms;   }
 .skeleton-row:nth-child(2) .skeleton-cell { animation-delay: 80ms;  }
 .skeleton-row:nth-child(3) .skeleton-cell { animation-delay: 160ms; }
 .skeleton-row:nth-child(4) .skeleton-cell { animation-delay: 240ms; }
 .skeleton-row:nth-child(5) .skeleton-cell { animation-delay: 320ms; }
 
-/* ── Fade-in tabel saat siap ── */
 .table-content-ready {
     animation: tableFadeIn 0.3s ease-out both;
 }
@@ -1501,42 +1421,31 @@ select:-webkit-autofill {
     to   { opacity: 1; transform: translateY(0);   }
 }
 
-/* =========================================================
-   ANTI-FOUC — Pre-hide elemen sebelum Scroll Reveal aktif
-   ========================================================= */
 .pre-hide {
     opacity: 0;
     transform: translateY(22px);
     will-change: opacity, transform;
-    transform: translateZ(0) translateY(22px); /* GPU layer */
+    transform: translateZ(0) translateY(22px); 
     transition:
         opacity   0.48s cubic-bezier(0.22, 1, 0.36, 1),
         transform 0.48s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* Fade-in: elemen masuk viewport */
 .pre-hide.is-visible {
     opacity: 1;
     transform: translateZ(0) translateY(0);
 }
 
-/* Fade-out: elemen keluar viewport */
 .pre-hide:not(.is-visible) {
     transition-delay: 0ms;
 }
 
-/* Stagger fade-IN */
 .pre-hide.is-visible:nth-child(1) { transition-delay: 0ms;   }
 .pre-hide.is-visible:nth-child(2) { transition-delay: 55ms;  }
 .pre-hide.is-visible:nth-child(3) { transition-delay: 110ms; }
 .pre-hide.is-visible:nth-child(4) { transition-delay: 165ms; }
 .pre-hide.is-visible:nth-child(n+5) { transition-delay: 220ms; }
 
-/* ═══════════════════════════════════════════════════════
-   EDIT BUTTON & MODAL EDIT STYLES
-   ═══════════════════════════════════════════════════════ */
-
-/* ── Tombol Edit (di kolom Aksi tabel) ──────────────────── */
 .btn-edit-sm, .btn-edit-sk {
     display: inline-flex; align-items: center; gap: .3rem;
     padding: .3rem .65rem; font-size: .76rem; font-weight: 600;
@@ -1561,7 +1470,6 @@ select:-webkit-autofill {
     transition-duration: 80ms;
 }
 
-/* ── Modal Edit: 2-column Grid Form Smooth ───────────────── */
 .edit-modal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .85rem 1.1rem; }
 .edit-field-group { display: flex; flex-direction: column; gap: .35rem; }
 .edit-field-full { grid-column: 1 / -1; }
@@ -1582,7 +1490,6 @@ select:-webkit-autofill {
 textarea.edit-field-input { resize: vertical; min-height: 58px; }
 select.edit-field-input { cursor: pointer; }
 
-/* ── Btn Primary (in modal) ──────────────────────────────── */
 .btn-primary {
     display: inline-flex; align-items: center; gap: .4rem;
     padding: .55rem 1.15rem;
@@ -1601,16 +1508,12 @@ select.edit-field-input { cursor: pointer; }
 .btn-primary:hover { opacity: .9; transform: translateY(-1px); box-shadow: 0 4px 16px rgba(37,99,235,.35); }
 .btn-primary:active { transform: scale(0.965); transition-duration: 80ms; }
 
-/* ── Spinner & Responsive ────────────────────────────────── */
 @keyframes spin { to { transform: rotate(360deg); } }
 @media (max-width: 540px) {
     .edit-modal-grid { grid-template-columns: 1fr; }
     .edit-field-full { grid-column: 1; }
 }
 
-/* ══════════════════════════════════════════════════════════════════
-   GLOBAL MODAL OVERLAY & BACKDROP SYSTEM
-   ══════════════════════════════════════════════════════════════════ */
 .modal-overlay {
     position: fixed !important;
     top: 0 !important;
@@ -1650,7 +1553,6 @@ select.edit-field-input { cursor: pointer; }
     pointer-events: auto !important;
 }
 
-/* Modal Box Centered & Animated */
 .modal-overlay .modal-box {
     position: relative !important;
     background: var(--color-surface, #ffffff);
@@ -1678,9 +1580,6 @@ select.edit-field-input { cursor: pointer; }
     transform: scale(1) translateY(0);
 }
 
-/* ══════════════════════════════════════════════════════════════════
-   TABLE COLLAPSE / EXPAND SYSTEM (MAX 5 ROWS BY DEFAULT)
-   ══════════════════════════════════════════════════════════════════ */
 .table-collapse-bar {
     display: flex;
     justify-content: center;
@@ -1744,9 +1643,6 @@ select.edit-field-input { cursor: pointer; }
     transform: rotate(180deg);
 }
 
-/* ══════════════════════════════════════════════════════════════════
-   NETWORK CONNECTION STATUS BADGE (TOPBAR)
-   ══════════════════════════════════════════════════════════════════ */
 .network-badge {
     display: inline-flex;
     align-items: center;

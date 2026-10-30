@@ -13,10 +13,8 @@ use Illuminate\Support\Str;
 class LoginController extends Controller
 {
 
-    /** Maksimum percobaan login gagal per kombinasi username+IP sebelum di-throttle */
     private const MAX_ATTEMPTS  = 5;
 
-    /** Durasi lockout throttle per username+IP dalam menit (5 menit) */
     private const DECAY_MINUTES = 5;
 
     public function showLoginForm()
@@ -81,8 +79,6 @@ class LoginController extends Controller
 
         RateLimiter::hit($throttleKey, self::DECAY_MINUTES * 60);
 
-        // Catat kegagalan per-IP untuk proteksi bruteforce global (BruteForceIpBan).
-        // Jika IP ini mencapai 20 kegagalan dalam 10 menit => IP di-ban 1 jam.
         BruteForceIpBan::recordFailure($request->ip());
 
         Log::warning('Percobaan login gagal.', [

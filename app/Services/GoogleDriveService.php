@@ -10,51 +10,9 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 
-/**
- * ============================================================
- * GOOGLE DRIVE SERVICE
- * ============================================================
- *
- * Mengelola operasi file PDF ke Google Drive menggunakan Service Account.
- * Setiap file PDF yang diarsipkan disimpan di DUA tempat:
- *   1. Google Drive (folder yang dikonfigurasi via GOOGLE_DRIVE_FOLDER_ID)
- *   2. Backup lokal di folder uploads/ di root project
- *
- * KONVENSI NAMA FILE:
- *   Format: {KODE_KLASIFIKASI}_{TIMESTAMP}_{NAMA_ASLI}.pdf
- *   Contoh: KP_20240901_143022_SuratPermohonan.pdf
- *
- * MEKANISME FALLBACK:
- *   Jika upload Google Drive GAGAL (quota habis, API tidak aktif, dll),
- *   sistem TIDAK melempar error ke user. Data tetap tersimpan ke Sheets
- *   dengan kolom link berisi NAMA FILE LOKAL (bukan URL Drive).
- *   File lokal (uploads/) bisa diakses via route /pdf/{type}/{filename}.
- *
- * KONFIGURASI (via .env):
- *   GOOGLE_SERVICE_ACCOUNT_JSON = path/ke/credentials.json
- *   GOOGLE_DRIVE_FOLDER_ID      = ID folder Drive yang dibagikan ke Service Account
- *
- * IZIN FILE DI DRIVE:
- *   Setelah upload, file langsung diset public (anyone reader) agar
- *   link Drive bisa dibuka siapa saja tanpa perlu login Google.
- *   Jika gagal set izin, file tetap tersimpan tapi linknya mungkin private.
- *
- * CATATAN QUOTA:
- *   Service Account di akun Google Drive pribadi memiliki kuota terbatas.
- *   Gunakan Google Workspace / Shared Drive untuk kapasitas lebih besar.
- *   Error 403 storageQuotaExceeded berarti Drive penuh → sistem fallback ke lokal.
- */
 class GoogleDriveService
 {
 
-    /**
-     * Upload file PDF ke Google Drive sekaligus simpan backup di lokal (uploads/).
-     *
-     * @param UploadedFile $file            File PDF yang diupload user
-     * @param string       $kodeKlasifikasi Kode klasifikasi arsip (untuk nama file)
-     * @return array ['filename' => string, 'driveLink' => string]
-     *               driveLink berisi URL Drive jika berhasil, atau nama file lokal jika gagal
-     */
     public static function uploadAndBackup(UploadedFile $file, string $kodeKlasifikasi): array
     {
 
@@ -138,19 +96,6 @@ class GoogleDriveService
         ];
     }
 
-    /**
-     * Mengubah nama file PDF baik di lokal maupun di Google Drive.
-     * Dipanggil saat admin mengedit kode_klasifikasi pada arsip yang sudah ada.
-     *
-     * LOGIKA:
-     *   - Jika $oldLinkOrFilename adalah URL (starts with http) → rename di Drive via API
-     *   - Jika bukan URL → rename file di lokal (uploads/ directory)
-     *   - Nama baru dibentuk dari kode baru + timestamp/suffix dari nama lama
-     *
-     * @param string $oldLinkOrFilename URL Drive atau nama file lokal
-     * @param string $newKodeKlasifikasi Kode klasifikasi baru
-     * @return string URL Drive yang sama (jika Drive), atau nama file lokal baru
-     */
     public static function renameFile(string $oldLinkOrFilename, string $newKodeKlasifikasi): string
     {
         $oldLinkOrFilename = trim($oldLinkOrFilename);
@@ -213,18 +158,6 @@ class GoogleDriveService
         return $newFilename;
     }
 
-    /**
-     * Menghapus file PDF dari lokal DAN Google Drive.
-     * Dipanggil saat admin menghapus data arsip.
-     *
-     * LOGIKA:
-     *   - Jika $linkOrFilename adalah URL Drive → hapus dari Drive + cari & hapus salinan lokal
-     *   - Jika bukan URL → hapus langsung dari uploads/
-     *   - Kegagalan penghapusan dari Drive hanya dicatat ke log (tidak throw exception)
-     *
-     * @param string $linkOrFilename URL Drive atau nama file lokal
-     * @return bool Selalu true (kegagalan Drive tidak dianggap fatal)
-     */
     public static function deleteFile(string $linkOrFilename): bool
     {
         $linkOrFilename = trim($linkOrFilename);
