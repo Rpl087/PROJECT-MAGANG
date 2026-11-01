@@ -164,67 +164,68 @@ Skrip ini akan menjalankan:
 
 ---
 
-## 👤 Use Case Diagram
+
+## ðŸ‘¤ Use Case Diagram
 
 ### Ringkasan Aktor & Use Case
 
 | Aktor | Use Case yang Dapat Diakses |
 |---|---|
-| **Admin** | Login, Logout, Lihat Surat Masuk/Keluar, Input Surat (internal), Edit Data & Rename PDF, Hapus Data & PDF, Dashboard & Grafik, Rekap Laporan & Print, Kelola Pengguna, Terima Notifikasi SSE Reset Password, Akses PDF |
-| **Internship** | Login, Logout, Lihat Surat Masuk/Keluar, Input Surat (internal only), Ajukan Reset Password, Akses PDF |
-| **Tamu WiFi** | Lihat Surat Masuk Read-Only, Lihat Surat Keluar Read-Only (tanpa login, dari subnet tamu) |
+| **Admin** | Login, Logout, Lihat Surat Masuk/Keluar, Input Surat (jaringan internal), Edit Data & Rename PDF, Hapus Data & PDF, Dashboard & Grafik, Rekap Laporan & Print, Kelola Pengguna, Terima Notifikasi SSE Reset Password, Akses PDF |
+| **Internship** | Login, Logout, Lihat Surat Masuk/Keluar, Input Surat (jaringan internal only), Ajukan Reset Password, Akses PDF |
+| **Tamu WiFi** | Lihat Surat Masuk Read-Only, Lihat Surat Keluar Read-Only (tanpa login, dari subnet tamu/internal) |
 | **Publik** | Akses URL PDF langsung (tanpa login) |
+
+> **Catatan Arsitektur:** Input Surat Masuk & Keluar dibatasi `InternalNetworkOnly` middleware â€” hanya bisa dari subnet internal. Admin memiliki akses penuh CRUD; Internship hanya dapat input (tidak bisa edit/hapus). `hasAdminAccess()` saat ini identik dengan `isAdmin()` (tidak ada role tambahan). Tamu WiFi dilayani dari cache SheetsCache tanpa autentikasi.
 
 ```mermaid
 flowchart LR
-    %% ── Aktor Utama ──
     Tamu([Tamu WiFi])
     Publ([Publik])
     Intrn([Internship])
     Adm([Admin])
 
-    %% ── Sistem Boundary ──
-    subgraph Sistem_Pengarsipan_Digital_BPSDMP [Sistem Pengarsipan Digital BPSDMP]
+    subgraph SIS [Sistem Pengarsipan Digital BPSDMP]
         direction TB
-        
-        UC_TamuSM([Lihat Surat Masuk Read-Only])
-        UC_TamuSK([Lihat Surat Keluar Read-Only])
-        UC_AksesPDF([Akses URL PDF])
-        
-        UC_ResetReq([Ajukan Reset Password])
-        UC_Login([Login])
-        UC_Logout([Logout])
-        UC_LihatSM([Lihat Surat Masuk])
-        UC_LihatSK([Lihat Surat Keluar])
-        UC_InputSM([Input Surat Masuk])
-        UC_InputSK([Input Surat Keluar])
-        
-        UC_ResetMgr([Terima Notifikasi SSE Reset])
-        UC_KelolaUser([Kelola Pengguna])
-        UC_Dashboard([Dashboard & Grafik])
-        UC_Rekap([Rekap Laporan])
-        UC_Print([Print Laporan])
-        UC_Edit([Edit Data & Rename PDF])
-        UC_Hapus([Hapus Data & PDF])
-        
-        UC_Upload([Upload & Backup PDF])
-        UC_Simpan([Simpan ke Google Sheets])
+
+        UC_TamuSM(["Lihat Surat Masuk\nRead-Only /tamu"])
+        UC_TamuSK(["Lihat Surat Keluar\nRead-Only /tamu/surat-keluar"])
+        UC_AksesPDF(["Akses URL PDF\n/pdf/type/filename"])
+
+        UC_Login(["Login\n/login"])
+        UC_Logout(["Logout\n/logout"])
+        UC_ResetReq(["Ajukan Reset Password\n(Internship only)"])
+        UC_LihatSM(["Lihat Surat Masuk\n/arsip"])
+        UC_LihatSK(["Lihat Surat Keluar\n/surat-keluar"])
+        UC_InputSM(["Input Surat Masuk\nPOST /arsip\n(jaringan internal)"])
+        UC_InputSK(["Input Surat Keluar\nPOST /surat-keluar\n(jaringan internal)"])
+
+        UC_Edit(["Edit Data & Rename PDF\n(Admin only)"])
+        UC_Hapus(["Hapus Data & PDF\n(Admin only)"])
+        UC_Dashboard(["Dashboard & Grafik Bar\n(Chart.js + datalabels)"])
+        UC_Rekap(["Rekap Laporan\nper Tahun & Klasifikasi"])
+        UC_Print(["Print Laporan\nPrint-Friendly View"])
+        UC_KelolaUser(["Kelola Pengguna &\nReset Password Manual"])
+        UC_SSE(["Terima Notifikasi\nSSE + Polling Fallback"])
+
+        UC_Upload(["Upload & Backup PDF\nLokal /uploads + Drive"])
+        UC_Simpan(["Simpan/Update/Hapus\nGoogle Sheets API"])
+        UC_Cache(["Invalidasi SheetsCache\nDual-tier: Admin 30s / Non-admin 60s"])
     end
 
-    %% ── Aktor Eksternal ──
     GS([Google Sheets API])
     GD([Google Drive API])
+    MySQL([MySQL\nAuth + Session + Cache])
 
-    %% ── Asosiasi Aktor Utama ↔ Use Case ──
     Tamu --- UC_TamuSM
     Tamu --- UC_TamuSK
     Tamu --- UC_AksesPDF
 
     Publ --- UC_AksesPDF
 
-    Intrn --- UC_ResetReq
     Intrn --- UC_Login
     Intrn --- UC_Logout
+    Intrn --- UC_ResetReq
     Intrn --- UC_LihatSM
     Intrn --- UC_LihatSK
     Intrn --- UC_InputSM
@@ -237,74 +238,92 @@ flowchart LR
     Adm --- UC_LihatSK
     Adm --- UC_InputSM
     Adm --- UC_InputSK
-    Adm --- UC_ResetMgr
-    Adm --- UC_KelolaUser
+    Adm --- UC_Edit
+    Adm --- UC_Hapus
     Adm --- UC_Dashboard
     Adm --- UC_Rekap
     Adm --- UC_Print
-    Adm --- UC_Edit
-    Adm --- UC_Hapus
+    Adm --- UC_KelolaUser
+    Adm --- UC_SSE
     Adm --- UC_AksesPDF
 
-    %% ── Relasi <<include>> ──
-    UC_InputSM -. "<<include>>" .-> UC_Upload
-    UC_InputSK -. "<<include>>" .-> UC_Upload
-    UC_Edit -. "<<include>>" .-> UC_Upload
-    UC_Hapus -. "<<include>>" .-> UC_Upload
+    UC_InputSM -. "include" .-> UC_Upload
+    UC_InputSK -. "include" .-> UC_Upload
+    UC_Edit    -. "include" .-> UC_Upload
+    UC_Hapus   -. "include" .-> UC_Upload
+    UC_InputSM -. "include" .-> UC_Simpan
+    UC_InputSK -. "include" .-> UC_Simpan
+    UC_Edit    -. "include" .-> UC_Simpan
+    UC_Hapus   -. "include" .-> UC_Simpan
+    UC_Simpan  -. "include" .-> UC_Cache
 
-    UC_InputSM -. "<<include>>" .-> UC_Simpan
-    UC_InputSK -. "<<include>>" .-> UC_Simpan
-    UC_Edit -. "<<include>>" .-> UC_Simpan
-    UC_Hapus -. "<<include>>" .-> UC_Simpan
-
-    %% ── Asosiasi Use Case ↔ Aktor Eksternal ──
-    UC_Simpan --- GS
-    UC_Dashboard --- GS
-    UC_Rekap --- GS
-    UC_Upload --- GD
+    UC_Simpan     --- GS
+    UC_Dashboard  --- GS
+    UC_Rekap      --- GS
+    UC_TamuSM     --- GS
+    UC_TamuSK     --- GS
+    UC_LihatSM    --- GS
+    UC_LihatSK    --- GS
+    UC_Upload     --- GD
+    UC_Login      --- MySQL
+    UC_SSE        --- MySQL
+    UC_KelolaUser --- MySQL
+    UC_ResetReq   --- MySQL
 ```
 
 
 ---
 
-## 🔄 Flowchart Sistem
+## ðŸ”„ Flowchart Sistem
 
 ### Alur Autentikasi & Navigasi
 
 ```mermaid
 flowchart TD
-    Start(["🚀 Buka Aplikasi"]) --> CheckAuth{"🔒 Session\nAktif?"}
+    Start(["Buka Aplikasi"]) --> CheckAuth{"Session\nAktif?"}
 
-    CheckAuth -- Tidak --> LoginPage["🔑 Halaman Login"]
-    LoginPage --> CheckBan{"🛡️ IP\nDi-ban?"}
-    CheckBan -- Ya --> Block429["⛔ HTTP 429\nAkses Diblokir 1 Jam"]
-    CheckBan -- Tidak --> InputCred["📝 Input Username/Email\n& Password"]
-    InputCred --> ValidateCred{"⚡ Kredensial\nValid?"}
-    ValidateCred -- Tidak --> RecordFail["📊 Catat Gagal Login\n(BruteForceIpBan)"]
-    RecordFail --> CheckThrottle{"🔢 ≥ 20x Gagal\ndalam 10 menit?"}
-    CheckThrottle -- Ya --> BanIP["🚫 Ban IP 1 Jam"]
+    CheckAuth -- Tidak --> LoginPage["Halaman Login\n/login"]
+    LoginPage --> CheckBan{"IP\nDi-ban?\nBruteForceIpBan"}
+    CheckBan -- Ya --> Block429["HTTP 429\nAkses Diblokir 1 Jam"]
+    CheckBan -- Tidak --> InputCred["Input Username/Email\n& Password"]
+    InputCred --> RateLimit{"Rate Limit\n5x gagal / 5 menit?"}
+    RateLimit -- Ya --> ErrThrottle["HTTP 429\nThrottle 5 menit"] --> LoginPage
+    RateLimit -- Tidak --> ValidateCred{"Kredensial\nValid?"}
+    ValidateCred -- Tidak --> RecordFail["Catat Gagal Login\nBruteForceIpBan::recordFailure()"]
+    RecordFail --> CheckBanCount{"â‰¥ 20 gagal\ndalam 10 menit?"}
+    CheckBanCount -- Ya --> BanIP["Ban IP 1 Jam\nCache ipban:md5(ip)"]
     BanIP --> Block429
-    CheckThrottle -- Tidak --> ErrMsg["⚠️ Pesan Error\nLogin Gagal"] --> LoginPage
-    ValidateCred -- Ya --> CreateSession["🎫 Buat Session\n(DB MySQL, 240 menit)"]
-    CreateSession --> CheckRole{"👤 Role\nUser?"}
+    CheckBanCount -- Tidak --> ErrMsg["Pesan Error\nlogin_error session"] --> LoginPage
+    ValidateCred -- Ya --> CreateSession["Buat Session DB MySQL\n240 menit, SameSite=lax"]
+    CreateSession --> UpdateLastSeen["Update last_seen_at\nUpdateUserLastSeen middleware"]
+    UpdateLastSeen --> CheckRole{"Role User?"}
 
-    CheckAuth -- Ya --> CheckRole
+    CheckAuth -- Ya --> UpdateLastSeen
 
-    CheckRole -- Admin --> CheckIntranet1{"🌐 Dari Jaringan\nInternal?"}
-    CheckIntranet1 -- Ya --> AdminDashboard["📊 Dashboard Admin"]
-    CheckIntranet1 -- Tidak --> ArsipReadAdmin["📋 Lihat Arsip\n(Read-Only Mode)"]
-    CheckRole -- Internship --> ArsipRead["📋 Halaman Surat Masuk"]
+    CheckRole -- admin --> AdminDash["Dashboard Admin\n/dashboard"]
+    CheckRole -- internship --> ArsipRead["Surat Masuk\n/arsip (index)"]
 
-    subgraph TamuFlow ["👥 Alur Tamu (Tanpa Login)"]
-        TamuReq["👥 Request /tamu/*"] --> CheckSubnet{"📡 Dari Subnet\nTamu/Internal?"}
-        CheckSubnet -- Ya --> TamuView["👀 Tampil Read-Only\n(Surat Masuk / Keluar)"]
-        CheckSubnet -- Tidak --> Deny403["🚫 HTTP 403\nAkses Ditolak"]
+    subgraph TamuFlow ["Alur Tamu WiFi â€” Tanpa Login"]
+        TamuReq["/tamu atau /tamu/surat-keluar"] --> CheckSubnet{"Dari Subnet\nTamu / Internal?\nGuestNetwork middleware"}
+        CheckSubnet -- Ya --> TamuView["Tampil Read-Only\ndari SheetsCache"]
+        CheckSubnet -- Tidak --> Deny403["HTTP 403\nAkses Ditolak"]
     end
 
-    subgraph PublicFlow ["🌍 Akses Publik PDF"]
-        PDFReq["🔗 GET /pdf/type/filename"] --> ValidatePDF{"✅ File .pdf\nValid & Ada?"}
-        ValidatePDF -- Ya --> ServePDF["📄 Serve PDF\n(Cache 1 hari)"]
-        ValidatePDF -- Tidak --> PDF404["❌ HTTP 404"]
+    subgraph PublicFlow ["Akses Publik PDF"]
+        PDFReq["GET /pdf/type/filename"] --> ValidatePDF{"File .pdf valid\n& ada di /uploads?"}
+        ValidatePDF -- Ya --> ServePDF["Serve PDF\nCache-Control 1 hari"]
+        ValidatePDF -- Tidak --> PDF404["HTTP 404"]
+    end
+
+    subgraph ResetFlow ["Alur Reset Password Internship"]
+        BtnForgot["Klik Lupa Password"] --> ResetForm["Isi Username\ndi Modal"]
+        ResetForm --> ResetThrottle{"Throttle\n3 req / 5 menit?"}
+        ResetThrottle -- Ya --> TooMany["HTTP 429"] --> ResetForm
+        ResetThrottle -- Tidak --> SaveRequest["Simpan PasswordResetRequest\nke MySQL (is_resolved=false)"]
+        SaveRequest --> SSENotif["SSE event dikirim\nke Admin yang login"]
+        SSENotif --> AdminResolve["Admin lihat di\n/admin/users"]
+        AdminResolve --> ResetPw["Admin reset password\n(bcrypt hash baru)"]
+        ResetPw --> MarkResolved["is_resolved=true\nresolved_at=now()"]
     end
 ```
 
@@ -312,155 +331,200 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-    UserAksi(["👤 User Terautentikasi\n(Admin / Internship)"]) --> CheckNet{"🌐 Dari Jaringan\nInternal?"}
-    CheckNet -- Tidak --> Deny403["🚫 HTTP 403 — Ditolak\n(InternalNetworkOnly)"]
-    CheckNet -- Ya --> PilihAksi{"📌 Pilih Aksi"}
+    UserAksi(["User Terautentikasi\nAdmin / Internship"]) --> CheckNet{"Dari Jaringan\nInternal?\nInternalNetworkOnly middleware"}
+    CheckNet -- Tidak --> Deny403["HTTP 403 â€” Ditolak"]
+    CheckNet -- Ya --> PilihAksi{"Pilih Aksi"}
 
-    PilihAksi -- "📥 Input Surat Masuk" --> FormSM["📋 Isi Form dbSM\n(17 field + 1 PDF)"]
-    PilihAksi -- "📤 Input Surat Keluar" --> FormSK["📋 Isi Form dbSK\n(17 field + 1 PDF)"]
+    PilihAksi -- "Input Surat Masuk" --> FormSM["Isi Form dbSM\n17 field + 1 PDF"]
+    PilihAksi -- "Input Surat Keluar" --> FormSK["Isi Form dbSK\n17 field + 1 PDF"]
 
-    FormSM --> ValidasiSM{"✅ Validasi\nInput?"}
-    FormSK --> ValidasiSK{"✅ Validasi\nInput?"}
+    FormSM --> ValidasiSM{"Validasi\nInput Laravel"}
+    FormSK --> ValidasiSK{"Validasi\nInput Laravel"}
+    ValidasiSM -- Gagal --> ErrSM["Error Validasi\nredirect + withInput"] --> FormSM
+    ValidasiSK -- Gagal --> ErrSK["Error Validasi\nredirect + withInput"] --> FormSK
 
-    ValidasiSM -- Gagal --> ErrSM["⚠️ Error Validasi"] --> FormSM
-    ValidasiSK -- Gagal --> ErrSK["⚠️ Error Validasi"] --> FormSK
+    ValidasiSM -- OK --> KodeMapSM["applyKodeMapFallback()\nAuto-fill retensi & keamanan"]
+    ValidasiSK -- OK --> KodeMapSK["applyKodeMapFallback()\nAuto-fill retensi & keamanan"]
+    KodeMapSM --> EscapeSM["escapeFormula()\nSanitasi = + - @ prefix"]
+    KodeMapSK --> EscapeKSK["escapeFormula()\nSanitasi = + - @ prefix"]
 
-    ValidasiSM -- OK --> UploadDrive1["☁️ Upload PDF\nke Google Drive"]
-    ValidasiSK -- OK --> UploadDrive2["☁️ Upload PDF\nke Google Drive"]
+    EscapeSM --> UploadDrive1["GoogleDriveService::uploadAndBackup()\nBackup ke /uploads lokal DULU\nlalu upload ke Google Drive"]
+    EscapeKSK --> UploadDrive2["GoogleDriveService::uploadAndBackup()\nBackup ke /uploads lokal DULU\nlalu upload ke Google Drive"]
 
-    UploadDrive1 --> BackupLokal1["💾 Backup PDF\nke /uploads (lokal)"]
-    UploadDrive2 --> BackupLokal2["💾 Backup PDF\nke /uploads (lokal)"]
+    UploadDrive1 --> AppendSheet1["Sheets API: append baris\ndbSM!A:R â€” 18 kolom"]
+    UploadDrive2 --> AppendSheet2["Sheets API: append baris\ndbSK!A:R â€” 18 kolom"]
 
-    BackupLokal1 --> AppendSheetSM["📊 Append Baris\nGoogle Sheets dbSM"]
-    BackupLokal2 --> AppendSheetSK["📊 Append Baris\nGoogle Sheets dbSK"]
+    AppendSheet1 --> Err1{"Exception\nSheets API?"}
+    AppendSheet2 --> Err2{"Exception\nSheets API?"}
 
-    AppendSheetSM --> CheckErr1{"❌ Gagal\nSheets?"}
-    AppendSheetSK --> CheckErr2{"❌ Gagal\nSheets?"}
+    Err1 -- Ya --> Rollback1["Rollback:\nHapus file lokal /uploads\n+ deleteFile() dari Drive"] --> ErrNotif["Flash error\nredirect back"]
+    Err2 -- Ya --> Rollback2["Rollback:\nHapus file lokal /uploads\n+ deleteFile() dari Drive"] --> ErrNotif
 
-    CheckErr1 -- Ya --> Rollback1["🔙 Rollback:\nHapus PDF lokal & Drive"] --> ErrNotif["⚠️ Notifikasi Gagal"]
-    CheckErr2 -- Ya --> Rollback2["🔙 Rollback:\nHapus PDF lokal & Drive"] --> ErrNotif
+    Err1 -- Tidak --> Forget1["SheetsCache::forgetSuratMasuk()\nHapus: SM + Dashboard + Report cache"]
+    Err2 -- Tidak --> Forget2["SheetsCache::forgetSuratKeluar()\nHapus: SK + Dashboard + Report cache"]
+    Forget1 --> OKNotif["Flash success\nredirect index"]
+    Forget2 --> OKNotif
 
-    CheckErr1 -- Tidak --> InvalidateCache1["🗑️ Invalidate SheetsCache\n(SM + Dashboard + Report)"]
-    CheckErr2 -- Tidak --> InvalidateCache2["🗑️ Invalidate SheetsCache\n(SK + Dashboard + Report)"]
+    PilihAksi -- "Edit (Admin only)" --> CheckAdmin1{"AdminOnly\nmiddleware"}
+    CheckAdmin1 -- Tidak --> Deny403
+    CheckAdmin1 -- Ya --> EditFetch["GET /arsip/{rowIndex}/edit\nAmbiil baris dari Sheets\nJSON response"]
+    EditFetch --> EditForm["User isi form edit\ndi modal"]
+    EditForm --> UpdateSheet["Sheets API: update baris\ndbSM!B{n}:R{n}"]
+    UpdateSheet --> RenameFile["GoogleDriveService::renameFile()\nRename PDF lokal + Drive"]
+    RenameFile --> Forget1
 
-    InvalidateCache1 --> SuccessNotif["✅ Notifikasi Berhasil"]
-    InvalidateCache2 --> SuccessNotif
+    PilihAksi -- "Hapus (Admin only)" --> CheckAdmin2{"AdminOnly\nmiddleware"}
+    CheckAdmin2 -- Tidak --> Deny403
+    CheckAdmin2 -- Ya --> DelRow["Sheets API: delete baris\nvia shiftDimensionRequest"]
+    DelRow --> DelFile["GoogleDriveService::deleteFile()\nHapus PDF lokal + Drive"]
+    DelFile --> Forget1
+```
 
-    PilihAksi -- "✏️ Edit (Admin)" --> EditForm["✏️ Load Data dari Sheets\n(JSON Response)"]
-    EditForm --> UpdateSheets["🔄 Update Baris Sheets\n+ Rename PDF Drive/Lokal"]
-    UpdateSheets --> InvalidateCache1
+### Alur Cache Google Sheets (Dual-Tier)
 
-    PilihAksi -- "🗑️ Hapus (Admin)" --> DeleteRow["🗑️ Delete Baris Sheets\n+ Hapus PDF Drive/Lokal"]
-    DeleteRow --> InvalidateCache1
+```mermaid
+flowchart TD
+    Req(["Request data\nSurat Masuk / Keluar / Dashboard"]) --> IsAdmin{"User\nAdmin?"}
+
+    IsAdmin -- Ya --> CheckMicro{"Cache\nadmin.micro.{key}\nTTL 30s ada?"}
+    CheckMicro -- Ya --> ReturnMicro["Return data\ndari micro-cache"]
+    CheckMicro -- Tidak --> FetchSheets["Fetch dari\nGoogle Sheets API"]
+    FetchSheets --> WriteMicro["Tulis admin.micro.{key}\n(TTL 30 detik)"]
+    WriteMicro --> WriteGlobal["Tulis {key} global\n(TTL 60 detik)\nuntuk non-admin"]
+    WriteGlobal --> ReturnData["Return data"]
+
+    IsAdmin -- Tidak --> CheckGlobal{"Cache {key}\nTTL 60s ada?"}
+    CheckGlobal -- Ya --> ReturnGlobal["Return data\ndari cache global"]
+    CheckGlobal -- Tidak --> FetchSheets2["Fetch dari\nGoogle Sheets API"]
+    FetchSheets2 --> WriteGlobal2["Tulis {key} global\n(TTL 60 detik)"]
+    WriteGlobal2 --> ReturnData
+
+    StoreUpdate(["store() / update() / destroy()"]) --> ForgetAll["SheetsCache::forget(key)\nHapus cache global\n+ admin.micro.{key}"]
 ```
 
 ---
 
-## 📐 Entity Relationship Diagram (ERD)
+## ðŸ“ Entity Relationship Diagram (ERD)
 
-### Tabel MySQL (Autentikasi & Session)
+### Tabel MySQL (Autentikasi, Session, Cache, Reset)
+
+> **Catatan Arsitektur:** MySQL **hanya** menyimpan data autentikasi, session, cache Laravel, dan permintaan reset password. Data arsip surat (Surat Masuk & Keluar) disimpan di **Google Spreadsheet** via API â€” bukan di MySQL.
 
 ```mermaid
 erDiagram
     USERS {
         bigint id PK "AUTO_INCREMENT"
-        string name "Nama lengkap user"
-        string email UK "Unique, untuk login"
-        string password "bcrypt hash"
+        string name "Username untuk login, unik"
+        string email UK "Email unik, alternatif login"
+        string password "bcrypt hash (cast: hashed)"
         string role "admin / internship"
-        datetime last_seen_at "Update tiap 60 detik"
-        string remember_token
-        datetime email_verified_at
+        datetime last_seen_at "Update tiap 60 dtk via middleware"
+        string remember_token "Laravel remember-me token"
+        datetime email_verified_at "Nullable"
         datetime created_at
         datetime updated_at
     }
 
     SESSIONS {
-        string id PK "Session token"
-        bigint user_id FK "Nullable (guest session)"
-        string ip_address
+        string id PK "Session token (UUID)"
+        bigint user_id FK "Nullable â€” guest session"
+        string ip_address "IPv4 / IPv6"
         text user_agent
-        longtext payload "Encrypted session data"
-        int last_activity "Unix timestamp"
+        longtext payload "Encrypted session payload"
+        int last_activity "Unix timestamp, index ada"
     }
 
     PASSWORD_RESET_REQUESTS {
         bigint id PK "AUTO_INCREMENT"
-        string username "Name atau email yang diajukan"
-        string ip_address "IP yang mengajukan"
-        boolean is_resolved "Default: false"
-        datetime resolved_at "Nullable"
+        string username "name user yang mengajukan, index"
+        string ip_address "IP pengaju, index"
+        boolean is_resolved "Default: false, index"
+        datetime resolved_at "Nullable â€” diisi saat admin resolve"
         datetime created_at
         datetime updated_at
     }
 
     CACHE {
-        string key PK "Cache key (sheets.*, admin.micro.*)"
-        mediumtext value "Serialized data Google Sheets"
+        string key PK "sheets.*, admin.micro.sheets.*"
+        mediumtext value "Serialized data dari Google Sheets"
         int expiration "Unix timestamp TTL"
     }
 
-    USERS ||--o{ SESSIONS : "memiliki sesi"
-    USERS ||--o{ PASSWORD_RESET_REQUESTS : "mengajukan reset"
-    CACHE }o--|| USERS : "scope: admin.micro (TTL 30s)"
+    CACHE_LOCKS {
+        string key PK
+        string owner
+        int expiration
+    }
+
+    USERS ||--o{ SESSIONS : "memiliki sesi aktif"
+    USERS ||--o{ PASSWORD_RESET_REQUESTS : "mengajukan reset via username=name"
 ```
 
 ### Skema Data Google Sheets (Non-Relasional)
 
-> **Catatan Arsitektur**: Google Sheets **bukan** tabel relasional. Data arsip disimpan langsung di Google Spreadsheet via API, bukan di MySQL. MySQL hanya untuk autentikasi, session, cache, dan password reset requests.
+> **Perbedaan Kritis dbSM vs dbSK:** Posisi kolom PDF berbeda â€” dbSM menyimpan PDF di kolom **R (index 17)**, sedangkan dbSK menyimpan di kolom **H (index 7)**. `tanggal_surat` juga berbeda index: dbSM di col **I (index 8)**, dbSK di col **J (index 9)**. Ini digunakan langsung di `DashboardController::buildDashboardStats()` dengan `dateColIndex: 8` untuk SM dan `dateColIndex: 9` untuk SK.
 
 ```mermaid
 erDiagram
     dbSM_SuratMasuk {
-        string A_timestamp "Waktu input data"
-        string B_kode_klasifikasi "Kode klasifikasi (KP/PR/HK/dll)"
-        string C_kode_surat "Nomor surat"
-        string D_uraian_berkas "Uraian isi berkas"
-        string E_kurun_waktu "Tahun dokumen"
-        string F_jumlah_folder "Jumlah folder fisik"
-        string G_nomor_item_arsip "Nomor urut item"
-        string H_uraian_informasi_arsip "Uraian informasi arsip"
-        string I_tanggal_surat "Tanggal surat (col index 8)"
-        string J_jumlah_lembar "Jumlah lembar (auto-format)"
-        string K_tingkat_perkembangan "Asli/Copy/dll"
-        string L_lokasi_simpan "Lokasi penyimpanan fisik"
-        string M_klasifikasi_keamanan "Biasa/Terbatas/Rahasia"
-        string N_tingkat_akses "Publik/Internal/dll"
-        string O_retensi_aktif "Masa simpan aktif"
-        string P_retensi_inaktif "Masa simpan inaktif"
-        string Q_retensi_keterangan "Keterangan retensi"
-        string R_url_pdf "Google Drive link / nama file lokal"
+        string A_timestamp "col 0 â€” Waktu input (Y-m-d H:i:s)"
+        string B_kode_klasifikasi "col 1 â€” KP/PR/HK/UM/dll"
+        string C_kode_surat "col 2 â€” Nomor surat"
+        string D_uraian_berkas "col 3 â€” Uraian isi berkas"
+        string E_kurun_waktu "col 4 â€” Tahun dokumen (numeric)"
+        string F_jumlah_folder "col 5 â€” Jumlah folder fisik"
+        string G_nomor_item_arsip "col 6 â€” Nomor urut item (numeric)"
+        string H_uraian_informasi_arsip "col 7 â€” Uraian informasi arsip"
+        string I_tanggal_surat "col 8 â€” Tanggal surat (dateColIndex=8)"
+        string J_jumlah_lembar "col 9 â€” Auto-format N Lembar"
+        string K_tingkat_perkembangan "col 10 â€” Asli/Copy/dll"
+        string L_lokasi_simpan "col 11 â€” Lokasi penyimpanan fisik"
+        string M_klasifikasi_keamanan "col 12 â€” Biasa/Terbatas/Rahasia"
+        string N_tingkat_akses "col 13 â€” Publik/Internal/dll"
+        string O_retensi_aktif "col 14 â€” auto-fill via KODE_MAP"
+        string P_retensi_inaktif "col 15 â€” auto-fill via KODE_MAP"
+        string Q_retensi_keterangan "col 16 â€” auto-fill via KODE_MAP"
+        string R_url_pdf "col 17 â€” Google Drive webViewLink / filename lokal"
     }
 
     dbSK_SuratKeluar {
-        string A_timestamp "Waktu input data"
-        string B_kode_klasifikasi "Kode klasifikasi"
-        string C_kode_surat "Nomor surat"
-        string D_uraian_berkas "Uraian isi berkas"
-        string E_kurun_waktu "Tahun dokumen"
-        string F_jumlah_folder "Jumlah folder fisik"
-        string G_nomor_item_arsip "Nomor urut item"
-        string H_url_pdf "⚠️ PDF di col-H (beda dari dbSM!)"
-        string I_uraian_informasi_arsip "Digeser dari posisi dbSM"
-        string J_tanggal_surat "Tanggal surat (col index 9)"
-        string K_jumlah_lembar "Jumlah lembar (auto-format)"
-        string L_tingkat_perkembangan "Asli/Copy/dll"
-        string M_lokasi_simpan "Lokasi penyimpanan fisik"
-        string N_klasifikasi_keamanan "Biasa/Terbatas/Rahasia"
-        string O_tingkat_akses "Publik/Internal/dll"
-        string P_retensi_aktif "Masa simpan aktif"
-        string Q_retensi_inaktif "Masa simpan inaktif"
-        string R_retensi_keterangan "Keterangan retensi"
+        string A_timestamp "col 0 â€” Waktu input (Y-m-d H:i:s)"
+        string B_kode_klasifikasi "col 1 â€” KP/PR/HK/UM/dll"
+        string C_kode_surat "col 2 â€” Nomor surat"
+        string D_uraian_berkas "col 3 â€” Uraian isi berkas"
+        string E_kurun_waktu "col 4 â€” Tahun dokumen"
+        string F_jumlah_folder "col 5 â€” Jumlah folder fisik"
+        string G_nomor_item_arsip "col 6 â€” Nomor urut item"
+        string H_url_pdf "col 7 â€” PDF di H bukan R! Drive link / filename"
+        string I_uraian_informasi_arsip "col 8 â€” Uraian informasi arsip"
+        string J_tanggal_surat "col 9 â€” Tanggal surat (dateColIndex=9)"
+        string K_jumlah_lembar "col 10 â€” Auto-format N Lembar"
+        string L_tingkat_perkembangan "col 11 â€” Asli/Copy/dll"
+        string M_lokasi_simpan "col 12 â€” Lokasi penyimpanan fisik"
+        string N_klasifikasi_keamanan "col 13 â€” Biasa/Terbatas/Rahasia"
+        string O_tingkat_akses "col 14 â€” Publik/Internal/dll"
+        string P_retensi_aktif "col 15 â€” auto-fill via KODE_MAP"
+        string Q_retensi_inaktif "col 16 â€” auto-fill via KODE_MAP"
+        string R_retensi_keterangan "col 17 â€” auto-fill via KODE_MAP"
     }
 
-    dbSM_SuratMasuk }|--|| GoogleDrive : "R_url_pdf → link Drive"
-    dbSK_SuratKeluar }|--|| GoogleDrive : "H_url_pdf → link Drive"
+    LocalStorage {
+        string filename PK "KodeKlas_Ymd_His_original.pdf"
+        string path "/uploads/filename"
+    }
 
     GoogleDrive {
         string file_id PK "Google Drive File ID"
-        string nama_file "Kode klas + timestamp + .pdf"
-        string folder_id "Target folder per kode klasifikasi"
+        string webViewLink "https://drive.google.com/file/d/..."
+        string name "filename yang sama dengan LocalStorage"
+        string parent_folder_id "GOOGLE_DRIVE_FOLDER_ID dari .env"
     }
+
+    dbSM_SuratMasuk }o--o| LocalStorage : "R_url_pdf = filename lokal (fallback)"
+    dbSM_SuratMasuk }o--o| GoogleDrive : "R_url_pdf = webViewLink (utama)"
+    dbSK_SuratKeluar }o--o| LocalStorage : "H_url_pdf = filename lokal (fallback)"
+    dbSK_SuratKeluar }o--o| GoogleDrive : "H_url_pdf = webViewLink (utama)"
+    GoogleDrive ||--|| LocalStorage : "Nama file identik, disimpan sinkron"
 ```
 
 ---
