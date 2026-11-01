@@ -302,41 +302,41 @@ flowchart LR
 
 ```mermaid
 flowchart LR
-    Start(["Buka Aplikasi"]) --> CheckAuth{"Session\nAktif?"}
+    Start(["Buka Aplikasi"]) --> CheckAuth{"Pengguna Sudah\nLogin?"}
 
-    CheckAuth -- Ya --> UpdateLastSeen["Update last_seen_at\nMiddleware"]
-    UpdateLastSeen --> CheckRole{"Role?"}
-    CheckRole -- admin --> AdminDash["Dashboard /dashboard"]
-    CheckRole -- internship --> ArsipPage["Surat Masuk /arsip"]
+    CheckAuth -- Ya --> UpdateLastSeen["Perbarui Waktu\nAktivitas Terakhir"]
+    UpdateLastSeen --> CheckRole{"Peran Akun\n(Role)?"}
+    CheckRole -- Admin --> AdminDash["Halaman Utama Admin\n(/dashboard)"]
+    CheckRole -- Internship --> ArsipPage["Halaman Arsip Surat\n(/arsip)"]
 
-    CheckAuth -- Tidak --> LoginPage["Halaman Login /login"]
-    LoginPage --> CheckBan{"IP Di-ban?\nBruteForceIpBan"}
-    CheckBan -- Ya --> Block429["HTTP 429\nAkses Diblokir 1 Jam"]
-    CheckBan -- Tidak --> InputCred["Input Username & Password"]
-    InputCred --> RateLimit{"Rate Limit\n5 gagal / 5 menit?"}
-    RateLimit -- Ya --> ErrThrottle["HTTP 429\nThrottle"] --> LoginPage
-    RateLimit -- Tidak --> ValidateCred{"Kredensial\nValid?"}
-    ValidateCred -- Tidak --> RecordFail["Catat Kegagalan Login"]
-    RecordFail --> CheckCount{"20 gagal\ndalam 10 menit?"}
-    CheckCount -- Ya --> BanIP["Ban IP 1 Jam"] --> Block429
-    CheckCount -- Tidak --> ErrMsg["Pesan Error Login"] --> LoginPage
-    ValidateCred -- Ya --> CreateSession["Buat Session MySQL\n240 menit"] --> UpdateLastSeen
+    CheckAuth -- Tidak --> LoginPage["Halaman Masuk\n(/login)"]
+    LoginPage --> CheckBan{"Alamat IP Sedang\nDiblokir Sementara?"}
+    CheckBan -- Ya --> Block429["Akses Diblokir 1 Jam\n(Terlalu Sering Gagal)"]
+    CheckBan -- Tidak --> InputCred["Masukkan Username\n& Password"]
+    InputCred --> RateLimit{"Batas Percobaan\nTerlampaui?\n(5x gagal / 5 menit)"}
+    RateLimit -- Ya --> ErrThrottle["Peringatan: Tunggu\nBeberapa Menit"] --> LoginPage
+    RateLimit -- Tidak --> ValidateCred{"Username & Password\nSesuai?"}
+    ValidateCred -- Tidak --> RecordFail["Catat Percobaan Gagal"]
+    RecordFail --> CheckCount{"Mencapai 20x Gagal\ndalam 10 Menit?"}
+    CheckCount -- Ya --> BanIP["Blokir Alamat IP\nselama 1 Jam"] --> Block429
+    CheckCount -- Tidak --> ErrMsg["Tampilkan Pesan:\nAkun Tidak Ditemukan"] --> LoginPage
+    ValidateCred -- Ya --> CreateSession["Buat Sesi Login Baru\n(Aktif 4 Jam)"] --> UpdateLastSeen
 
-    subgraph TamuFlow ["Tamu WiFi â€” Tanpa Login"]
-        TReq["/tamu atau /tamu/surat-keluar"] --> CheckSubnet{"Subnet\nTamu/Internal?\nGuestNetwork"}
-        CheckSubnet -- Ya --> TamuView["Tampil Read-Only\ndari SheetsCache"]
-        CheckSubnet -- Tidak --> Deny403T["HTTP 403"]
+    subgraph TamuFlow ["Akses Tamu WiFi (Tanpa Login)"]
+        TReq["Akses Halaman Tamu\n(/tamu)"] --> CheckSubnet{"Terhubung ke WiFi Tamu\natau Jaringan Kantor?"}
+        CheckSubnet -- Ya --> TamuView["Tampilkan Data Arsip\n(Hanya Baca / Read-Only)"]
+        CheckSubnet -- Tidak --> Deny403T["Akses Ditolak\n(403 Forbidden)"]
     end
 
-    subgraph ResetFlow ["Reset Password â€” Internship"]
-        BtnForgot["Klik Lupa Password"] --> ResetForm["Isi Username di Modal"]
-        ResetForm --> ResetThrottle{"Throttle\n3 req / 5 menit?"}
-        ResetThrottle -- Ya --> TooMany["HTTP 429"] --> ResetForm
-        ResetThrottle -- Tidak --> SaveReq["Simpan PasswordResetRequest\nMySQL is_resolved=false"]
-        SaveReq --> SSENotif["SSE event ke Admin"]
-        SSENotif --> AdminResolve["Admin lihat /admin/users"]
-        AdminResolve --> ResetPw["Admin reset password\nbcrypt hash baru"]
-        ResetPw --> MarkDone["is_resolved=true\nresolved_at=now()"]
+    subgraph ResetFlow ["Pengajuan Reset Password (Internship)"]
+        BtnForgot["Klik 'Lupa Password'"] --> ResetForm["Masukkan Username\npada Formulir"]
+        ResetForm --> ResetThrottle{"Batas Pengajuan\nTerlampaui?\n(3x / 5 menit)"}
+        ResetThrottle -- Ya --> TooMany["Peringatan: Terlalu\nBanyak Permohonan"] --> ResetForm
+        ResetThrottle -- Tidak --> SaveReq["Simpan Permohonan Reset\n(Status: Menunggu Persetujuan)"]
+        SaveReq --> SSENotif["Kirim Notifikasi Langsung\nke Layar Admin (Real-Time)"]
+        SSENotif --> AdminResolve["Admin Membuka Menu\nKelola Pengguna"]
+        AdminResolve --> ResetPw["Admin Buat Password Baru\nuntuk Pengguna"]
+        ResetPw --> MarkDone["Permohonan Selesai Diproses"]
     end
 ```
 
@@ -387,25 +387,25 @@ flowchart LR
 
 ```mermaid
 flowchart LR
-    Adm(["Admin"]) --> CheckAdminNet{"Jaringan Internal\n+ AdminOnly\nmiddleware?"}
-    CheckAdminNet -- Tidak --> Deny403["HTTP 403"]
+    Adm(["Admin"]) --> CheckAdminNet{"Dari Jaringan Internal\n+ Akses Admin?"}
+    CheckAdminNet -- Tidak --> Deny403["Akses Ditolak\n(403 Forbidden)"]
     CheckAdminNet -- Ya --> Pilih{"Pilih Aksi"}
 
-    Pilih -- "Edit Data" --> FetchRow["GET /arsip/{rowIndex}/edit\nAmbil baris dari Sheets\nJSON response"]
-    FetchRow --> EditModal["User edit di modal"]
-    EditModal --> ValidEdit{"Validasi\nInput?"}
-    ValidEdit -- Gagal --> ErrEdit["Error Validasi"] --> EditModal
-    ValidEdit -- OK --> UpdateSheet["Sheets API update baris\ndbSM/dbSK!B{n}:R{n}"]
-    UpdateSheet --> RenamePDF["renameFile()\nRename PDF di /uploads + Drive"]
-    RenamePDF --> ForgetEdit["SheetsCache::forget()\nhapus cache terkait"]
-    ForgetEdit --> OKEdit["Flash success\nredirect index"]
+    Pilih -- "Edit Data" --> FetchRow["Ambil Data Arsip\ndari Google Sheets"]
+    FetchRow --> EditModal["Admin Edit Data\ndi Form Modal"]
+    EditModal --> ValidEdit{"Data Lengkap\n& Valid?"}
+    ValidEdit -- Tidak --> ErrEdit["Tampilkan Pesan\nKesalahan"] --> EditModal
+    ValidEdit -- Ya --> RenamePDF["Ganti Nama File PDF\ndi Server & Google Drive"]
+    RenamePDF --> UpdateSheet["Perbarui Data\ndi Google Sheets"]
+    UpdateSheet --> ForgetEdit["Perbarui Tampilan\n(hapus cache lama)"]
+    ForgetEdit --> OKEdit["Tampilkan Pesan Berhasil\nKembali ke Halaman Arsip"]
 
     Pilih -- "Hapus Data" --> ConfirmDel{"Konfirmasi\nHapus?"}
     ConfirmDel -- Tidak --> Pilih
-    ConfirmDel -- Ya --> DelSheet["Sheets API delete baris\nshiftDimensionRequest"]
-    DelSheet --> DelPDF["deleteFile()\nHapus PDF /uploads + Drive"]
-    DelPDF --> ForgetDel["SheetsCache::forget()\nhapus cache terkait"]
-    ForgetDel --> OKDel["Flash success\nredirect index"]
+    ConfirmDel -- Ya --> DelSheet["Hapus Baris Data\ndari Google Sheets"]
+    DelSheet --> DelPDF["Hapus File PDF\ndari Server & Google Drive"]
+    DelPDF --> ForgetDel["Perbarui Tampilan\n(hapus cache lama)"]
+    ForgetDel --> OKDel["Tampilkan Pesan Berhasil\nKembali ke Halaman Arsip"]
 ```
 
 ---
