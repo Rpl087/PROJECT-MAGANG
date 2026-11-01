@@ -184,7 +184,7 @@ flowchart LR
     Publ([Publik])
     Intrn([Internship])
 
-    subgraph SIS1 [Sistem â€” Akses Umum]
+    subgraph SIS1 [Sistem - Akses Umum]
         direction TB
         UC_TamuSM(["Lihat Surat Masuk\nRead-Only"])
         UC_TamuSK(["Lihat Surat Keluar\nRead-Only"])
@@ -196,8 +196,7 @@ flowchart LR
         UC_LihatSK(["Lihat Surat Keluar"])
         UC_InputSM(["Input Surat Masuk\nJaringan Internal"])
         UC_InputSK(["Input Surat Keluar\nJaringan Internal"])
-        UC_UploadSM(["Upload & Simpan PDF\n+ Google Sheets"])
-        UC_UploadSK(["Upload & Simpan PDF\n+ Google Sheets"])
+        UC_SimpanArsip(["Simpan PDF & Data\nke Drive + Google Sheets"])
     end
 
     GS([Google Sheets API])
@@ -208,6 +207,7 @@ flowchart LR
     Tamu --- UC_TamuSK
     Tamu --- UC_AksesPDF
     Publ --- UC_AksesPDF
+
     Intrn --- UC_Login
     Intrn --- UC_Logout
     Intrn --- UC_ResetReq
@@ -217,28 +217,26 @@ flowchart LR
     Intrn --- UC_InputSK
     Intrn --- UC_AksesPDF
 
-    UC_InputSM -. "include" .-> UC_UploadSM
-    UC_InputSK -. "include" .-> UC_UploadSK
+    UC_InputSM -. "include" .-> UC_SimpanArsip
+    UC_InputSK -. "include" .-> UC_SimpanArsip
 
-    UC_TamuSM  --- GS
-    UC_TamuSK  --- GS
-    UC_LihatSM --- GS
-    UC_LihatSK --- GS
-    UC_UploadSM --- GD
-    UC_UploadSK --- GD
-    UC_UploadSM --- GS
-    UC_UploadSK --- GS
-    UC_Login    --- MySQL
-    UC_ResetReq --- MySQL
+    UC_TamuSM      --- GS
+    UC_TamuSK      --- GS
+    UC_LihatSM     --- GS
+    UC_LihatSK     --- GS
+    UC_SimpanArsip --- GD
+    UC_SimpanArsip --- GS
+    UC_Login       --- MySQL
+    UC_ResetReq    --- MySQL
 ```
 
-### Use Case 2 â€” Manajemen & Administrasi (Admin)
+### Use Case 2 - Manajemen & Administrasi (Admin)
 
 ```mermaid
 flowchart LR
     Adm([Admin])
 
-    subgraph SIS2 [Sistem â€” Manajemen & Administrasi]
+    subgraph SIS2 [Sistem - Manajemen & Administrasi]
         direction TB
         UC_Login2(["Login"])
         UC_Logout2(["Logout"])
@@ -254,8 +252,8 @@ flowchart LR
         UC_KelolaUser(["Kelola Pengguna\n& Reset Password Manual"])
         UC_SSE(["Terima Notifikasi SSE\n+ Polling Fallback"])
         UC_AksesPDF2(["Akses URL PDF"])
-        UC_Upload2(["Upload & Backup PDF\nLokal + Drive"])
-        UC_Simpan2(["Simpan/Update/Hapus\nGoogle Sheets"])
+        UC_KelolaPDF(["Kelola File PDF\nUpload / Rename di Drive"])
+        UC_Simpan2(["Simpan / Update / Hapus\nGoogle Sheets"])
     end
 
     GS([Google Sheets API])
@@ -277,10 +275,9 @@ flowchart LR
     Adm --- UC_SSE
     Adm --- UC_AksesPDF2
 
-    UC_InputSM2 -. "include" .-> UC_Upload2
-    UC_InputSK2 -. "include" .-> UC_Upload2
-    UC_Edit     -. "include" .-> UC_Upload2
-    UC_Hapus    -. "include" .-> UC_Upload2
+    UC_InputSM2 -. "include" .-> UC_KelolaPDF
+    UC_InputSK2 -. "include" .-> UC_KelolaPDF
+    UC_Edit     -. "include" .-> UC_KelolaPDF
     UC_InputSM2 -. "include" .-> UC_Simpan2
     UC_InputSK2 -. "include" .-> UC_Simpan2
     UC_Edit     -. "include" .-> UC_Simpan2
@@ -291,12 +288,11 @@ flowchart LR
     UC_Rekap      --- GS
     UC_LihatSM2   --- GS
     UC_LihatSK2   --- GS
-    UC_Upload2    --- GD
+    UC_KelolaPDF  --- GD
     UC_Login2     --- MySQL
     UC_SSE        --- MySQL
     UC_KelolaUser --- MySQL
 ```
-
 
 ---
 
@@ -348,38 +344,42 @@ flowchart LR
 
 ```mermaid
 flowchart LR
-    UserAksi(["User Terautentikasi\nAdmin / Internship"]) --> CheckNet{"Jaringan\nInternal?\nInternalNetworkOnly"}
-    CheckNet -- Tidak --> Deny403["HTTP 403"]
-    CheckNet -- Ya --> PilihForm{"Pilih Form"}
+    UserAksi(["Pengguna Aktif\nAdmin / Internship"]) --> CheckNet{"Dari Jaringan\nInternal Kantor?"}
+    CheckNet -- Tidak --> Deny403["Akses Ditolak\n(403 Forbidden)"]
+    CheckNet -- Ya --> PilihForm{"Pilih Jenis\nSurat"}
 
-    PilihForm -- "Surat Masuk" --> FormSM["Form dbSM\n17 field + PDF"]
-    PilihForm -- "Surat Keluar" --> FormSK["Form dbSK\n17 field + PDF"]
+    PilihForm -- "Surat Masuk" --> FormSM["Isi Formulir Surat Masuk\n17 field + upload PDF"]
+    PilihForm -- "Surat Keluar" --> FormSK["Isi Formulir Surat Keluar\n17 field + upload PDF"]
 
-    FormSM --> ValidSM{"Validasi?"}
-    FormSK --> ValidSK{"Validasi?"}
-    ValidSM -- Gagal --> ErrSM["Error Validasi"] --> FormSM
-    ValidSK -- Gagal --> ErrSK["Error Validasi"] --> FormSK
+    FormSM --> ValidSM{"Data Lengkap\n& Valid?"}
+    FormSK --> ValidSK{"Data Lengkap\n& Valid?"}
+    ValidSM -- Tidak --> ErrSM["Tampilkan Pesan\nKesalahan"] --> FormSM
+    ValidSK -- Tidak --> ErrSK["Tampilkan Pesan\nKesalahan"] --> FormSK
 
-    ValidSM -- OK --> KodeSM["applyKodeMapFallback()\nauto-fill retensi & keamanan"]
-    ValidSK -- OK --> KodeSK["applyKodeMapFallback()\nauto-fill retensi & keamanan"]
-    KodeSM --> EscSM["escapeFormula()\nsanitasi prefix = + - @"]
-    KodeSK --> EscSK["escapeFormula()\nsanitasi prefix = + - @"]
+    ValidSM -- Ya --> KodeSM["Lengkapi Otomatis\nData Retensi & Keamanan"]
+    ValidSK -- Ya --> KodeSK["Lengkapi Otomatis\nData Retensi & Keamanan"]
+    KodeSM --> EscSM["Amankan Data dari\nKarakter Berbahaya"]
+    KodeSK --> EscSK["Amankan Data dari\nKarakter Berbahaya"]
 
-    EscSM --> UpSM["uploadAndBackup()\nBackup /uploads lokal\nlalu upload Google Drive"]
-    EscSK --> UpSK["uploadAndBackup()\nBackup /uploads lokal\nlalu upload Google Drive"]
+    EscSM --> UpSM["Simpan PDF ke Server\nlalu Coba Upload ke Drive"]
+    EscSK --> UpSK["Simpan PDF ke Server\nlalu Coba Upload ke Drive"]
 
-    UpSM --> AppSM["Sheets API append\ndbSM!A:R â€” 18 kolom"]
-    UpSK --> AppSK["Sheets API append\ndbSK!A:R â€” 18 kolom"]
+    UpSM --> DriveOKSM{"Upload Drive\nBerhasil?"}
+    UpSK --> DriveOKSK{"Upload Drive\nBerhasil?"}
+    DriveOKSM -- Ya --> AppSM["Catat Data ke\nGoogle Sheets\n(Surat Masuk)"]
+    DriveOKSK -- Ya --> AppSK["Catat Data ke\nGoogle Sheets\n(Surat Keluar)"]
+    DriveOKSM -- Tidak --> LocalSM["Simpan Lokal Saja\n(Drive tidak tersedia)"] --> AppSM
+    DriveOKSK -- Tidak --> LocalSK["Simpan Lokal Saja\n(Drive tidak tersedia)"] --> AppSK
 
-    AppSM --> ErrSM2{"Gagal?"}
-    AppSK --> ErrSK2{"Gagal?"}
+    AppSM --> ErrSM2{"Berhasil\nTercatat?"}
+    AppSK --> ErrSK2{"Berhasil\nTercatat?"}
 
-    ErrSM2 -- Ya --> RollSM["Rollback: hapus\n/uploads + Drive"] --> Fail["Flash error"]
-    ErrSK2 -- Ya --> RollSK["Rollback: hapus\n/uploads + Drive"] --> Fail
+    ErrSM2 -- Tidak --> RollSM["Batalkan & Hapus\nFile yang Sudah Tersimpan"] --> Fail["Tampilkan\nPesan Gagal"]
+    ErrSK2 -- Tidak --> RollSK["Batalkan & Hapus\nFile yang Sudah Tersimpan"] --> Fail
 
-    ErrSM2 -- Tidak --> CacheSM["forgetSuratMasuk()\nhapus SM+Dashboard+Report cache"]
-    ErrSK2 -- Tidak --> CacheSK["forgetSuratKeluar()\nhapus SK+Dashboard+Report cache"]
-    CacheSM --> OK["Flash success\nredirect index"]
+    ErrSM2 -- Ya --> CacheSM["Perbarui Tampilan\n(hapus data cache lama)"]
+    ErrSK2 -- Ya --> CacheSK["Perbarui Tampilan\n(hapus data cache lama)"]
+    CacheSM --> OK["Tampilkan Pesan Berhasil\nKembali ke Halaman Arsip"]
     CacheSK --> OK
 ```
 
