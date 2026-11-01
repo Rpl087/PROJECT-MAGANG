@@ -279,7 +279,7 @@ flowchart LR
 ### Alur Autentikasi & Navigasi
 
 ```mermaid
-flowchart TD
+flowchart LR
     Start(["Buka Aplikasi"]) --> CheckAuth{"Session\nAktif?"}
 
     CheckAuth -- Tidak --> LoginPage["Halaman Login\n/login"]
@@ -330,7 +330,7 @@ flowchart TD
 ### Alur Input & CRUD Arsip
 
 ```mermaid
-flowchart TD
+flowchart LR
     UserAksi(["User Terautentikasi\nAdmin / Internship"]) --> CheckNet{"Dari Jaringan\nInternal?\nInternalNetworkOnly middleware"}
     CheckNet -- Tidak --> Deny403["HTTP 403 â€” Ditolak"]
     CheckNet -- Ya --> PilihAksi{"Pilih Aksi"}
@@ -383,7 +383,7 @@ flowchart TD
 ### Alur Cache Google Sheets (Dual-Tier)
 
 ```mermaid
-flowchart TD
+flowchart LR
     Req(["Request data\nSurat Masuk / Keluar / Dashboard"]) --> IsAdmin{"User\nAdmin?"}
 
     IsAdmin -- Ya --> CheckMicro{"Cache\nadmin.micro.{key}\nTTL 30s ada?"}
